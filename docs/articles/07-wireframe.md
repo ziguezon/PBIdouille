@@ -84,7 +84,10 @@ avertissement :
 
 Changer de rapport ou fermer l'app ne pose pas cette question : enregistrer avant.
 
-Après réouverture du projet, **Restaurer une sauvegarde…** permet de retirer les visuels d’un import enregistré avec un manifeste JSON. Les anciens imports accompagnés uniquement d’`import_manifest.txt` doivent être vérifiés à partir de cette liste.
+Un import est aussi une sauvegarde. Après la fermeture de l'app, **Ctrl+Z** ne l'annule
+plus, mais [🕘 Restaurer une sauvegarde…](01-barre-du-haut.md#restaurer-une-sauvegarde)
+retire ses visuels. Un import fait avec une version plus ancienne n'a que sa liste
+`import_manifest.txt` : ses visuels se retirent à la main.
 
 **Annuler**, ou **Ctrl+Z**, défait le dernier geste ou la dernière action, y compris un
 enregistrement.

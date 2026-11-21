@@ -1985,6 +1985,14 @@ puis :
 - [ ] après la première génération : les relations TD → P_xxx[Indicateur]
       dans Desktop.
 
+**Poste géré** : pour lire un Excel sans le verrouiller, l'app copie le
+classeur **entier** dans un dossier temporaire, effacé dès la lecture finie
+(`xlsx_lecture.lire_lignes`). Par défaut, c'est le dossier temporaire de
+Windows ; `PBIDOUILLE_TEMP_EXCEL=<dossier>` en choisit un autre, qui doit
+exister et accepter l'écriture (sinon la lecture échoue en nommant le
+chemin). Comme `PBIDOUILLE_PROJETS`, une variable d'environnement : rien
+à régler dans l'app.
+
 ---
 
 ## 13. L'interface en détail
