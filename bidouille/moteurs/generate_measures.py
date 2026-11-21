@@ -2391,6 +2391,13 @@ def _generate(model_dir, config, *, dry_run=None, remove_orphans=None, log=print
                 mtext = mtext.rstrip() + "\n" + add
             to_write.append((model_path, mtext))
 
+    # Les fins de ligne sont normalisées par read_text comme à la lecture initiale.
+    to_write = [(path, content) for path, content in to_write
+                if not path.exists() or path.read_text(encoding="utf-8") != content]
+    if not to_write:
+        log("Aucun changement à écrire.")
+        return stats
+
     # session de sauvegarde partagée : copies + manifeste (d'où venait chaque
     # fichier), donc restaurable d'un clic depuis « Restaurer une sauvegarde… » comme le
     # reste — et soumise au même ménage (on ne garde que les plus récentes)
