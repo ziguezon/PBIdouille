@@ -2391,16 +2391,22 @@ def _generate(model_dir, config, *, dry_run=None, remove_orphans=None, log=print
                 mtext = mtext.rstrip() + "\n" + add
             to_write.append((model_path, mtext))
 
-    # Les fins de ligne sont normalisées par read_text comme à la lecture initiale.
+    # Seuls les fichiers dont le contenu change sont écrits (et sauvegardés) :
+    # relancer sans changement n'écrit rien et ne consomme aucune des
+    # MAX_SESSIONS sauvegardes. read_text normalise les fins de ligne, comme à
+    # la lecture initiale.
     to_write = [(path, content) for path, content in to_write
                 if not path.exists() or path.read_text(encoding="utf-8") != content]
     if not to_write:
-        log("Aucun changement à écrire.")
+        log("Rien à écrire : le modèle est déjà à jour.")
         return stats
 
     # session de sauvegarde partagée : copies + manifeste (d'où venait chaque
     # fichier), donc restaurable d'un clic depuis « Restaurer une sauvegarde… » comme le
-    # reste — et soumise au même ménage (on ne garde que les plus récentes)
+    # reste — et soumise au même ménage (on ne garde que les plus récentes).
+    # Le manifeste est écrit AVANT la première écriture, et un fichier encore
+    # absent y est noté comme tel : une écriture interrompue au milieu du lot
+    # se défait donc entièrement, fichiers créés compris.
     session = br.BackupSession(br.backup_root(model_dir.parent, "_tmdl_backups"),
                                "Mesures générées", model_dir.parent)
     for path, _ in to_write:
@@ -2410,12 +2416,19 @@ def _generate(model_dir, config, *, dry_run=None, remove_orphans=None, log=print
             session.mark_absent(path)
     backup_dir = session.close(f"{len(created)} créée(s), {len(updated)} mise(s) "
                                f"à jour, {len(removed)} retirée(s)")
+    path = None
     try:
         for path, content in to_write:
             path.write_text(content, encoding="utf-8")
     except OSError as exc:
-        log(f"Écriture interrompue. Restaurer la session {backup_dir} : {exc}")
-        raise
+        # erreur attendue (fichier verrouillé, disque plein) : SystemExit, comme
+        # les autres refus du moteur, pour que l'app montre un message et non
+        # une trace
+        raise SystemExit(
+            f"Écriture interrompue sur {path.name if path else '?'} ({exc}). Le modèle "
+            "est peut-être à moitié écrit : le remettre en état avec 🕘 Restaurer une "
+            f"sauvegarde…, sauvegarde « Mesures générées » {backup_dir.name}, "
+            "avant de relancer.") from exc
     log(f"Écrit : {', '.join(p.name for p, _ in to_write)}"
         + (f"  (backup : {backup_dir.name})" if backup_dir else ""))
     log("Rouvrir le .pbip dans Power BI Desktop pour charger le nouveau modèle.")

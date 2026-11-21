@@ -195,11 +195,18 @@ Le générateur écrit directement les fichiers TMDL.
 ⚠ Après l'écriture réelle, fermer Desktop **sans enregistrer** et rouvrir le
 `.pbip` ; backup automatique sous `_backupsPBIdouille\_tmdl_backups\`. `settings.dryRun` (ou la case
 « Aperçu ») pour tout lister sans rien écrire. Idempotent : relancer sans
-changement = 0 écriture. Les lineageTags
+changement = 0 écriture et aucune sauvegarde (seuls les fichiers dont le
+contenu change sont sauvegardés puis écrits). Le manifeste de la sauvegarde est
+écrit **avant** la première écriture, un fichier créé y étant noté absent : une
+écriture interrompue se défait entièrement, et l'erreur nomme la sauvegarde à
+restaurer. Les lineageTags
 existants sont préservés ; une table paramètre créée est ajoutée aux
 `ref table` de model.tmdl (penser à la relation TD → Indicateur ensuite).
 
-**Collisions de nom** : les noms de mesures sont uniques dans le modèle. Si une
+**Collisions de nom** : les noms de mesures sont uniques dans le modèle, à la
+casse près et toutes tables confondues. Un nom déjà pris par une mesure écrite à
+la main, ou par une mesure d'une autre table, n'est pas touché : la mesure
+générée est ignorée et le journal nomme la table. Si une
 variation a un `namePattern` invariant par branche (utilise `{kpi}` au lieu de
 `{base}`, ex. une mesure « direction »), la passe de base et la passe de
 branche visent le même nom : la 1re (la base) est gardée, les suivantes sont

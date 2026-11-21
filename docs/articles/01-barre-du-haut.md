@@ -63,7 +63,13 @@ L'état actuel est sauvegardé juste avant, donc une restauration peut elle-mêm
 annulée. Un fichier créé par l'opération d'origine est effacé, et un fichier qu'elle avait
 supprimé est recréé.
 
-Si une génération échoue pendant l’écriture, le journal indique la session à restaurer. Fermer Desktop sans enregistrer et restaurer cette session avant une nouvelle génération.
+La sauvegarde d'une génération est complète avant la première écriture. Si l'écriture
+s'interrompt, par exemple sur un fichier verrouillé, le message nomme la sauvegarde
+« Mesures générées » à restaurer : elle remet tout le modèle dans son état d'avant,
+fichiers créés compris. La restaurer avant de relancer, puis fermer Desktop sans
+enregistrer et rouvrir le `.pbip`.
+
+Une génération qui ne change rien n'écrit rien et ne crée pas de sauvegarde.
 
 Après une restauration, les onglets relisent les fichiers, comme avec **↻ Tout recharger**.
 

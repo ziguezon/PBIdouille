@@ -37,7 +37,8 @@ class Generation(unittest.TestCase):
             if path == self.tables.parent / "model.tmdl":
                 raise OSError("interruption simulée")
             return ecrire(path, *args, **kwargs)
-        with patch.object(Path, "write_text", panne), self.assertRaises(OSError):
+        with patch.object(Path, "write_text", panne), \
+                self.assertRaisesRegex(SystemExit, "model.tmdl.*Restaurer"):
             self.generer()
         session, = br.list_sessions(self.projet)
         self.assertTrue(session["manifeste"])
