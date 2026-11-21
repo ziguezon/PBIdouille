@@ -135,7 +135,9 @@ L'arbre est recalculé à chaque ouverture de l'onglet et après chaque généra
 lit le config **en mémoire** : les modifications de **Variations** y apparaissent
 avant d'être sauvegardées.
 
-L’arbre présente l’aperçu des mesures du générateur avec le config en mémoire. La génération relit le config enregistré. Pour obtenir le même résultat, enregistrer les modifications et conserver les mêmes sources et options. Les avertissements s’affichent en jaune sous la fiche.
+Il est produit par le générateur lui-même, lancé en aperçu sur ce config en mémoire. La
+génération, elle, lit le config **enregistré** : une fois les modifications sauvegardées,
+elle fait ce que l'arbre annonce. Ses avertissements s'affichent en jaune sous la fiche.
 
 ## Ce que l'arbre ne montre pas
 

@@ -4,7 +4,8 @@
 
 Une **variation** est une recette de mesure. On l'écrit une seule fois, et
 PBIdouille en génère une mesure pour chaque KPI, dans chaque branche, et pour
-les cibles lorsque nécessaire. Si les cinq KPI sont admissibles et que la branche YTD inclut la variation, elle donne cinq mesures de base déclinées et cinq mesures YTD.
+les cibles lorsque nécessaire. Avec 5 KPI et une branche YTD, une variation
+donne 10 mesures dans Power BI, si aucun filtre ne l'écarte d'un KPI ou de la branche.
 
 ![L'onglet Variations](../ressources/images/variations_formulaire.png)
 

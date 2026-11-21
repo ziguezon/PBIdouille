@@ -1,7 +1,5 @@
 # PBIdouille 🔧
 
-**Premier projet.** Copier le [config de démarrage](exemples/measures_config.json) à côté du `.pbip` sous le nom `measures_config.json`. Dans **Réglages**, remplacer `Ventes` et `Base` par la table et le dossier d’affichage contenant vos mesures. Cette recette double chacune des bases admissibles. Lancer d’abord **Aperçu**. Le paramètre de champ peut ensuite être activé dans l’onglet dédié.
-
 Une app de bureau pour les rapports Power BI au format **PBIP**. Elle écrit
 automatiquement ce qui se répète dans un rapport : les mesures dérivées de chaque KPI
 (7d avg, PY, YTD…), les tables paramètre de champ, le formatage conditionnel
@@ -101,6 +99,14 @@ L'app rouvre le dernier rapport utilisé. Le `measures_config.json` est
 cherché à côté du `.pbip` ; le bouton 📄, à côté du nom du rapport, en choisit
 un autre.
 
+**Premier rapport, sans config** : copier
+[`exemples\measures_config.json`](exemples/measures_config.json) à côté du
+`.pbip`, sous le nom `measures_config.json`. Dans ⚙ Réglages, remplacer
+`Ventes` et `Base` par la table et le dossier des mesures de base. Sa seule
+variation double chaque base ; laisser **Aperçu (dry-run)** coché pour la
+première génération. Les tables paramètre de champ, désactivées dans cet
+exemple, s'activent ensuite dans **Paramètres de champ**.
+
 **Partager** : sur GitHub, branche `stable`, **Code → Download ZIP**. Le
 dossier extrait démarre toujours en **édition production** (cf. §13,
 « Édition production / dev ») : le fichier `.dev` n'est jamais versionné.
@@ -174,6 +180,7 @@ doublon. Tout ce qui est réécrit est d'abord sauvegardé.
 | `bidouille\moteurs\backup_restore.py` | sauvegardes horodatées et restauration (manifeste : d'où vient chaque copie) |
 | `bidouille\moteurs\xlsx_lecture.py` | lecture de l'Excel qui relâche toujours le fichier |
 | `bidouille\moteurs\chemins.py` | où vivent l'outil et les projets |
+| `bidouille\moteurs\dossiers_mesures.py` | la règle « ce dossier est-il celui des cibles ? », commune au générateur et à la propagation |
 | `bidouille\core\` | projet, journal, thème, édition, lecture du modèle et du rapport |
 | `bidouille\tabs\` | les onglets et leurs fenêtres |
 | `bidouille\aide\` | les images du guide intégré |
