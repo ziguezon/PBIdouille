@@ -6,8 +6,6 @@ Un **paramètre de champ** est une table Power BI qui liste des mesures. Placé 
 segment, il permet de choisir quelle mesure un visuel affiche : `Réel`, `7d avg`,
 `PY`, ou un autre KPI.
 
-Si le nom existe déjà, le générateur vérifie la partition calculée et les métadonnées du paramètre. Un conflit avec une table Power Query interrompt l’aperçu ou la génération avant toute écriture. Choisissez un nom libre pour créer un nouveau paramètre.
-
 PBIdouille écrit ces tables à partir des KPI, des cibles et des variations. L'onglet
 se lit de haut en bas : les **réglages** de chaque table, puis **ce qu'elle
 contiendra**.
@@ -151,7 +149,8 @@ L'état de la table s'affiche à côté de son nom :
 | **modifiée** | Seule la liste des rangées est réécrite |
 | **inchangée** | Rien |
 | **vide** | Aucune rangée après les filtres : la table n'est pas touchée, et un avertissement le signale |
-| **source introuvable** | La table existe, mais sa définition n'a pas été reconnue : elle n'est pas touchée |
+| **conflit** | Une table qui n'est pas un paramètre de champ porte déjà ce nom, une table Power Query par exemple : elle n'est pas touchée, et le reste de la génération se fait. Choisir un autre nom |
+| **source introuvable** | La table est bien un paramètre de champ, mais sa liste de rangées n'a pas été trouvée : elle n'est pas touchée |
 | Table **retirée** de la liste | Elle reste dans le modèle. La supprimer dans Power BI Desktop si plus aucun visuel ne s'en sert |
 | Table **renommée** | Une nouvelle table est créée, et l'ancienne reste dans le modèle avec ses visuels |
 | **Générer les tables paramètre de champ** décoché | Le générateur ne touche à aucune table |

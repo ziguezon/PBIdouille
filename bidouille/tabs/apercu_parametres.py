@@ -31,10 +31,10 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
-from core.theme import ACCENT, BLUE, TEXT_DIM, TEXT_MUTED, YELLOW
+from core.theme import ACCENT, BLUE, RED, TEXT_DIM, TEXT_MUTED, YELLOW
 
 COULEUR_ETAT = {"nouvelle": ACCENT, "modifiée": YELLOW, "vide": YELLOW,
-                "source introuvable": YELLOW}
+                "source introuvable": YELLOW, "conflit": RED}
 # colonnes du contenu
 C_AFFICHAGE, C_MESURE, C_CALCUL, C_BRANCHE, C_ORDRE = range(5)
 # autour du nom d'une table, dans l'en-tête de la matrice : le padding du thème

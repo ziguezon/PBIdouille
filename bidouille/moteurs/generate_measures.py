@@ -906,21 +906,27 @@ def colonne_de_parametre(bloc):
     return isinstance(metadata, dict) and metadata.get("kind") == 2
 
 
-def source_parametre(texte, nom):
-    """Localise la source d'un paramètre de champ avant toute écriture du lot."""
+def source_parametre(texte):
+    """La source d'une table paramètre de champ EXISTANTE, ou pourquoi on n'y
+    touche pas : (match, None, None) ou (None, état, raison).
+
+    Un bloc `source =` ne suffit pas : une table Power Query en a un aussi, et
+    y écrire du DAX remplaçait sa requête M. Seule une table à partition
+    calculée unique, avec la colonne de champs que Power BI marque d'un
+    ParameterMetadata de type 2, est un paramètre de champ."""
     membres = split_members(texte)
     partitions = [bloc for genre, bloc in membres if genre == "partition"]
     metadata = any(genre == "column" and colonne_de_parametre(bloc) for genre, bloc in membres)
     if (len(partitions) != 1 or not metadata or not re.search(
             r"^\tpartition[^\n]+?=\s*calculated[ \t]*$", partitions[0], re.M | re.I)):
-        raise SystemExit(f"« {nom} » existe déjà et n'est pas une table paramètre "
-                         "de champ à partition calculée unique. Choisir un autre nom.")
+        return None, "conflit", ("une table qui n'est pas un paramètre de champ porte "
+                                 "déjà ce nom (Power Query ?)")
     debut = re.search(r"^\tpartition\b", texte, re.M).start()
     suivant = MEMBER_RE.search(texte, debut + 1)
     source = SOURCE_BLOCK_RE.search(texte, debut, suivant.start() if suivant else len(texte))
     if not source:
-        raise SystemExit(f"« {nom} » : source du paramètre illisible. Génération annulée.")
-    return source
+        return None, "source introuvable", "bloc `source =` introuvable"
+    return source, None, None
 
 
 def fp_table_names(fp) -> list:
@@ -2264,17 +2270,29 @@ def _generate(model_dir, config, *, dry_run=None, remove_orphans=None, log=print
                     raise SystemExit(f"Plusieurs tables portent le nom « {nom} ».")
                 chemins_fp[nom.casefold()] = fichier
 
+        # Une table qu'on ne doit pas toucher est signalée et laissée telle
+        # quelle, comme une table vide : le reste du lot s'écrit. Seuls un nom
+        # impossible et deux tables homonymes arrêtent tout, parce que c'est
+        # alors le config ou le modèle lui-même qui est faux.
         etats_fp: dict = {}
         for tname, expr, n_rows in targets:
             if Path(tname).name != tname or tname in (".", ".."):
                 raise SystemExit(f"Nom de table paramètre invalide : « {tname} ».")
             tpath = chemins_fp.get(tname.casefold(), tables_dir / (tname + ".tmdl"))
-            if tpath.exists() and tname.casefold() not in chemins_fp:
-                raise SystemExit(f"Le fichier {tpath.name} appartient à une autre table.")
             indented = "\n".join("\t\t\t\t" + l for l in expr.split("\n"))
             if tpath.exists():
                 ttext = tpath.read_text(encoding="utf-8")
-                m = source_parametre(ttext, tname)
+                if tname.casefold() in chemins_fp:
+                    m, etat_fp, raison = source_parametre(ttext)
+                else:
+                    m, etat_fp, raison = (None, "conflit", f"le fichier {tpath.name} "
+                                          "décrit une autre table")
+                if m is None:
+                    fp_statuses.append(f"⚠ {tname} : {raison}, non modifiée"
+                                       + (". Choisir un autre nom de table."
+                                          if etat_fp == "conflit" else ""))
+                    etats_fp[tname] = etat_fp
+                    continue
                 new_ttext = ttext[: m.start(2)] + indented + "\n" + ttext[m.end(2):]
                 if new_ttext != ttext:
                     fp_writes.append((tpath, new_ttext))

@@ -52,6 +52,13 @@ Un réglage enregistré agit sur le modèle à la prochaine **Générer les mesu
 Avec `sourceFolder` vide, une cible écrite à la main devient aussi une base : garder ce
 réglage rempli quand le modèle contient d'autres mesures.
 
+Une mesure écrite à la main n'est jamais modifiée, quel que soit `overwriteExisting`.
+
+`overwriteExisting` et **Supprimer les orphelines** sont indépendants. Décoché,
+`overwriteExisting` laisse telle quelle une mesure générée encore demandée, formule et
+identifiant compris. **Supprimer les orphelines** ne retire que les mesures générées que
+le config ne demande plus.
+
 ### Le rangement des dossiers
 
 | Choix | `Weight 7d avg` | `Weight YTD 7d avg` |
@@ -62,12 +69,6 @@ réglage rempli quand le modèle contient d'autres mesures.
 Par KPI, les deux motifs de dossier ne servent pas et sont grisés. Changer de rangement
 déplace les mesures existantes à la prochaine génération : elles sont **modifiées**, pas
 recréées.
-
-Quand **overwriteExisting** est décoché, une mesure générée encore demandée garde sa
-formule et son identifiant, même si **Supprimer les orphelines** est coché. Ce ménage
-retire uniquement les mesures générées qui ne sont plus demandées.
-
-Une mesure écrite à la main n'est jamais modifiée, quel que soit `overwriteExisting`.
 
 ## Excel des indicateurs
 
