@@ -1671,6 +1671,18 @@ def _generate(model_dir, config, *, dry_run=None, remove_orphans=None, log=print
             if info["name"]:
                 existing[info["name"]] = {"idx": ci, **info}
 
+    # Un nom de mesure est unique dans le modèle, y compris entre deux tables.
+    proprietaires = {n.casefold(): (target_table, n) for n in existing}
+    for table in sorted(tables_dir.glob("*.tmdl")):
+        if table == src_path:
+            continue
+        contenu = table.read_text(encoding="utf-8-sig")
+        nom_table = _first_group(TABLE_NAME_RE.search(contenu)) or table.stem
+        for ligne in contenu.splitlines():
+            nom = _first_group(MEASURE_NAME_RE.match(ligne))
+            if nom:
+                proprietaires[nom.casefold()] = (nom_table, nom)
+
     # mesures de base : sans annotation, displayFolder == sourceFolder.
     # Ordre alphabétique « à la Power BI » (et non ordinal) : c'est l'ordre
     # d'écriture dans le TMDL, et le repli des tables paramètre quand aucune
@@ -1826,6 +1838,12 @@ def _generate(model_dir, config, *, dry_run=None, remove_orphans=None, log=print
                             kpi_lbl, fp_label, fp_branch, vid, fp_group == 1,
                             False, "" if fp_branch == fp_nobranch else fp_branch])
 
+        cle = name.casefold()
+        proprietaire = proprietaires.get(cle)
+        if proprietaire and proprietaire != (target_table, name):
+            table, mesure = proprietaire
+            raise SystemExit(f"Mesure en conflit : '{target_table}'[{name}] et '{table}'[{mesure}].")
+        proprietaires[cle] = (target_table, name)
         prev = existing.get(name)
         if prev is not None and not prev["annotation"]:
             # collision avec une mesure NON générée : ne pas y toucher

@@ -28,6 +28,8 @@ nommer le dossier d'affichage. Le choisir comme un libellé.
 
 ### 2. Nommer la mesure
 
+Le nom doit être libre dans tout le modèle, y compris lorsque seule la casse diffère. Si `Archives` possède déjà `TOTAL DOUBLE`, la génération de `Total double` dans `Ventes` signale les deux tables avant toute écriture.
+
 | Champ | Valeur |
 |---|---|
 | namePattern | `{base} MoM %` |
