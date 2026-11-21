@@ -6,9 +6,7 @@ L'onglet **Radiographie** fait la carte d'un rapport qu'on n'a pas fait : quels 
 affiche et où, ce que chaque mesure calcule vraiment, et ce qui filtre chaque visuel. Il
 sert à savoir où regarder avant de modifier un rapport, ou quand un chiffre semble faux.
 
-Il fonctionne sur n'importe quel rapport PBIP, même fait sans PBIdouille : il ne lit que
-le DAX des mesures, leurs noms et les fichiers des visuels. Il ne modifie rien dans le
-projet.
+La radiographie lit les fichiers TMDL d’un modèle local et les définitions PBIR des visuels, y compris pour un rapport créé sans PBIdouille. Une connexion live seule ne fournit pas ces fichiers. L’analyse se fait en lecture seule.
 
 La ligne du haut résume le rapport : le nombre de mesures, de KPI, de visuels et de pages,
 de paramètres de champ, de briques et de colonnes utilisées.

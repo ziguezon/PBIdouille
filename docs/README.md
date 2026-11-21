@@ -128,7 +128,7 @@ Excel, CSV, base ODBC ou serveur SQL, et signale un fichier local introuvable su
 Pour un rapport fait par quelqu'un d'autre, cet onglet montre quels KPI sont affichés et
 où, à quelles mesures de base et à quelles colonnes mène chaque mesure, et ce qui filtre
 chaque visuel : filtres, segments, interactions. Il ne s'appuie sur rien de PBIdouille et
-fonctionne sur n'importe quel rapport PBIP.
+demande un modèle local au format TMDL et des visuels au format PBIR.
 
 → [6 Radiographie](articles/06-radiographie.md)
 
@@ -136,7 +136,7 @@ fonctionne sur n'importe quel rapport PBIP.
 
 ![Diapo du guide : ChopChop : ce que plus rien n'utilise](ressources/guide/chopchop.png)
 
-ChopChop liste les mesures, colonnes et tables que plus rien n'utilise, et exporte la liste.
+ChopChop liste les mesures, colonnes et tables sans référence détectée dans le modèle et le rapport analysés. Les autres rapports consommateurs sont à vérifier séparément.
 
 → [8 ChopChop](articles/08-chopchop.md)
 
@@ -144,8 +144,7 @@ ChopChop liste les mesures, colonnes et tables que plus rien n'utilise, et expor
 
 ![Diapo du guide : Les filets de sécurité](ressources/guide/filets.png)
 
-Chaque écriture est précédée d'une sauvegarde, et le journal raconte tout ce que l'outil
-fait.
+Le bouton **Restaurer une sauvegarde…** liste les sessions enregistrées dans le projet. Déplier une session permet de vérifier les fichiers concernés. L’éditeur de configuration conserve aussi une copie `.bak` à côté du JSON.
 
 → [Restaurer une sauvegarde](articles/01-barre-du-haut.md#restaurer-une-sauvegarde)
 

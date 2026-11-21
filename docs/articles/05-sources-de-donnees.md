@@ -6,7 +6,7 @@ L'onglet **Sources de données** indique d'où vient chaque table du rapport ouv
 Excel, un CSV, une base ODBC, un serveur SQL. Il sert à savoir de quoi dépend un rapport,
 et à repérer ce qui empêchera son actualisation sur un autre poste.
 
-L'onglet ne modifie rien dans le projet.
+L’onglet lit les expressions M enregistrées dans le projet. Un lecteur réseau mappé, par exemple `P:\`, a la même forme qu’un lecteur local. L’accès à la source dépend du poste et du compte qui actualisent le rapport.
 
 ![L'onglet Sources de données, regroupé par source](../ressources/images/sources_onglet.png)
 
