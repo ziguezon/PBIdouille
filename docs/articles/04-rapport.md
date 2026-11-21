@@ -136,11 +136,14 @@ TD_Indicateurs.
   manquent. Une ancienne colonne `couleur` n'est pas touchée.
 - Une matrice sans gabarit de couleur est ignorée.
 - Un gabarit qui n'a qu'un fond ne colore que le fond, et le journal le signale.
+- Seules les colonnes des KPI changent de couleur. Une couleur posée à la main sur une
+  autre colonne de la matrice reste.
+
+Chaque matrice modifiée est sauvegardée avant l'écriture. La restauration se fait depuis
+[🕘 Restaurer une sauvegarde…](01-barre-du-haut.md#restaurer-une-sauvegarde).
 
 L'Excel et ses colonnes se règlent dans
 [⚙ Réglages → Excel des indicateurs](02-reglages.md#excel-des-indicateurs), et le lien **Se règle dans ⚙ Réglages** y mène directement.
-
-**Colorer** conserve les sélecteurs des autres tables et des colonnes indépendantes. Les fichiers `visual.json` modifiés sont sauvegardés et peuvent être restaurés depuis le ruban.
 
 ## Propager puis colorer
 

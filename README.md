@@ -1581,7 +1581,7 @@ Trois garde-fous :
 | Garde-fou | Effet |
 |---|---|
 | Visuel sans aucune entrée du KPI template | jamais touché (un visuel qui n'affiche pas le template n'est pas concerné) |
-| Couleurs statiques de `columnFormatting` | hors périmètre (`color_matrix_by_kpi.py` en est propriétaire) |
+| Couleurs statiques de `columnFormatting` | hors périmètre (`color_matrix_by_kpi.py` en est propriétaire pour les colonnes des KPI ; les autres restent telles quelles) |
 | Selector sans `metadata` (`id: default`, règles globales) | hors périmètre |
 
 ### Qui possède les couleurs statiques
@@ -1627,6 +1627,16 @@ couleur pour toutes les variations), pour distinguer les KPI d'un coup d'œil.
   **tous exclus automatiquement**. Le ciblage est naturel — aucune liste de GUID
   à gérer : on « cible » une matrice juste en y appliquant la couleur sur une
   colonne (le gabarit EST le marqueur). Pas de gabarit = matrice ignorée.
+- **Ne remplace que les couleurs des KPI** : une entrée statique n'est retirée
+  et réécrite que si son selector est exactement `{"metadata": "Table.Mesure"}`
+  sur une mesure qui a un KPI dans l'Excel. Une couleur posée à la main sur une
+  autre colonne (une mesure sans KPI, un champ d'une autre table) reste ; ni ce
+  script ni propagate_cf n'y touchent. Le selector porte la **table réelle** de
+  chaque mesure, lue dans le modèle.
+- **Sauvegarde** : chaque matrice modifiée est copiée dans
+  `_backupsPBIdouille\_propagate_backups\` (session « Couleurs des matrices »)
+  avant écriture, comme pour la propagation. Une matrice déjà à jour n'est ni
+  sauvegardée ni réécrite.
 - **Ordre** : `propagate_cf.py` d'abord, puis ce script (il a le dernier mot
   sur les couleurs des matrices). Les deux ne se marchent pas dessus :
   propagate_cf ignore les couleurs statiques de `columnFormatting` — la clé

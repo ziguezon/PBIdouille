@@ -28,8 +28,6 @@ nommer le dossier d'affichage. Le choisir comme un libellé.
 
 ### 2. Nommer la mesure
 
-Le nom doit être libre dans tout le modèle, y compris lorsque seule la casse diffère. Si `Archives` possède déjà `TOTAL DOUBLE`, la génération de `Total double` dans `Ventes` signale les deux tables avant toute écriture.
-
 | Champ | Valeur |
 |---|---|
 | namePattern | `{base} MoM %` |
@@ -188,8 +186,11 @@ donne pas le même résultat. Pour obtenir la variation **du cumul**, décocher
 | **dans les paramètres de champ** | La rangée entre dans les tables, ou en sort | Rien côté mesures |
 | **Supprimer** | Rien, tant que « Supprimer les orphelines » n'est pas coché | Avec la case, les mesures sont retirées du modèle. Vérifier d'abord qu'aucun visuel ne s'en sert |
 
-Si une mesure écrite à la main porte déjà le nom prévu, elle n'est pas touchée :
-le journal l'indique et la mesure générée est ignorée.
+Si le nom prévu est déjà pris par une mesure écrite à la main, ou par une mesure d'une
+autre table, celle-ci n'est pas touchée : le journal l'indique, avec sa table, et la
+mesure générée est ignorée. Un nom
+de mesure est unique dans tout le modèle, à la casse près : `TOTAL DOUBLE` dans la table
+`Archives` bloque donc `Total double` dans `Ventes`.
 
 ---
 

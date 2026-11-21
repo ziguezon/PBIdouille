@@ -173,6 +173,13 @@ class ReportTab(QWidget):
         opts.addWidget(btn_palette)
         opts.addStretch()
         self.btn_colorize = QPushButton("Colorer")
+        self.btn_colorize.setToolTip(
+            "Donne à chaque colonne de KPI d'une matrice la couleur de son KPI, "
+            "lue dans l'Excel. Une couleur posée à la main sur une autre colonne "
+            "reste.\n"
+            "Chaque matrice modifiée est copiée dans _backupsPBIdouille\\_propagate_backups\\ "
+            "avant écriture. Laisser « Aperçu » coché pour voir le détail sans rien "
+            "changer.")
         self.btn_colorize.clicked.connect(self._run_colorize)
         opts.addWidget(self.btn_colorize)
         grid.addLayout(opts, 2, 0, 1, 3)

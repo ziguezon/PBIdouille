@@ -1838,11 +1838,19 @@ def _generate(model_dir, config, *, dry_run=None, remove_orphans=None, log=print
                             kpi_lbl, fp_label, fp_branch, vid, fp_group == 1,
                             False, "" if fp_branch == fp_nobranch else fp_branch])
 
+        # un nom de mesure est unique dans TOUT le modèle, casse comprise : une
+        # mesure homonyme d'une autre table (ou de celle-ci, à la casse près)
+        # est traitée comme une mesure écrite à la main, signalée et laissée
+        # telle quelle. La créer ferait un modèle que Power BI refuse d'ouvrir.
         cle = name.casefold()
         proprietaire = proprietaires.get(cle)
         if proprietaire and proprietaire != (target_table, name):
             table, mesure = proprietaire
-            raise SystemExit(f"Mesure en conflit : '{target_table}'[{name}] et '{table}'[{mesure}].")
+            log(f"⚠ '{name}' existe déjà dans '{table}'"
+                + (f" sous le nom « {mesure} »" if mesure != name else "")
+                + ", ignorée : un nom de mesure est unique dans tout le modèle.")
+            skipped.append(name)
+            return (name, fmt, folder)
         proprietaires[cle] = (target_table, name)
         prev = existing.get(name)
         if prev is not None and not prev["annotation"]:
