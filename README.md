@@ -2709,3 +2709,12 @@ l'onglet (changer de projet reste instantané). La version autonome
 
 - Wireframe : redimensionner un groupe (simulation ScaleMode), configurer les
   attributs d'un modèle importé (champs, titres) depuis l'UI.
+
+---
+
+## Licence
+
+PBIdouille est sous licence **MIT** (voir [LICENSE](LICENSE)) : on peut
+l'utiliser, le modifier et le redistribuer, à condition de garder la mention
+de copyright et le texte de la licence. Une contribution fusionnée dans le
+dépôt est publiée sous la même licence.
