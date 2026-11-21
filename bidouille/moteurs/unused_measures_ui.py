@@ -55,6 +55,7 @@ from qtpy.QtWidgets import (
 )
 
 import unused_measures as um
+import chemins                    # le modèle que déclare le rapport
 
 # Thème partagé BIdouille (« Dark Teal Pro » : vert néon sur bleu nuit).
 # Fallback : si le dossier bidouille\ n'est pas à côté (copie isolée de
@@ -371,7 +372,8 @@ class ChopChopPanel(QWidget):
             self.log.appendPlainText(f"Projet : {pbip_path}")
             self.refresh()
         else:
-            self._invalider_analyse("Aucun projet valide, dossiers .Report/.SemanticModel introuvables.")
+            self._invalider_analyse(chemins.modele_absent(pbip_path)
+                                    or "Aucun projet valide, dossiers .Report/.SemanticModel introuvables.")
 
     # ---- construction de l'arbre ---------------------------------------------
 

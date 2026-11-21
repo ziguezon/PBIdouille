@@ -47,5 +47,30 @@ class Modeles(unittest.TestCase):
             self.assertEqual(projet.model_dir, rapport.with_suffix(".SemanticModel").resolve())
 
 
+    def test_pourquoi_sans_modele(self):
+        """Chaque fenêtre qui a besoin du modèle dit POURQUOI il manque."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            pbip = root / "R.pbip"
+            rapport = root / "R.Report"
+            rapport.mkdir()
+            pbip.write_text(json.dumps({"artifacts": [{"report": {"path": rapport.name}}]}))
+            pbir = rapport / "definition.pbir"
+
+            pbir.write_text(json.dumps({"datasetReference": {"byConnection": {
+                "connectionString": "Data Source=powerbi://exemple"}}}))
+            projet = Project(pbip)
+            self.assertFalse(projet.valid)
+            self.assertIn("connexion live", projet.sans_modele)
+            with self.assertRaisesRegex(FileNotFoundError, "connexion live"):
+                radiographie.analyser(pbip)
+
+            pbir.write_text(json.dumps({"datasetReference": {"byPath": {"path": "../Parti.SemanticModel"}}}))
+            self.assertIn("Parti.SemanticModel", Project(pbip).sans_modele)
+
+            (root / "Parti.SemanticModel").mkdir()
+            self.assertEqual(Project(pbip).sans_modele, "")
+
+
 if __name__ == "__main__":
     unittest.main()

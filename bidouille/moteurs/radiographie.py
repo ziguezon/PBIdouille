@@ -56,6 +56,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import generate_measures as gm                  # noqa: E402
 import unused_measures as um                    # noqa: E402
+import chemins                                  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from core import report_reader as rr            # noqa: E402
@@ -421,7 +422,8 @@ def analyser(pbip) -> dict:
     pbip = Path(pbip)
     um.set_project(pbip)
     if um.MODEL_DIR is None or not um.MODEL_DIR.exists():
-        raise FileNotFoundError(f"modèle introuvable : {um.MODEL_DIR}")
+        raise FileNotFoundError(chemins.modele_absent(pbip)
+                                or f"modèle introuvable : {um.MODEL_DIR}")
     measures, _blocs, colinfo = um.parse_model()
     noms = set(measures)
 

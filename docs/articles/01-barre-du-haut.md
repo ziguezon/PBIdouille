@@ -28,6 +28,12 @@ Cliquer sur le bouton du rapport, à gauche. Son menu propose :
 - **Ouvrir un autre rapport…**, pour choisir un `.pbip` ;
 - **Afficher le dossier dans l'Explorateur**.
 
+Le rapport et son modèle sont ceux que déclarent les fichiers du projet : le `.pbip`
+désigne le dossier du rapport, et le rapport désigne son modèle. Un rapport branché sur
+un modèle partagé, au nom différent, est donc lu et modifié dans ce modèle-là, même si un
+modèle du même nom que le `.pbip` est à côté. L'infobulle du bouton du rapport montre les
+deux dossiers.
+
 Le survol du bouton affiche le chemin complet du rapport. Au démarrage, l'app rouvre le
 dernier rapport utilisé.
 

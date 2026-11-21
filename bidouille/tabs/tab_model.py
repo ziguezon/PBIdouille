@@ -114,6 +114,11 @@ class ModelTab(QWidget):
             return
         self.lbl_hint.hide()
         self.btn_generate.setEnabled(project.valid)
+        if not project.valid:
+            # connexion live, ou modèle déclaré introuvable : dire pourquoi
+            # « Générer » est grisé plutôt que le laisser deviner
+            self.lbl_hint.setText(project.sans_modele or "Projet incomplet.")
+            self.lbl_hint.show()
 
         cfg = model_reader.read_config(project)
         settings = cfg.get("settings") or {}

@@ -2106,6 +2106,14 @@ défaut, le point de départ des boîtes de dialogue, la bibliothèque de
 variations par défaut, les lignes de commande des moteurs et les tests passent
 tous par lui. Les projets ailleurs ? `PBIDOUILLE_PROJETS=<dossier>`.
 
+Il sait aussi **quel rapport et quel modèle** ouvrir : ceux que déclarent le
+`.pbip` (`artifacts` → `report.path`) et le `definition.pbir` du rapport
+(`byPath`, ou `byConnection` pour une connexion live), via `dossier_rapport`
+et `modele_du_rapport`. La convention `<nom>.Report` / `<nom>.SemanticModel`
+ne sert que si rien n'est déclaré. `Project.model_dir` vaut donc `None` pour
+une connexion live ou une référence cassée, et `Project.sans_modele`
+(`chemins.modele_absent`) donne la phrase que chaque onglet affiche alors.
+
 Les sauvegardes (`_backupsPBIdouille\`) vivent avec **leur projet** et leurs
 manifestes stockent des chemins relatifs au projet : déplacer un projet avec
 son dossier de sauvegardes les garde restaurables.

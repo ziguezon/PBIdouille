@@ -1066,7 +1066,8 @@ class ConfigTab(QWidget):
         config où l'on a versé les réglages en cours. Rien n'est écrit."""
         import copy
         if not self.project or self.project.model_dir is None or not self.project.model_dir.exists():
-            self.apercu_fp.erreur("Aucun modèle : ouvrir un projet .pbip.")
+            self.apercu_fp.erreur((self.project and self.project.sans_modele)
+                                  or "Aucun modèle : ouvrir un projet .pbip.")
             return
         cfg = copy.deepcopy(self._config)
         self._fp_vers(cfg)
@@ -1747,7 +1748,8 @@ class ConfigTab(QWidget):
         copie : le générateur ne doit rien y laisser). Rien n'est écrit."""
         import copy
         if not self.project or self.project.model_dir is None or not self.project.model_dir.exists():
-            self.arbre_mesures.erreur("Aucun modèle : ouvrir un projet .pbip.")
+            self.arbre_mesures.erreur((self.project and self.project.sans_modele)
+                                      or "Aucun modèle : ouvrir un projet .pbip.")
             return
         avis: list = []
 
@@ -2670,7 +2672,8 @@ class ConfigTab(QWidget):
         sur une copie du config (cf. generate_measures.apercu_jetons)."""
         ex = self.explorateur_jetons
         if not self.project or self.project.model_dir is None or not self.project.model_dir.exists():
-            ex.erreur("Ouvrir un projet .pbip pour voir ce que valent les jetons.")
+            ex.erreur((self.project and self.project.sans_modele)
+                      or "Ouvrir un projet .pbip pour voir ce que valent les jetons.")
             return
         try:
             donnees = gm.apercu_jetons(self.project.model_dir, self._config,
@@ -2844,7 +2847,8 @@ class ConfigTab(QWidget):
             return
         noeuds, avis, erreur = {}, [], ""
         if not self.project or self.project.model_dir is None or not self.project.model_dir.exists():
-            erreur = "ouvrir un projet .pbip pour voir le DAX généré"
+            erreur = ((self.project and self.project.sans_modele)
+                      or "ouvrir un projet .pbip pour voir le DAX généré")
         else:
             cfg = copy.deepcopy(self._config)
             v = (cfg.get("variations") or {}).get(self._current)

@@ -35,6 +35,11 @@ class Project:
             return None
 
     @property
+    def sans_modele(self) -> str:
+        """Pourquoi il n'y a pas de modèle local, ou "" (cf. chemins.modele_absent)."""
+        return chemins.modele_absent(self.pbip)
+
+    @property
     def config_json(self) -> Path:
         if self.config_override:
             return self.config_override
