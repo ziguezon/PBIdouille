@@ -49,6 +49,8 @@ Un réglage enregistré agit sur le modèle à la prochaine **Générer les mesu
 | **removeOrphans** | `removeOrphans` | L'état de départ de **Supprimer les orphelines** |
 | **dryRun** | `dryRun` | Pour la ligne de commande seulement. Dans l'app, c'est **Aperçu (dry-run)** qui décide |
 
+Exemple avec deux tables. Pour lire les mesures de base dans `Ventes` et placer leurs variations dans `Indicateurs`, régler `sourceTable` sur `Ventes` et `targetTable` sur `Indicateurs`. Les deux tables doivent déjà exister.
+
 Avec `sourceFolder` vide, une cible écrite à la main devient aussi une base : garder ce
 réglage rempli quand le modèle contient d'autres mesures.
 

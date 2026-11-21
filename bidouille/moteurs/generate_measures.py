@@ -1250,23 +1250,27 @@ def folder_matches(mfolder, cfolder) -> bool:
     return mf == cf or re.split(r"[\\/]", mf)[-1] == cf
 
 
+def index_mesures(chunks):
+    mesures = {}
+    for idx, (kind, bloc) in enumerate(chunks):
+        if kind == "measure":
+            info = measure_info(bloc)
+            if info["name"]:
+                mesures[info["name"]] = {"idx": idx, **info}
+    return mesures
+
+
 def read_measures(model_dir, config) -> tuple:
     """(mesures, bases) d'après le TMDL : `mesures` = nom -> info (dossier,
     format, annotation…), `bases` = les mesures de BASE (non générées, dans
     sourceFolder) triées comme Power BI. Lecture seule."""
     settings = config.get("settings") or {}
     source_table = settings.get("sourceTable") or "_mesures"
-    target_table = settings.get("targetTable") or source_table
     source_folder = settings.get("sourceFolder")
-    src = Path(model_dir) / "definition" / "tables" / (target_table + ".tmdl")
+    src = Path(model_dir) / "definition" / "tables" / (source_table + ".tmdl")
     if not src.exists():
         return {}, []
-    existing = {}
-    for kind, ctext in split_members(src.read_text(encoding="utf-8")):
-        if kind == "measure":
-            info = measure_info(ctext)
-            if info["name"]:
-                existing[info["name"]] = info
+    existing = index_mesures(split_members(src.read_text(encoding="utf-8-sig")))
     bases = sorted(
         (n for n, e in existing.items()
          if not e["annotation"]
@@ -1664,12 +1668,8 @@ def _generate(model_dir, config, *, dry_run=None, remove_orphans=None, log=print
     text = src_path.read_text(encoding="utf-8")
     chunks = split_members(text)
 
-    existing: dict = {}      # nom -> {chunk_idx, info}
-    for ci, (kind, ctext) in enumerate(chunks):
-        if kind == "measure":
-            info = measure_info(ctext)
-            if info["name"]:
-                existing[info["name"]] = {"idx": ci, **info}
+    mesures_source, bases = read_measures(model_dir, config)
+    existing = mesures_source if source_table == target_table else index_mesures(chunks)
 
     # Un nom de mesure est unique dans le modèle, y compris entre deux tables.
     proprietaires = {n.casefold(): (target_table, n) for n in existing}
@@ -1682,24 +1682,12 @@ def _generate(model_dir, config, *, dry_run=None, remove_orphans=None, log=print
             nom = _first_group(MEASURE_NAME_RE.match(ligne))
             if nom:
                 proprietaires[nom.casefold()] = (nom_table, nom)
-
-    # mesures de base : sans annotation, displayFolder == sourceFolder.
-    # Ordre alphabétique « à la Power BI » (et non ordinal) : c'est l'ordre
-    # d'écriture dans le TMDL, et le repli des tables paramètre quand aucune
-    # colonne d'ordre n'est configurée (cf. kpi_ranks).
-    bases = sorted(
-        (n for n, e in existing.items()
-         if not e["annotation"]
-         and (source_folder is None
-              or (e["folder"] or "").lower() == source_folder.lower())),
-        key=sort_key_pbi,
-    )
     if not bases:
-        raise SystemExit(f"Aucune mesure de base dans '{target_table}' "
+        raise SystemExit(f"Aucune mesure de base dans '{source_table}' "
                          f"(dossier '{source_folder}').")
 
     # portées manquantes : déduites du DAX des bases si l'option est active
-    kpi_tables = complete_kpi_tables(kpi_tables, existing, bases,
+    kpi_tables = complete_kpi_tables(kpi_tables, mesures_source, bases,
                                      kpi_tables_auto, log)
 
     # ---- compute : les specs de toutes les mesures générées ------------------
@@ -1935,7 +1923,7 @@ def _generate(model_dir, config, *, dry_run=None, remove_orphans=None, log=print
                             "kpi": kpi_lbl, "variation": None, "branche": None,
                             "cible": is_cible,
                             # écrite à la main : ses attributs viennent du TMDL
-                            "dax": (existing.get(base_name) or {}).get("expression"),
+                            "dax": (mesures_source.get(base_name) or {}).get("expression"),
                             "format": base_fmt, "dossier": base_folder,
                             "description": None, "dataCategory": None,
                             "enveloppe": False}
@@ -1974,7 +1962,7 @@ def _generate(model_dir, config, *, dry_run=None, remove_orphans=None, log=print
                                      allowed_vids, base_name))
 
     for base in bases:
-        run_base(base, existing[base]["format"], existing[base]["folder"],
+        run_base(base, mesures_source[base]["format"], mesures_source[base]["folder"],
                  base, fp_base_lbl, "", kpi_vids)
 
     if filtres_format:
@@ -2025,7 +2013,7 @@ def _generate(model_dir, config, *, dry_run=None, remove_orphans=None, log=print
             log(f"⚠ kpiMeasureFolders : « {cfolder} » est le dossier des bases, ignoré.")
             continue
         found = 0
-        cnames = sorted((n for n, e in existing.items()
+        cnames = sorted((n for n, e in mesures_source.items()
                          if not e["annotation"] and folder_matches(e["folder"], cfolder)),
                         key=sort_key_pbi)
         for cname in cnames:
@@ -2040,7 +2028,7 @@ def _generate(model_dir, config, *, dry_run=None, remove_orphans=None, log=print
             if kpi is None:
                 log(f"⚠ cible « {cname} » : aucun KPI ne correspond au préfixe, ignorée.")
                 continue
-            e = existing[cname]
+            e = mesures_source[cname]
             run_base(cname, e["format"], e["folder"], kpi, calcul, calcul + " ",
                      cible_vids)
             found += 1
@@ -2048,9 +2036,9 @@ def _generate(model_dir, config, *, dry_run=None, remove_orphans=None, log=print
             log(f"Cibles ({cfolder}) : {found} cible(s) racine déclinée(s) en variations "
                 f"(Indicateur = KPI, Calcul « {calcul}… »).")
         else:
-            seen_folders = sorted({e["folder"] for e in existing.values()
+            seen_folders = sorted({e["folder"] for e in mesures_source.values()
                                    if e["folder"] and not e["annotation"]})
-            log(f"⚠ Cibles ({cfolder}) : AUCUNE cible racine trouvée dans « {target_table} ». "
+            log(f"⚠ Cibles ({cfolder}) : AUCUNE cible racine trouvée dans « {source_table} ». "
                 f"À vérifier : (1) les cibles sont dans cette table ; (2) leur dossier "
                 f"correspond ; (3) leur nom commence par un KPI de base (ex. "
                 f"« Weight cible »). Dossiers présents : {', '.join(seen_folders) or '(aucun)'}.")
