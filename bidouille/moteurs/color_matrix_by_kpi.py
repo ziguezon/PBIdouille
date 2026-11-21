@@ -36,6 +36,8 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))   # moteurs\ voisins
+import backup_restore as br
+from unused_measures import TABLE_NAME_RE, _first_group
 import xlsx_lecture as _xl                  # relâche toujours le classeur
 import chemins                              # où sont les projets
 
@@ -132,16 +134,21 @@ def normalize_hex(v) -> str:
     return v.upper()
 
 
-def all_measures(model_dir=MODEL_DIR) -> list[str]:
-    names = []
+def mesures_et_tables(model_dir):
+    noms = {}
     tables_dir = Path(model_dir) / "definition" / "tables"
     for tmdl in sorted(tables_dir.glob("*.tmdl")) if tables_dir.exists() else []:
         text = tmdl.read_text(encoding="utf-8")
+        table = _first_group(TABLE_NAME_RE.search(text)) or tmdl.stem
         for m in MEASURE_NAME_RE.finditer(text):
             nm = m.group(1) or m.group(2)
             if nm:
-                names.append(nm.replace("''", "'"))
-    return names
+                noms[nm.replace("''", "'")] = table
+    return noms
+
+
+def all_measures(model_dir=MODEL_DIR) -> list[str]:
+    return list(mesures_et_tables(model_dir))
 
 
 def kpi_of(measure: str, kpi_keys) -> str | None:
@@ -198,7 +205,7 @@ def visual_title(data: dict) -> str:
 def process_visual(path: Path, measure_colors: dict[str, dict], *,
                    entity: str = ENTITY,
                    column_formatting_key: str = COLUMN_FORMATTING_KEY,
-                   dry_run: bool = False) -> tuple[int, bool, str]:
+                   dry_run: bool = False, session=None) -> tuple[int, bool, str]:
     """Régénère les couleurs statiques de la matrice à partir de son gabarit.
     Ne touche QUE objects.columnFormatting -> jamais les graphes (dataPoint),
     slicers, cartes, etc. Une matrice n'est traitée que si elle a un gabarit
@@ -212,7 +219,12 @@ def process_visual(path: Path, measure_colors: dict[str, dict], *,
     entries = objects.get(column_formatting_key)
     if not isinstance(entries, list):
         return 0, False, ""  # pas de specific column -> pas une matrice ciblée
-    static = [e for e in entries if is_static_color_entry(e)]
+    cibles = {col.get("table", entity) + "." + mesure for mesure, col in measure_colors.items()}
+    def gere(entree):
+        return (is_static_color_entry(entree) and set(entree["selector"]) == {"metadata"}
+                and entree["selector"]["metadata"] in cibles)
+
+    static = [e for e in entries if gere(e)]
     if not static:
         return 0, False, ""  # aucun gabarit -> non ciblée
 
@@ -227,7 +239,8 @@ def process_visual(path: Path, measure_colors: dict[str, dict], *,
     missing_text = text_key is None
 
     # retire les couleurs statiques existantes (idempotent), garde le reste
-    entries[:] = [e for e in entries if not is_static_color_entry(e)]
+    avant = list(entries)
+    entries[:] = [e for e in entries if not gere(e)]
 
     written = 0
     for measure in sorted(measure_colors):
@@ -239,11 +252,13 @@ def process_visual(path: Path, measure_colors: dict[str, dict], *,
             props[text_key] = color_value(col["text"])
         entries.append({
             "properties": props,
-            "selector": {"metadata": entity + "." + measure},
+            "selector": {"metadata": col.get("table", entity) + "." + measure},
         })
         written += 1
 
-    if not dry_run:
+    if not dry_run and entries != avant:
+        if session is not None:
+            session.save(path)
         path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n",
                         encoding="utf-8")
     return written, missing_text, visual_title(data)
@@ -271,13 +286,14 @@ def colorize(report_dir=REPORT_DIR, model_dir=MODEL_DIR, xlsx=TD_XLSX, *,
 
     # mesure -> couleurs de son KPI (toutes les variations, sauf les mesures CF)
     measure_colors = {}
-    for m in all_measures(model_dir):
+    for m, table in mesures_et_tables(model_dir).items():
         if " CF " in m or m.endswith(" CF"):
             continue
         k = kpi_of(m, kpi_colors.keys())
         if k:
             c = kpi_colors[k]
             measure_colors[m] = {
+                "table": table,
                 "fill": normalize_hex(c["fill"]) if c["fill"] else None,
                 "text": normalize_hex(c["text"]) if c["text"] else None,
             }
@@ -290,17 +306,22 @@ def colorize(report_dir=REPORT_DIR, model_dir=MODEL_DIR, xlsx=TD_XLSX, *,
 
     total = 0
     warned = False
-    for visual_json in sorted(report_dir.glob("definition/pages/*/visuals/*/visual.json")):
-        n, missing_text, title = process_visual(visual_json, measure_colors,
-                                                entity=entity, dry_run=dry_run)
-        if n:
-            label = '"' + title + '"' if title else visual_json.parent.name
-            log(f"  matrice {label} : {n} colonnes colorées"
-                + ("  [gabarit sans texte]" if missing_text else ""))
-            total += n
-            if missing_text:
-                warned = True
+    session = br.BackupSession(br.backup_root(report_dir.parent, "_propagate_backups"),
+                               "Couleurs des matrices", report_dir.parent)
+    try:
+        for visual_json in sorted(report_dir.glob("definition/pages/*/visuals/*/visual.json")):
+            n, missing_text, title = process_visual(visual_json, measure_colors,
+                                                    entity=entity, dry_run=dry_run, session=session)
+            if n:
+                label = '"' + title + '"' if title else visual_json.parent.name
+                log(f"  matrice {label} : {n} colonnes colorées"
+                    + ("  [gabarit sans texte]" if missing_text else ""))
+                total += n
+                if missing_text:
+                    warned = True
 
+    finally:
+        session.close(f"{total} couleurs de matrice")
     if total == 0:
         log("Aucune matrice avec un gabarit de couleur « specific column ». "
             "Appliquer fond + texte sur une série de la matrice voulue, "

@@ -140,6 +140,8 @@ TD_Indicateurs.
 L'Excel et ses colonnes se règlent dans
 [⚙ Réglages → Excel des indicateurs](02-reglages.md#excel-des-indicateurs), et le lien **Se règle dans ⚙ Réglages** y mène directement.
 
+**Colorer** conserve les sélecteurs des autres tables et des colonnes indépendantes. Les fichiers `visual.json` modifiés sont sauvegardés et peuvent être restaurés depuis le ruban.
+
 ## Propager puis colorer
 
 **Propager puis colorer** lance les deux, dans cet ordre, avec les cases **Aperçu** de
