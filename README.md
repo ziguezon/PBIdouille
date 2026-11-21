@@ -1,9 +1,5 @@
 # PBIdouille 🔧
 
-**Tester une contribution.** `py tests/lancer_tests.py` distingue les scripts réussis, ignorés et échoués. Les suites Fitbit utilisent le projet de démonstration externe. GitHub Actions exécute les tests hors écran sous Ubuntu et Windows, avec PyQt5 et PySide6, pour les PR vers `experimental` et `stable`. Chaque job affiche le nombre de scripts exécutés et ignorés.
-
-Pour un essai autonome, installer `openpyxl` puis lancer `py tests/projet_minimal.py AtelierTest`. Ouvrir `AtelierTest/Atelier.pbip` dans Power BI Desktop et actualiser la matrice. Les deux ventes fictives donnent un total de 12. Le dossier contient aussi le classeur et le `measures_config.json` utilisables dans PBIdouille.
-
 Une app de bureau pour les rapports Power BI au format **PBIP**. Elle écrit
 automatiquement ce qui se répète dans un rapport : les mesures dérivées de chaque KPI
 (7d avg, PY, YTD…), les tables paramètre de champ, le formatage conditionnel
@@ -172,14 +168,14 @@ doublon. Tout ce qui est réécrit est d'abord sauvegardé.
 | `bidouille\moteurs\unused_measures.py` | analyse de ce qui ne sert plus (mesures, colonnes, tables) |
 | `bidouille\moteurs\unused_measures_ui.py` | le panneau ChopChop |
 | `bidouille\moteurs\lineage.py` | les sources de données du rapport ouvert |
-| `bidouille\moteursadiographie.py` | la radiographie d'un rapport : familles de KPI, visuels, filtres, colonnes |
+| `bidouille\moteurs\radiographie.py` | la radiographie d'un rapport : familles de KPI, visuels, filtres, colonnes |
 | `bidouille\moteurs\backup_restore.py` | sauvegardes horodatées et restauration (manifeste : d'où vient chaque copie) |
 | `bidouille\moteurs\xlsx_lecture.py` | lecture de l'Excel qui relâche toujours le fichier |
 | `bidouille\moteurs\chemins.py` | où vivent l'outil et les projets |
 | `bidouille\core\` | projet, journal, thème, édition, lecture du modèle et du rapport |
 | `bidouille\tabs\` | les onglets et leurs fenêtres |
 | `bidouille\aide\` | les images du guide intégré |
-| `tests\` | les suites de tests (chacune finit par « TOUT OK ») ; `test_python38.py` garde l'app lisible en Python 3.8 |
+| `tests\` | les suites de tests, que `lancer_tests.py` lance toutes (cf. [Tests](#tests)) ; `test_python38.py` garde l'app lisible en Python 3.8 |
 | `docs\` | [la documentation](docs/README.md), le guide PowerPoint ; `docs\ressources\sources\build_deck.py` le reconstruit, `exporter_aide.ps1` en tire les images de `bidouille\aide\` (PowerPoint requis) |
 
 Côté projet, à côté du `.pbip` : `measures_config.json` (variations,
@@ -2254,6 +2250,24 @@ ou une bibliothèque personnelle : `.gitignore` les tient dehors).
 **Python 3.8** et porte `from __future__ import annotations`, qu'aucune
 fonction postérieure à 3.8 n'est appelée (`removeprefix`…), et qu'aucun
 `.dev` n'est versionné. À lancer avant de pousser sur `stable`.
+
+### Tests
+
+`py tests/lancer_tests.py` lance chaque suite dans son propre interpréteur et
+compte les scripts réussis, ignorés et échoués. Une suite qui travaille sur le
+projet de démonstration est **ignorée**, pas réussie, quand ce projet manque :
+il vit hors du dépôt (cf. `PBIDOUILLE_PROJETS`).
+
+GitHub Actions lance la même commande, hors écran, pour chaque PR et chaque
+poussée vers `experimental` et `stable` : sous Ubuntu et Windows avec PyQt5 et
+PySide6, et sous Windows en Python 3.8 avec PyQt5, comme au travail. Faute du
+projet de démonstration, la CI n'y exécute que les suites autonomes.
+
+Pour un essai sans le projet de démonstration, `py tests/projet_minimal.py
+AtelierTest` crée un PBIP fictif (il faut `openpyxl`). Ouvert dans Power BI
+Desktop et actualisé, sa matrice affiche un total de 12 pour deux ventes de 4
+et 8. Le dossier contient aussi le classeur et le `measures_config.json`
+utilisables dans PBIdouille.
 
 ### Architecture
 

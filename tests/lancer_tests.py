@@ -19,7 +19,7 @@ def main():
         else:
             statut = "ignorés" if motif else "réussis"
         comptes[statut] += 1
-        print(f"{script.name} — {motif or statut}", flush=True)
+        print(f"{script.name} : {motif or statut}", flush=True)
     print(" · ".join(f"{n} {statut}" for statut, n in comptes.items()))
     return int(bool(comptes["échoués"]))
 
