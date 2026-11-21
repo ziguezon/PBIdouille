@@ -414,11 +414,14 @@ QTabBar::tab:selected {{
 }}
 QTabBar::tab:hover:!selected {{ color: {ACCENT}; }}
 /* les onglets de l'app : plus grands, un vrai niveau de navigation */
+/* Qt 5 mesure le texte avec la police de la barre, y compris à DPI élevé. */
+QTabWidget#ongletsPrincipaux > QTabBar {{
+    font-size: 10pt;
+    font-weight: 600;
+}}
 QTabWidget#ongletsPrincipaux > QTabBar::tab {{
     padding: 7px 22px;
-    font-size: 10pt;
 }}
-QTabWidget#ongletsPrincipaux > QTabBar::tab:selected {{ font-weight: 600; }}
 /* les sous-onglets (Mesures) : un soulignement, pas des cartes. Deux niveaux
    au même style se lisaient comme une seule rangée coupée en deux */
 QTabWidget#sousOnglets::pane {{
