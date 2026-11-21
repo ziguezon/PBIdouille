@@ -58,6 +58,9 @@ sys.path.insert(0, str(FIT))
 sys.path.insert(0, str(FIT / "bidouille"))
 sys.path.insert(0, str(FIT / "bidouille" / "moteurs"))
 
+from _fixture import exiger_projet, PROJET_DEMO
+exiger_projet(PBI, PROJET_DEMO, "measures_config.json")
+
 from qtpy.QtCore import QEvent, QPoint, Qt                        # noqa: E402
 from qtpy.QtGui import QKeyEvent, QTextCursor                     # noqa: E402
 from qtpy.QtWidgets import QApplication, QPlainTextEdit, QSplitter  # noqa: E402
