@@ -420,7 +420,7 @@ def analyser(pbip) -> dict:
     """Toute la radiographie d'un projet .pbip. Ne modifie rien."""
     pbip = Path(pbip)
     um.set_project(pbip)
-    if not um.MODEL_DIR.exists():
+    if um.MODEL_DIR is None or not um.MODEL_DIR.exists():
         raise FileNotFoundError(f"modèle introuvable : {um.MODEL_DIR}")
     measures, _blocs, colinfo = um.parse_model()
     noms = set(measures)

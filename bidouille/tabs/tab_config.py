@@ -1065,7 +1065,7 @@ class ConfigTab(QWidget):
         """L'aperçu des tables : la génération à blanc sur une COPIE du
         config où l'on a versé les réglages en cours. Rien n'est écrit."""
         import copy
-        if not self.project or not self.project.model_dir.exists():
+        if not self.project or self.project.model_dir is None or not self.project.model_dir.exists():
             self.apercu_fp.erreur("Aucun modèle : ouvrir un projet .pbip.")
             return
         cfg = copy.deepcopy(self._config)
@@ -1746,7 +1746,7 @@ class ConfigTab(QWidget):
         """L'arbre = la génération en APERÇU sur le config EN MÉMOIRE (sur une
         copie : le générateur ne doit rien y laisser). Rien n'est écrit."""
         import copy
-        if not self.project or not self.project.model_dir.exists():
+        if not self.project or self.project.model_dir is None or not self.project.model_dir.exists():
             self.arbre_mesures.erreur("Aucun modèle : ouvrir un projet .pbip.")
             return
         avis: list = []
@@ -2669,7 +2669,7 @@ class ConfigTab(QWidget):
         """Les valeurs de l'explorateur de jetons : la génération à blanc,
         sur une copie du config (cf. generate_measures.apercu_jetons)."""
         ex = self.explorateur_jetons
-        if not self.project or not self.project.model_dir.exists():
+        if not self.project or self.project.model_dir is None or not self.project.model_dir.exists():
             ex.erreur("Ouvrir un projet .pbip pour voir ce que valent les jetons.")
             return
         try:
@@ -2843,7 +2843,7 @@ class ConfigTab(QWidget):
         if not items:
             return
         noeuds, avis, erreur = {}, [], ""
-        if not self.project or not self.project.model_dir.exists():
+        if not self.project or self.project.model_dir is None or not self.project.model_dir.exists():
             erreur = "ouvrir un projet .pbip pour voir le DAX généré"
         else:
             cfg = copy.deepcopy(self._config)

@@ -82,8 +82,12 @@ def set_project(pbip_path: Path) -> None:
     pbip_path = Path(pbip_path)
     PBIP_DIR    = pbip_path.parent
     PROJECT     = pbip_path.stem
-    REPORT_DIR  = PBIP_DIR / f"{PROJECT}.Report"
-    MODEL_DIR   = PBIP_DIR / f"{PROJECT}.SemanticModel"
+    REPORT_DIR = PBIP_DIR / f"{PROJECT}.Report"
+    try:
+        REPORT_DIR = chemins.dossier_rapport(pbip_path)
+        MODEL_DIR, _ = chemins.modele_du_rapport(REPORT_DIR)
+    except (ValueError, OSError, TypeError, AttributeError):
+        MODEL_DIR = None
     CSV_PATH    = PBIP_DIR / "unused_measures.csv"
     BACKUP_ROOT = br.backup_root(PBIP_DIR, "_tmdl_backups")
 
@@ -546,7 +550,7 @@ def analyze() -> dict:
                          mesures elles-mêmes inutilisées) ;
     - column_referencers : clé -> mesures qui la référencent ;
     - column_report_refs / column_struct_refs : détail des usages."""
-    if not MODEL_DIR.exists() or not REPORT_DIR.exists():
+    if MODEL_DIR is None or not MODEL_DIR.exists() or not REPORT_DIR.exists():
         raise SystemExit(f"Projet introuvable sous {PBIP_DIR} ({PROJECT}).")
 
     measures, other_blocks, colinfo = parse_model()

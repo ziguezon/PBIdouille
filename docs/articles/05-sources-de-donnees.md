@@ -10,6 +10,8 @@ L'onglet lit les requêtes Power Query enregistrées dans le projet. Il ne modif
 
 ![L'onglet Sources de données, regroupé par source](../ressources/images/sources_onglet.png)
 
+Le dossier rapport est lu dans le `.pbip`. Si `definition.pbir` référence un modèle par `byPath`, les onglets utilisent ce dossier. Une connexion live seule permet d’identifier la source mais ne donne pas de modèle local à modifier. L’infobulle du bouton du projet indique le rapport et le modèle sélectionnés.
+
 La ligne du haut résume le modèle : son nom, le nombre de sources et le nombre de tables.
 
 ## Les deux regroupements

@@ -585,7 +585,7 @@ class ReportTab(QWidget):
     def _set_busy(self, busy):
         self._busy = busy
         for b in self._action_buttons:
-            b.setEnabled(not busy)
+            b.setEnabled(not busy and bool(self.project and self.project.valid))
 
     def _set_enabled(self, enabled):
         for b in self._action_buttons:

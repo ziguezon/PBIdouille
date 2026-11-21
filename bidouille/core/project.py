@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from moteurs import chemins
+
 
 class Project:
     """Chemins dérivés d'un .pbip. Ne touche pas au disque (sauf `valid`)."""
@@ -23,11 +25,14 @@ class Project:
 
     @property
     def report_dir(self) -> Path:
-        return self.folder / (self.name + ".Report")
+        return chemins.dossier_rapport(self.pbip)
 
     @property
-    def model_dir(self) -> Path:
-        return self.folder / (self.name + ".SemanticModel")
+    def model_dir(self) -> Path | None:
+        try:
+            return chemins.modele_du_rapport(self.report_dir)[0]
+        except (ValueError, OSError, TypeError, AttributeError):
+            return None
 
     @property
     def config_json(self) -> Path:
@@ -41,7 +46,8 @@ class Project:
 
     @property
     def valid(self) -> bool:
-        return self.report_dir.is_dir() and self.model_dir.is_dir()
+        modele = self.model_dir
+        return modele is not None and modele.is_dir() and self.report_dir.is_dir()
 
     def __str__(self) -> str:
         return str(self.pbip)

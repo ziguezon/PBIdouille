@@ -1781,7 +1781,12 @@ def contexte_modele(report_dir, field_parameter=FIELD_PARAMETER,
     Paramètre de champ illisible : on ne l'exige que si les cibles n'ont pas
     été données explicitement — l'ancien comportement de propagate."""
     report_dir = Path(report_dir)
-    semantic_dir = Path(str(report_dir).replace(".Report", ".SemanticModel"))
+    try:
+        semantic_dir, _ = chemins.modele_du_rapport(report_dir)
+    except (OSError, ValueError, TypeError, AttributeError) as exc:
+        raise SystemExit(f"Modèle du rapport illisible : {exc}") from exc
+    if semantic_dir is None or not semantic_dir.is_dir():
+        raise SystemExit("Ce rapport ne référence aucun modèle local accessible.")
     try:
         kpis_connus = kpis_from_parameter(semantic_dir, field_parameter)
     except SystemExit:

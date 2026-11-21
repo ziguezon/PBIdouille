@@ -53,6 +53,8 @@ def _scan_field_parameter(project):
     """Dernier recours : première table du modèle qui RESSEMBLE à un paramètre
     de champ (NAMEOF + parameterMetadata) et dont on peut extraire des KPI.
     Utile quand le config ne correspond pas au rapport ouvert."""
+    if project.model_dir is None:
+        return None
     tables_dir = Path(project.model_dir) / "definition" / "tables"
     if not tables_dir.exists():
         return None
@@ -74,6 +76,8 @@ def field_parameter(project) -> str:
     """Nom de la table paramètre à utiliser : la première CONFIGURÉE qui
     existe dans le modèle, sinon un scan du modèle, sinon la première
     configurée (l'outil appelé donnera alors l'erreur détaillée)."""
+    if project.model_dir is None:
+        return candidate_parameters(project)[0]
     tables_dir = Path(project.model_dir) / "definition" / "tables"
     cands = candidate_parameters(project)
     for name in cands:
@@ -97,6 +101,8 @@ def kpis(project) -> list:
     """KPI distincts via la table paramètre résolue (réutilise propagate_cf).
     RuntimeError actionnable si rien ne se résout (config d'un autre rapport,
     ou pas de config choisi — bouton « Config… »)."""
+    if project.model_dir is None:
+        raise RuntimeError("Le rapport ne référence aucun modèle local accessible.")
     name = field_parameter(project)
     tmdl = Path(project.model_dir) / "definition" / "tables" / (name + ".tmdl")
     if not tmdl.exists():
@@ -118,7 +124,7 @@ def kpis(project) -> list:
 
 def measures(project) -> list:
     """Toutes les mesures du modèle (réutilise color_matrix_by_kpi)."""
-    return _cmx.all_measures(project.model_dir)
+    return _cmx.all_measures(project.model_dir) if project.model_dir else []
 
 
 def excel_headers(xlsx_path) -> list:

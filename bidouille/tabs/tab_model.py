@@ -113,7 +113,7 @@ class ModelTab(QWidget):
             self.lbl_recap.setToolTip("")
             return
         self.lbl_hint.hide()
-        self.btn_generate.setEnabled(project.model_dir.exists())
+        self.btn_generate.setEnabled(project.valid)
 
         cfg = model_reader.read_config(project)
         settings = cfg.get("settings") or {}
@@ -137,7 +137,7 @@ class ModelTab(QWidget):
     # ---- exécution ---------------------------------------------------------------
 
     def _run(self):
-        if self._runner is not None or not self.project:
+        if self._runner is not None or not self.project or self.project.model_dir is None:
             return
         if self._non_sauve and not self._resoudre_non_sauve():
             return

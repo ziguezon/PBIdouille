@@ -367,7 +367,7 @@ class ChopChopPanel(QWidget):
         """Pointe le panneau vers un projet et (ré)analyse. Gère un projet
         invalide en douceur (message, pas d'exception)."""
         um.set_project(Path(pbip_path))
-        if um.MODEL_DIR.exists():
+        if um.MODEL_DIR is not None and um.MODEL_DIR.exists():
             self.log.appendPlainText(f"Projet : {pbip_path}")
             self.refresh()
         else:
@@ -777,7 +777,7 @@ class ChopChopPanel(QWidget):
                 f"(état précédent sous {Path(rep['sauvegarde_avant']).name})"
                 if rep.get("sauvegarde_avant")
                 else f"Restauré : {len(rep['restaurés'])} fichier(s)")
-            if um.MODEL_DIR.exists():
+            if um.MODEL_DIR is not None and um.MODEL_DIR.exists():
                 self.refresh()
 
         dlg = BackupsDialog(um.PBIP_DIR, self, on_restored=after)

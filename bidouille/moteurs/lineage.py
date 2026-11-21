@@ -22,6 +22,7 @@ Lecture seule : aucun fichier du projet n'est modifié.
 from __future__ import annotations
 
 import csv
+import chemins
 import json
 import re
 from pathlib import Path
@@ -270,18 +271,6 @@ def scan_model(model_dir: Path) -> tuple:
     return lignes, params
 
 
-def _dossier_rapport(pbip: Path) -> Path:
-    """Le .pbip pointe vers le dossier rapport ; à défaut, la convention."""
-    try:
-        meta = json.loads(pbip.read_text(encoding="utf-8"))
-        for art in meta.get("artifacts", []):
-            if "report" in art:
-                return pbip.parent / art["report"]["path"]
-    except (OSError, ValueError, KeyError, TypeError):
-        pass
-    return pbip.parent / (pbip.stem + ".Report")
-
-
 def scan_projet(pbip) -> dict:
     """Le lineage d'un projet PBIP.
 
@@ -292,29 +281,18 @@ def scan_projet(pbip) -> dict:
     pbip = Path(pbip)
     res = {"modele": "", "modele_dir": None, "live": "", "lignes": [],
            "parametres": {}, "erreur": ""}
-    report_dir = _dossier_rapport(pbip)
-    pbir = report_dir / "definition.pbir"
-    model_dir = None
-    if pbir.exists():
-        try:
-            ref = json.loads(pbir.read_text(encoding="utf-8")).get("datasetReference", {})
-        except ValueError as e:
-            res["erreur"] = f"definition.pbir illisible : {e}"
-            return res
-        if ref.get("byPath"):
-            model_dir = (report_dir / ref["byPath"]["path"]).resolve()
-            res["modele"] = model_dir.name
-        elif ref.get("byConnection"):
-            conn = ref["byConnection"]
-            res["modele"] = (conn.get("pbiModelDatabaseName")
-                             or conn.get("connectionString", "?"))
-            res["live"] = conn.get("connectionString", "") or ""
-            res["lignes"].append(_ligne("", "", "", "Connexion live",
-                                        res["live"], "", LIVE))
-            return res
-    if model_dir is None:                       # pas de .pbir : la convention
-        model_dir = pbip.parent / (pbip.stem + ".SemanticModel")
-        res["modele"] = model_dir.name
+    try:
+        report_dir = chemins.dossier_rapport(pbip)
+        model_dir, conn = chemins.modele_du_rapport(report_dir)
+    except (OSError, ValueError, TypeError, AttributeError) as exc:
+        res["erreur"] = str(exc)
+        return res
+    if model_dir is None:
+        res["modele"] = conn.get("pbiModelDatabaseName") or "Connexion live"
+        res["live"] = conn.get("connectionString", "")
+        res["lignes"].append(_ligne("", "", "", "Connexion live", res["live"], "", LIVE))
+        return res
+    res["modele"] = model_dir.name
     if not model_dir.exists():
         res["erreur"] = f"modèle introuvable : {model_dir}"
         return res

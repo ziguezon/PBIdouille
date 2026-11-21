@@ -436,6 +436,11 @@ class BidouilleWindow(QMainWindow):
 
     def _set_project(self, pbip):
         project = Project(pbip)
+        try:
+            dossier = project.report_dir
+        except (OSError, ValueError, TypeError, AttributeError) as exc:
+            QMessageBox.warning(self, "Projet illisible", str(exc))
+            return
         # config mémorisé pour CE projet (si toujours présent sur le disque)
         override = self.settings.value("config::" + str(project.pbip), "")
         if override and Path(override).exists():
@@ -457,7 +462,8 @@ class BidouilleWindow(QMainWindow):
         # le FICHIER, extension comprise : on voit que c'est un .pbip qu'on
         # choisit, comme le 📄 du config à côté
         self.btn_projet.setText("📂 " + project.pbip.name + "  ▾")
-        self.btn_projet.setToolTip(str(project.pbip) + "\n\nCliquer pour ouvrir un "
+        self.btn_projet.setToolTip(f"{project.pbip}\nRapport : {dossier}\nModèle : "
+                                   + str(project.model_dir or "Aucun modèle local") + "\n\nCliquer pour ouvrir un "
                                    "rapport récent ou un autre.")
         self.btn_sauvegardes.setEnabled(True)
         self.setWindowTitle(APP_NAME + " " + edition.libelle() + " · " + project.name)
