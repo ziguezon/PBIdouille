@@ -22,6 +22,8 @@ champs guident la saisie.
 La sauvegarde écrit `measures_config.json` et garde la version précédente dans
 `measures_config.json.bak`.
 
+Avec **Enregistrer puis recharger**, un échec de sauvegarde laisse le brouillon visible. Corriger le texte puis relancer le rechargement.
+
 ## Si le JSON est invalide
 
 | Geste | Résultat |

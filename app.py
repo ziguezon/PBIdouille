@@ -399,6 +399,8 @@ class BidouilleWindow(QMainWindow):
             clic = box.clickedButton()
             if clic is b_save:
                 self._save_all()
+                if self._en_attente():
+                    return
             elif clic is not b_jeter:
                 return
 
