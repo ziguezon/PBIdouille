@@ -63,6 +63,8 @@ L'état actuel est sauvegardé juste avant, donc une restauration peut elle-mêm
 annulée. Un fichier créé par l'opération d'origine est effacé, et un fichier qu'elle avait
 supprimé est recréé.
 
+Si une génération échoue pendant l’écriture, le journal indique la session à restaurer. Fermer Desktop sans enregistrer et restaurer cette session avant une nouvelle génération.
+
 Après une restauration, les onglets relisent les fichiers, comme avec **↻ Tout recharger**.
 
 Chaque outil garde ses **10** sauvegardes les plus récentes, dans le dossier

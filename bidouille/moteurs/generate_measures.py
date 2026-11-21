@@ -2404,11 +2404,18 @@ def _generate(model_dir, config, *, dry_run=None, remove_orphans=None, log=print
     session = br.BackupSession(br.backup_root(model_dir.parent, "_tmdl_backups"),
                                "Mesures générées", model_dir.parent)
     for path, _ in to_write:
-        session.save(path)
-    for path, content in to_write:
-        path.write_text(content, encoding="utf-8")
+        if path.exists():
+            session.save(path)
+        else:
+            session.mark_absent(path)
     backup_dir = session.close(f"{len(created)} créée(s), {len(updated)} mise(s) "
                                f"à jour, {len(removed)} retirée(s)")
+    try:
+        for path, content in to_write:
+            path.write_text(content, encoding="utf-8")
+    except OSError as exc:
+        log(f"Écriture interrompue. Restaurer la session {backup_dir} : {exc}")
+        raise
     log(f"Écrit : {', '.join(p.name for p, _ in to_write)}"
         + (f"  (backup : {backup_dir.name})" if backup_dir else ""))
     log("Rouvrir le .pbip dans Power BI Desktop pour charger le nouveau modèle.")
