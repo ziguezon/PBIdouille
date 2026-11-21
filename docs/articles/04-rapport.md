@@ -130,8 +130,6 @@ TD_Indicateurs.
 5. Décocher **Aperçu (dry-run)**, cliquer **Colorer** et confirmer.
 6. Fermer Desktop **sans enregistrer**, puis rouvrir le `.pbip`.
 
-Dans l’éditeur, **Effacer** puis **Enregistrer dans l’Excel** vide la cellule de fond ou de texte choisie. La couleur voisine du même KPI est conservée.
-
 ![L'éditeur des couleurs par KPI](../ressources/images/rapport_couleurs.png)
 
 - Les colonnes `couleur_fill` et `couleur_text` sont créées dans l'Excel si elles
@@ -147,7 +145,17 @@ Chaque matrice modifiée est sauvegardée avant l'écriture. La restauration se 
 L'Excel et ses colonnes se règlent dans
 [⚙ Réglages → Excel des indicateurs](02-reglages.md#excel-des-indicateurs), et le lien **Se règle dans ⚙ Réglages** y mène directement.
 
-L’éditeur retrouve le KPI par sa clé au moment de sauvegarder, y compris après un tri du classeur. Une clé modifiée, absente ou devenue ambiguë interrompt l’écriture des changements concernés.
+### L'éditeur des couleurs
+
+**Aperçu & édition des couleurs…** écrit dans l'Excel, pas dans le rapport.
+
+- **Effacer** puis **Enregistrer dans l'Excel** vide la cellule, de fond ou de texte.
+- Seules les couleurs modifiées sont écrites, et chaque KPI est retrouvé par sa clé au
+  moment d'enregistrer. Un tri du classeur, ou une autre colonne modifiée entre-temps,
+  est donc respecté.
+- Un KPI qui n'a plus exactement une ligne dans l'Excel arrête l'enregistrement, sans
+  rien écrire.
+- Le classeur est sauvegardé avant l'écriture, et se restaure comme le reste.
 
 ## Propager puis colorer
 

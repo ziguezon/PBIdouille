@@ -22,8 +22,6 @@ champs guident la saisie.
 La sauvegarde écrit `measures_config.json` et garde la version précédente dans
 `measures_config.json.bak`.
 
-Avec **Enregistrer puis recharger**, un échec de sauvegarde laisse le brouillon visible. Corriger le texte puis relancer le rechargement.
-
 ## Si le JSON est invalide
 
 | Geste | Résultat |
@@ -31,6 +29,7 @@ Avec **Enregistrer puis recharger**, un échec de sauvegarde laisse le brouillon
 | **Valider le JSON** | Un message indique l'erreur et sa position |
 | Changer d'onglet | Le changement est refusé, et l'onglet reste ouvert sur le texte à corriger |
 | **Sauvegarder** | Rien n'est écrit, et un message indique l'erreur |
+| **↻ Tout recharger**, puis **Enregistrer puis recharger** | Rien n'est écrit ni relu : le texte reste dans l'éditeur, à corriger |
 
 **Valider le JSON** contrôle seulement la syntaxe. Une clé mal orthographiée passe la
 validation, et elle sera ignorée ou signalée à la génération. L'onglet

@@ -286,7 +286,12 @@ class CouleursDialog(QDialog):
         for key, cols in changements.items():
             if len(lignes.get(key, [])) != 1:
                 wb.close()
-                QMessageBox.critical(self, "Excel", f"Clé « {key} » absente ou en double. Rien écrit.")
+                QMessageBox.critical(
+                    self, "Excel",
+                    f"« {key} » n'a pas exactement une ligne dans {self.xlsx.name} "
+                    "(absente, ou en double). Le classeur a pu changer depuis "
+                    "l'ouverture de l'éditeur : rien n'a été écrit. Fermer "
+                    "l'éditeur, vérifier la colonne clé et le rouvrir.")
                 return
             for col in cols:
                 cellule = ws.cell(lignes[key][0], fill_c if col == "fill" else text_c)
@@ -294,12 +299,14 @@ class CouleursDialog(QDialog):
 
         if not changements and not colonnes_manquantes:
             wb.close()
+            QMessageBox.information(self, "Rien à enregistrer",
+                                    "Aucune couleur n'a changé depuis l'ouverture.")
             return
         n = len(changements)
         session = br.BackupSession(br.backup_root(self.project_root, "_indicateurs_backups"),
                                    "Excel des indicateurs", self.project_root)
         try:
-            xl._substituer(wb, self.xlsx, session.save)
+            xl.substituer(wb, self.xlsx, session.save)
         except PermissionError:
             br.abandonner(session)
             QMessageBox.critical(

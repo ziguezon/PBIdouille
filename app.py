@@ -400,6 +400,10 @@ class BidouilleWindow(QMainWindow):
             if clic is b_save:
                 self._save_all()
                 if self._en_attente():
+                    # un onglet a refusé d'écrire (JSON invalide…) : relire
+                    # le disque effacerait justement ce qu'il faut corriger
+                    self.journal.info("↻ Rechargement annulé : l'enregistrement "
+                                      "a échoué, rien n'a été relu.")
                     return
             elif clic is not b_jeter:
                 return

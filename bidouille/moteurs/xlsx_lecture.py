@@ -90,9 +90,12 @@ def _entetes(ws) -> dict:
     return out
 
 
-def _substituer(wb, source, avant_ecriture) -> None:
+def substituer(wb, source, avant_ecriture) -> None:
     """Écrit le classeur à côté, puis le substitue d'un coup : un Excel ouvert
-    fait échouer la substitution (PermissionError) sans rien abîmer."""
+    fait échouer la substitution (PermissionError) sans rien abîmer.
+    `avant_ecriture(chemin)` est appelé entre les deux, pour la sauvegarde.
+    Pour qui modifie un classeur déjà ouvert avec openpyxl (l'éditeur des
+    couleurs) ; ajouter_colonne et ecrire_cellule s'en servent aussi."""
     with tempfile.NamedTemporaryFile(dir=source.parent, prefix="~pbidouille_",
                                      suffix=source.suffix, delete=False) as fichier:
         temp = Path(fichier.name)
@@ -151,7 +154,7 @@ def ajouter_colonne(xlsx, cle, nom, valeurs=None, avant_ecriture=None) -> int:
                     t.autoFilter.ref = t.ref
                 t.tableColumns.append(
                     TableColumn(id=max(x.id for x in t.tableColumns) + 1, name=nom))
-        _substituer(wb, source, avant_ecriture)
+        substituer(wb, source, avant_ecriture)
     finally:
         wb.close()
     return n
@@ -178,6 +181,6 @@ def ecrire_cellule(xlsx, cle, kpi, colonne, valeur, avant_ecriture=None) -> None
                 break
         else:
             raise ValueError(f"« {kpi} » n'a pas de ligne dans {source.name}.")
-        _substituer(wb, source, avant_ecriture)
+        substituer(wb, source, avant_ecriture)
     finally:
         wb.close()

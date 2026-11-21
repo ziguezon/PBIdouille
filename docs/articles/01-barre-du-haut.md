@@ -88,7 +88,7 @@ S'il reste des changements non enregistrés, une question est posée avant :
 
 | Choix | Effet |
 |---|---|
-| **Enregistrer puis recharger** | Écrit les changements, puis relit tout |
+| **Enregistrer puis recharger** | Écrit les changements, puis relit tout. Si un enregistrement échoue, rien n'est relu et le journal le dit |
 | **Recharger quand même** | Relit tout et abandonne les changements |
 | **Annuler** | Ne fait rien |
 
