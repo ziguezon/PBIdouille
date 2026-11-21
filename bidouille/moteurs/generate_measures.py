@@ -1784,8 +1784,8 @@ def _generate(model_dir, config, *, dry_run=None, remove_orphans=None, log=print
         if not name or not dax:
             log(f"⚠ variation '{vid}' sans namePattern ou dax, ignorée.")
             return None
-        if "<<" in dax or "<<" in (name or ""):
-            missing = re.findall(r"<<([^>]+)>>", dax + " " + (name or ""))
+        missing = re.findall(r"<<([^>]+)>>", " ".join((dax, name, desc or "")))
+        if missing:
             manquants = ", ".join("<<" + m + ">>" for m in dict.fromkeys(missing))
             log(f"⚠ « {name} » non générée : {manquants} sans valeur pour "
                 f"« {kpi_lbl} », remplir sa colonne dans TD_Indicateurs.")

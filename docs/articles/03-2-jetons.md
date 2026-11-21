@@ -227,6 +227,8 @@ Total Steps part du total =
 Plusieurs tables : les séparer par des virgules. Pour utiliser deux fonctions
 différentes, faire deux colonnes.
 
+Une valeur Excel manquante dans le nom, la formule ou la description fait ignorer la variation pour ce KPI. Le journal indique le jeton à renseigner.
+
 ### Les règles
 
 - **Cellule vide : pas de mesure** pour ce KPI, et le journal dit laquelle et
