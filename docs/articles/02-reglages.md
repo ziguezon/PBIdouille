@@ -63,6 +63,10 @@ Par KPI, les deux motifs de dossier ne servent pas et sont grisés. Changer de r
 déplace les mesures existantes à la prochaine génération : elles sont **modifiées**, pas
 recréées.
 
+Quand **overwriteExisting** est décoché, une mesure générée encore demandée garde sa
+formule et son identifiant, même si **Supprimer les orphelines** est coché. Ce ménage
+retire uniquement les mesures générées qui ne sont plus demandées.
+
 Une mesure écrite à la main n'est jamais modifiée, quel que soit `overwriteExisting`.
 
 ## Excel des indicateurs

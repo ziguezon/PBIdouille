@@ -1652,6 +1652,7 @@ def _generate(model_dir, config, *, dry_run=None, remove_orphans=None, log=print
 
     # ---- compute : les specs de toutes les mesures générées ------------------
     created, updated, unchanged, skipped, removed = [], [], [], [], []
+    preserved_names = set()  # mesures demandées, conservées sans écrasement
     planned: dict = {}       # tag -> spec {name, dax, fmt, folder, desc, data_cat}
     planned_names: dict = {} # nom de mesure -> tag propriétaire (dédup par NOM)
     # [affichage, réf DAX, tri, KPI, calcul, branche, variation | None, cible?,
@@ -1792,6 +1793,7 @@ def _generate(model_dir, config, *, dry_run=None, remove_orphans=None, log=print
             skipped.append(name)
             return (name, prev["format"], prev["folder"])
         if prev is not None and not overwrite:
+            preserved_names.add(name)
             skipped.append(name)
             return (name, prev["format"], prev["folder"])
 
@@ -2076,7 +2078,7 @@ def _generate(model_dir, config, *, dry_run=None, remove_orphans=None, log=print
         if kind == "measure":
             info = measure_info(ctext)
             tag = info["annotation"]
-            if tag:
+            if tag and info["name"] not in preserved_names:
                 # remplacée par la version recalculée. Le NOM compte aussi : une
                 # variation dont l'id a changé garde ses noms sous une autre
                 # annotation, et la laisser ferait deux mesures du même nom,
