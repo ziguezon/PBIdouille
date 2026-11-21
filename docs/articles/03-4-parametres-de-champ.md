@@ -6,6 +6,8 @@ Un **paramètre de champ** est une table Power BI qui liste des mesures. Placé 
 segment, il permet de choisir quelle mesure un visuel affiche : `Réel`, `7d avg`,
 `PY`, ou un autre KPI.
 
+Si le nom existe déjà, le générateur vérifie la partition calculée et les métadonnées du paramètre. Un conflit avec une table Power Query interrompt l’aperçu ou la génération avant toute écriture. Choisissez un nom libre pour créer un nouveau paramètre.
+
 PBIdouille écrit ces tables à partir des KPI, des cibles et des variations. L'onglet
 se lit de haut en bas : les **réglages** de chaque table, puis **ce qu'elle
 contiendra**.

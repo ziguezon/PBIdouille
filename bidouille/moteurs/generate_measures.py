@@ -36,7 +36,7 @@ from pathlib import Path
 
 # réutilise le découpage TMDL éprouvé de unused_measures (mêmes fichiers cibles)
 sys.path.insert(0, str(Path(__file__).resolve().parent))   # moteurs\ voisins
-from unused_measures import MEMBER_RE, MEASURE_NAME_RE, _first_group
+from unused_measures import MEMBER_RE, MEASURE_NAME_RE, TABLE_NAME_RE, _first_group
 import backup_restore as br                                # sauvegardes + manifeste
 import xlsx_lecture as _xl                                 # relâche le classeur
 import chemins                                             # où sont les projets
@@ -887,6 +887,40 @@ def fp_table_specs(fp) -> list:
             s[k] = _fp_liste(s[k])
         out.append(s)
     return out
+
+
+def colonne_de_parametre(bloc):
+    """Power BI identifie la colonne de champs par la métadonnée JSON de type 2."""
+    prop = re.search(
+        r"^\t\textendedProperty[ \t]+(?:ParameterMetadata|'ParameterMetadata')[ \t]*="
+        r"(?P<valeur>[^\n]*(?:\n\t{3,}[^\n]*)*)", bloc, re.M | re.I)
+    if not prop:
+        return False
+    valeur = prop.group("valeur").strip()
+    if valeur.startswith("```") and valeur.endswith("```"):
+        valeur = valeur[3:-3].strip()
+    try:
+        metadata = json.loads(valeur)
+    except ValueError:
+        return False
+    return isinstance(metadata, dict) and metadata.get("kind") == 2
+
+
+def source_parametre(texte, nom):
+    """Localise la source d'un paramètre de champ avant toute écriture du lot."""
+    membres = split_members(texte)
+    partitions = [bloc for genre, bloc in membres if genre == "partition"]
+    metadata = any(genre == "column" and colonne_de_parametre(bloc) for genre, bloc in membres)
+    if (len(partitions) != 1 or not metadata or not re.search(
+            r"^\tpartition[^\n]+?=\s*calculated[ \t]*$", partitions[0], re.M | re.I)):
+        raise SystemExit(f"« {nom} » existe déjà et n'est pas une table paramètre "
+                         "de champ à partition calculée unique. Choisir un autre nom.")
+    debut = re.search(r"^\tpartition\b", texte, re.M).start()
+    suivant = MEMBER_RE.search(texte, debut + 1)
+    source = SOURCE_BLOCK_RE.search(texte, debut, suivant.start() if suivant else len(texte))
+    if not source:
+        raise SystemExit(f"« {nom} » : source du paramètre illisible. Génération annulée.")
+    return source
 
 
 def fp_table_names(fp) -> list:
@@ -2215,19 +2249,33 @@ def _generate(model_dir, config, *, dry_run=None, remove_orphans=None, log=print
                 if n is not None:
                     arbre[n].setdefault("tables", []).append(spec["name"])
 
+        # Le nom logique de la table peut différer du nom de son fichier TMDL.
+        chemins_fp = {}
+        demandes = {nom.casefold() for nom, _, _ in targets}
+        for fichier in tables_dir.glob("*.tmdl"):
+            with fichier.open(encoding="utf-8-sig") as stream:
+                nom = None
+                for ligne in stream:
+                    nom = _first_group(TABLE_NAME_RE.match(ligne))
+                    if nom:
+                        break
+            if nom and nom.casefold() in demandes:
+                if nom.casefold() in chemins_fp:
+                    raise SystemExit(f"Plusieurs tables portent le nom « {nom} ».")
+                chemins_fp[nom.casefold()] = fichier
+
         etats_fp: dict = {}
         for tname, expr, n_rows in targets:
-            tpath = tables_dir / (tname + ".tmdl")
+            if Path(tname).name != tname or tname in (".", ".."):
+                raise SystemExit(f"Nom de table paramètre invalide : « {tname} ».")
+            tpath = chemins_fp.get(tname.casefold(), tables_dir / (tname + ".tmdl"))
+            if tpath.exists() and tname.casefold() not in chemins_fp:
+                raise SystemExit(f"Le fichier {tpath.name} appartient à une autre table.")
             indented = "\n".join("\t\t\t\t" + l for l in expr.split("\n"))
             if tpath.exists():
                 ttext = tpath.read_text(encoding="utf-8")
-                m = SOURCE_BLOCK_RE.search(ttext)
-                if not m:
-                    fp_statuses.append(f"⚠ {tname} : bloc `source =` introuvable, non modifiée")
-                    etats_fp[tname] = "source introuvable"
-                    continue
+                m = source_parametre(ttext, tname)
                 new_ttext = ttext[: m.start(2)] + indented + "\n" + ttext[m.end(2):]
-                new_ttext = re.sub(r"\n{3,}", "\n\n", new_ttext)
                 if new_ttext != ttext:
                     fp_writes.append((tpath, new_ttext))
                     fp_statuses.append(f"{tname} : expression mise à jour ({n_rows} rangées)")
