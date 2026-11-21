@@ -130,6 +130,8 @@ TD_Indicateurs.
 5. Décocher **Aperçu (dry-run)**, cliquer **Colorer** et confirmer.
 6. Fermer Desktop **sans enregistrer**, puis rouvrir le `.pbip`.
 
+Dans l’éditeur, **Effacer** puis **Enregistrer dans l’Excel** vide la cellule de fond ou de texte choisie. La couleur voisine du même KPI est conservée.
+
 ![L'éditeur des couleurs par KPI](../ressources/images/rapport_couleurs.png)
 
 - Les colonnes `couleur_fill` et `couleur_text` sont créées dans l'Excel si elles
