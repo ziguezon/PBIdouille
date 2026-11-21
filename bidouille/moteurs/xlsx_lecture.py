@@ -93,7 +93,9 @@ def _entetes(ws) -> dict:
 def _substituer(wb, source, avant_ecriture) -> None:
     """Écrit le classeur à côté, puis le substitue d'un coup : un Excel ouvert
     fait échouer la substitution (PermissionError) sans rien abîmer."""
-    temp = source.with_name("~pbidouille_" + source.name)
+    with tempfile.NamedTemporaryFile(dir=source.parent, prefix="~pbidouille_",
+                                     suffix=source.suffix, delete=False) as fichier:
+        temp = Path(fichier.name)
     try:
         wb.save(temp)
         if avant_ecriture:

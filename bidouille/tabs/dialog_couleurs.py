@@ -27,6 +27,8 @@ from qtpy.QtWidgets import (
     QVBoxLayout,
 )
 
+import backup_restore as br
+import xlsx_lecture as xl
 from core.theme import ACCENT, TEXT_DIM, SURFACE_ALT
 
 COL_KPI, COL_FILL, COL_TEXT, COL_PREVIEW = range(4)
@@ -45,11 +47,13 @@ class CouleursDialog(QDialog):
     """Édite les couleurs par KPI directement dans l'Excel TD."""
 
     def __init__(self, xlsx, key_col: str, fill_col: str, text_col: str,
-                 model_kpis=None, parent=None):
+                 model_kpis=None, parent=None, project_root=None):
         super().__init__(parent)
         self.setWindowTitle("Couleurs des KPI · " + Path(xlsx).name)
         self.resize(720, 460)
         self.xlsx = Path(xlsx)
+        self.project_root = Path(project_root) if project_root else self.xlsx.parent
+        self.initial = {}
         self.key_col = key_col
         self.fill_col = fill_col
         self.text_col = text_col
@@ -141,6 +145,7 @@ class CouleursDialog(QDialog):
                 "text": _norm_hex(ws.cell(row=r, column=text_c).value) if text_c else "",
                 "row": r,
             }
+            self.initial[key] = self.state[key].copy()
         wb.close()
 
         # KPI du modèle absents de l'Excel : montrés grisés (à ajouter dans l'Excel)
@@ -264,32 +269,53 @@ class CouleursDialog(QDialog):
                 headers[name.lower()] = c
             return c
 
+        colonnes_manquantes = any(n.lower() not in headers for n in (self.fill_col, self.text_col))
         fill_c = ensure(self.fill_col)
         text_c = ensure(self.text_col)
 
-        n = 0
-        for key, s in self.state.items():
-            if not s["row"]:
-                continue
-            ws.cell(row=s["row"], column=fill_c,
-                    value=(s["fill"] if s["fill"] else None))
-            ws.cell(row=s["row"], column=text_c,
-                    value=(s["text"] if s["text"] else None))
-            n += 1
+        changements = {key: [col for col in ("fill", "text") if s[col] != self.initial[key][col]]
+                       for key, s in self.state.items() if key in self.initial}
+        changements = {k: cols for k, cols in changements.items() if cols}
+        cle = headers.get(self.key_col.lower())
+        lignes = {}
+        if cle:
+            for r in range(2, ws.max_row + 1):
+                valeur = ws.cell(r, cle).value
+                if valeur is not None:
+                    lignes.setdefault(str(valeur).strip(), []).append(r)
+        for key, cols in changements.items():
+            if len(lignes.get(key, [])) != 1:
+                wb.close()
+                QMessageBox.critical(self, "Excel", f"Clé « {key} » absente ou en double. Rien écrit.")
+                return
+            for col in cols:
+                cellule = ws.cell(lignes[key][0], fill_c if col == "fill" else text_c)
+                cellule.value = self.state[key][col] or None
 
+        if not changements and not colonnes_manquantes:
+            wb.close()
+            return
+        n = len(changements)
+        session = br.BackupSession(br.backup_root(self.project_root, "_indicateurs_backups"),
+                                   "Excel des indicateurs", self.project_root)
         try:
-            wb.save(self.xlsx)
+            xl._substituer(wb, self.xlsx, session.save)
         except PermissionError:
+            br.abandonner(session)
             QMessageBox.critical(
                 self, "Excel verrouillé",
                 f"{self.xlsx.name} est ouvert dans Excel, le fermer et réessayer.")
             return
         except OSError as e:
+            br.abandonner(session)
             QMessageBox.critical(self, "Erreur d'écriture", str(e))
             return
         finally:
             wb.close()
 
+        session.close(f"{n} KPI modifiés")
+        for key in changements:
+            self.initial[key] = self.state[key].copy()
         QMessageBox.information(
             self, "Enregistré",
             f"{n} KPI écrits dans {self.xlsx.name} "

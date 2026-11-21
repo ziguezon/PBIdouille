@@ -337,6 +337,7 @@ class ReportTab(QWidget):
             fill_col=td["fillColumn"],
             text_col=td["textColumn"],
             model_kpis=kpis,
+            project_root=self.project.folder,
             parent=self,
         )
         dlg.exec_() if hasattr(dlg, "exec_") else dlg.exec()
