@@ -2113,13 +2113,6 @@ class ConfigTab(QWidget):
 
     # ---- attributs codés en dur (table label/colonne) --------------------------
 
-    def _hc_xlsx_path(self) -> Path:
-        raw = str(self._td_path_resolu()) or "TD_Indicateurs.xlsx"
-        p = Path(raw)
-        if not p.is_absolute() and self.project:
-            p = self.project.folder / p
-        return p
-
     def _hc_columns(self) -> list:
         return self._td_entetes()          # même cache, même classeur
 
