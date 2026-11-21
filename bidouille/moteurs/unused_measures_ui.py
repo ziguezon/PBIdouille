@@ -354,6 +354,15 @@ class ChopChopPanel(QWidget):
 
     # ---- projet ---------------------------------------------------------------
 
+    def _invalider_analyse(self, message):
+        self.result = None
+        self._unused_groups = []
+        self._unused_col_groups = []
+        self._dead_table_groups = []
+        self.tree.clear()
+        self.info.setText(message)
+        self._update_delete_label()
+
     def set_pbip(self, pbip_path) -> None:
         """Pointe le panneau vers un projet et (ré)analyse. Gère un projet
         invalide en douceur (message, pas d'exception)."""
@@ -362,11 +371,7 @@ class ChopChopPanel(QWidget):
             self.log.appendPlainText(f"Projet : {pbip_path}")
             self.refresh()
         else:
-            self.result = None
-            self.tree.clear()
-            self._unused_groups = []
-            self.info.setText("Aucun projet valide, dossiers .Report/.SemanticModel introuvables.")
-            self._update_delete_label()
+            self._invalider_analyse("Aucun projet valide, dossiers .Report/.SemanticModel introuvables.")
 
     # ---- construction de l'arbre ---------------------------------------------
 
@@ -524,6 +529,8 @@ class ChopChopPanel(QWidget):
         try:
             self.result = um.analyze()
         except SystemExit as e:
+            self._invalider_analyse(str(e))
+            self.log.appendPlainText(str(e))
             QMessageBox.critical(self, "Erreur", str(e))
             return
 
@@ -839,6 +846,8 @@ class ChopChopPanel(QWidget):
         if not path:
             return
         header, rows = self._export_rows()
+        header = list(header) + ["Rapport analysé"]
+        rows = [list(row) + [self.result["report_path"]] for row in rows]
         try:
             if path.lower().endswith(".xlsx"):
                 self._write_xlsx(path, header, rows)
@@ -867,7 +876,7 @@ class ChopChopPanel(QWidget):
     # ---- suppression -----------------------------------------------------------
 
     def _delete_checked(self):
-        if _production():
+        if _production() or not self.result:
             return
         measures    = self.result["measures"]
         referencers = self.result["referencers"]
@@ -949,14 +958,23 @@ class ChopChopPanel(QWidget):
             return
 
         try:
+            # Le rapport peut avoir changé depuis la sélection.
+            courant = um.analyze()
+            if (not set(selected).issubset(courant["unused"])
+                    or not set(col_selected).issubset(set(courant["unused_columns"]) | set(courant["column_chained"]))
+                    or not set(tbl_selected).issubset(courant["dead_table_info"])):
+                self.refresh()
+                QMessageBox.information(self, "Rapport modifié", "Les usages ont changé. Revoir la sélection.")
+                return
             rep = um.delete_objects(
-                self.result, measure_names=sorted(selected),
+                courant, measure_names=sorted(selected),
                 column_keys=sorted(col_selected),
                 table_names=sorted(tbl_selected),
                 log=self.log.appendPlainText,
             )
-        except OSError as e:
-            QMessageBox.critical(self, "Erreur d'écriture", str(e))
+        except (OSError, SystemExit) as e:
+            self._invalider_analyse(str(e))
+            QMessageBox.critical(self, "Suppression interrompue", str(e))
             return
 
         if rep["tables_deleted"]:
