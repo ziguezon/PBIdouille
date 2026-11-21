@@ -53,7 +53,8 @@ def lire_lignes(xlsx, sheet=None, max_rows=None) -> list:
     import openpyxl
 
     source = Path(xlsx)
-    dossier = tempfile.mkdtemp(prefix="pbidouille_xlsx_")
+    dossier = tempfile.mkdtemp(prefix="pbidouille_xlsx_",
+                               dir=os.environ.get("PBIDOUILLE_TEMP_EXCEL") or None)
     copie = Path(dossier) / source.name
     try:
         shutil.copy2(source, copie)          # seul moment où l'on tient l'original

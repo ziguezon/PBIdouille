@@ -5,6 +5,8 @@
 La fenêtre **⚙ Réglages** regroupe les réglages du `measures_config.json` qui servent à
 plusieurs onglets. Elle s'ouvre avec le bouton **⚙ Réglages** de la barre du haut.
 
+La lecture Excel par `openpyxl` copie le classeur entier dans un sous-dossier temporaire et le retire à la fin de la lecture. Sur un poste géré, la variable d’environnement `PBIDOUILLE_TEMP_EXCEL` peut désigner un répertoire existant autorisé en écriture. Le dossier temporaire du système est utilisé par défaut.
+
 | Page | Ce qu'elle décide |
 |---|---|
 | [Génération](#génération) | Où trouver les KPI, où ranger les mesures, ce qui peut être modifié |
