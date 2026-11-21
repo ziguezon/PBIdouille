@@ -1,0 +1,19 @@
+{
+  "settings": {
+    "sourceTable": "Ventes",
+    "sourceFolder": "Base",
+    "dryRun": true,
+    "overwriteExisting": false,
+    "removeOrphans": false
+  },
+  "variations": {
+    "double": {
+      "namePattern": "{base} double",
+      "dax": "{baseRef} * 2",
+      "description": "Double de {base}."
+    }
+  },
+  "fieldParameter": {
+    "enabled": false
+  }
+}

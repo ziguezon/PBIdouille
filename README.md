@@ -1,5 +1,7 @@
 # PBIdouille 🔧
 
+**Premier projet.** Copier le [config de démarrage](exemples/measures_config.json) à côté du `.pbip` sous le nom `measures_config.json`. Dans **Réglages**, remplacer `Ventes` et `Base` par la table et le dossier d’affichage contenant vos mesures. Cette recette double chacune des bases admissibles. Lancer d’abord **Aperçu**. Le paramètre de champ peut ensuite être activé dans l’onglet dédié.
+
 Une app de bureau pour les rapports Power BI au format **PBIP**. Elle écrit
 automatiquement ce qui se répète dans un rapport : les mesures dérivées de chaque KPI
 (7d avg, PY, YTD…), les tables paramètre de champ, le formatage conditionnel
