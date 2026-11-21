@@ -53,6 +53,7 @@ from pathlib import Path
 # backup_restore.py est le voisin de ce fichier (sauvegardes + manifeste)
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import backup_restore as br
+from dossiers_mesures import folder_matches
 import chemins                    # où sont les projets
 
 # ---------------------------------------------------------------------------
@@ -139,20 +140,6 @@ def measures_of_model(semantic_dir) -> set:
             if nom:
                 noms.add(nom.replace("''", "'"))
     return noms
-
-
-def folder_matches(mfolder, cfolder) -> bool:
-    """Le displayFolder `mfolder` correspond-il au dossier `cfolder` ?
-
-    Match si le chemin complet est identique OU si le dossier FEUILLE l'est :
-    « _indicateurs\\cible » répond donc à la config « cible », sans avoir à
-    écrire le chemin entier. Même règle que generate_measures.folder_matches —
-    dupliquée parce que propagate_cf reste utilisable seul en CLI."""
-    mf = (mfolder or "").strip().lower()
-    cf = (cfolder or "").strip().lower()
-    if not mf or not cf:
-        return False
-    return mf == cf or re.split(r"[\\/]", mf)[-1] == cf
 
 
 def cibles_of_model(semantic_dir, dossiers) -> set:

@@ -39,6 +39,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))   # moteurs\ voisins
 from unused_measures import MEMBER_RE, MEASURE_NAME_RE, TABLE_NAME_RE, _first_group
 import backup_restore as br                                # sauvegardes + manifeste
 import xlsx_lecture as _xl                                 # relâche le classeur
+from dossiers_mesures import folder_matches
 import chemins                                             # où sont les projets
 
 # ---------------------------------------------------------------------------
@@ -1236,18 +1237,6 @@ def match_kpi(name: str, bases_by_len) -> str | None:
         if name == b or name.startswith(b + " "):
             return b
     return None
-
-
-def folder_matches(mfolder, cfolder) -> bool:
-    """Le displayFolder `mfolder` correspond-il au dossier de cibles `cfolder` ?
-    Match si chemin complet identique OU si le dossier FEUILLE est le même — un
-    dossier imbriqué (« _indicateurs\\_cibles ») matche donc la config
-    « _cibles », sans avoir à écrire le chemin complet."""
-    mf = (mfolder or "").strip().lower()
-    cf = (cfolder or "").strip().lower()
-    if not mf or not cf:
-        return False
-    return mf == cf or re.split(r"[\\/]", mf)[-1] == cf
 
 
 def index_mesures(chunks):
