@@ -262,7 +262,8 @@ def session_info(session_dir, project_root=None) -> dict:
     Lit le manifeste s'il existe, sinon reconstitue (cf. _infer_entries)."""
     session_dir = Path(session_dir)
     root_dir = session_dir.parent
-    project_root = Path(project_root) if project_root else project_of(root_dir)
+    projet_selectionne = project_root is not None
+    project_root = Path(project_root) if projet_selectionne else project_of(root_dir)
     man = session_dir / MANIFEST
     info = {}
     if man.exists():
@@ -272,7 +273,12 @@ def session_info(session_dir, project_root=None) -> dict:
             info = {}
     if info.get("fichiers"):
         info["manifeste"] = True
-        info.setdefault("racine", str(project_root))
+        # Une copie du projet emporte le manifeste et son ancienne racine.
+        # Une session archivée à part, ouverte seule, conserve sa racine enregistrée.
+        if projet_selectionne or root_dir.name in BACKUP_ROOTS:
+            info["racine"] = str(project_root)
+        else:
+            info.setdefault("racine", str(project_root))
     else:
         info = {"outil": BACKUP_ROOTS.get(root_dir.name, root_dir.name.strip("_")),
                 "horodatage": session_dir.name,
@@ -451,21 +457,21 @@ def restore_session(session_dir, project_root=None, *, dry_run: bool = False,
             skipped.append(entry.get("sauvegarde") or "?")
             continue
         if action == ABSENT:                    # à EFFACER, rien à copier
-            plan.append((None, root / entry["cible"], ABSENT))
+            plan.append((None, Path(entry["cible"]), ABSENT))
             continue
         src = session_dir / entry["sauvegarde"]
         if not src.exists():
             skipped.append(entry["sauvegarde"])
             continue
-        plan.append((src, root / entry["cible"], action))
+        plan.append((src, Path(entry["cible"]), action))
 
     report = {"restaurés": [], "supprimés": [], "ignorés": skipped,
               "sauvegarde_avant": None, "dossier": str(session_dir),
               "outil": info.get("outil", "")}
     if dry_run or not plan:
-        report["restaurés"] = [str(d.relative_to(root)) for _s, d, a in plan
+        report["restaurés"] = [str(d) for _s, d, a in plan
                                if a != ABSENT]
-        report["supprimés"] = [str(d.relative_to(root)) for _s, d, a in plan
+        report["supprimés"] = [str(d) for _s, d, a in plan
                                if a == ABSENT]
         return report
 
@@ -476,7 +482,8 @@ def restore_session(session_dir, project_root=None, *, dry_run: bool = False,
     # pas emporter la sauvegarde qu'on n'a pas encore fini de relire.
     undo = BackupSession(session_dir.parent, "Restauration", root,
                          protect=[session_dir])
-    for _src, dest, _action in plan:
+    for _src, cible, _action in plan:
+        dest = root / cible
         if dest.exists():
             undo.save(dest)
         else:
@@ -485,7 +492,8 @@ def restore_session(session_dir, project_root=None, *, dry_run: bool = False,
     if undo_dir:
         report["sauvegarde_avant"] = str(undo_dir)
 
-    for src, dest, action in plan:
+    for src, cible, action in plan:
+        dest = root / cible
         if action == ABSENT:
             if dest.exists():
                 dest.unlink()
@@ -496,12 +504,12 @@ def restore_session(session_dir, project_root=None, *, dry_run: bool = False,
                         dest.parent.rmdir()
                 except OSError:
                     pass
-                report["supprimés"].append(str(dest.relative_to(root)))
-                log(f"effacé : {dest.relative_to(root)}  (absent à la sauvegarde)")
+                report["supprimés"].append(str(cible))
+                log(f"effacé : {cible}  (absent à la sauvegarde)")
             continue
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(src, dest)
-        report["restaurés"].append(str(dest.relative_to(root)))
-        log(f"restauré : {dest.relative_to(root)}"
+        report["restaurés"].append(str(cible))
+        log(f"restauré : {cible}"
             + ("  (fichier recréé)" if action == DELETED else ""))
     return report

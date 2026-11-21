@@ -137,6 +137,8 @@ class BackupsDialog(QDialog):
                 elif e.get("devine"):
                     marque = "  (destination déduite)"
                 child = QTreeWidgetItem([e["sauvegarde"] or "·", "", cible + marque])
+                if e.get("cible"):
+                    child.setToolTip(COL_DETAIL, str(self.project_root / cible))
                 child.setFlags(Qt.ItemIsEnabled)
                 child.setForeground(COL_QUOI, muted)
                 child.setForeground(COL_DETAIL, muted)
@@ -174,13 +176,18 @@ class BackupsDialog(QDialog):
         efface = sum(1 for e in s["fichiers"] if e.get("action") == br.ABSENT)
         n = s["n_fichiers"] - s["n_orphelins"] - efface
         msg = [f"Restaurer la sauvegarde « {s['outil']} » du {s['date']} ?", ""]
-        msg.append(f"• {n} fichier(s) seront réécrits dans le projet")
+        msg.append(f"Projet sélectionné : {self.project_root}")
+        msg.append(f"• {n} fichier(s) seront réécrits")
         recrees = sum(1 for e in s["fichiers"] if e.get("action") == br.DELETED)
         if recrees:
             msg.append(f"• dont {recrees} fichier(s) supprimé(s) à recréer")
         if efface:
             msg.append(f"• {efface} fichier(s) seront EFFACÉS "
                        "(ils n'existaient pas à ce moment-là)")
+        externes = [e["cible"] for e in s["fichiers"]
+                    if e.get("cible") and Path(e["cible"]).is_absolute()]
+        if externes:
+            msg.extend(["", "Fichiers hors projet concernés :"] + externes)
         if s["n_orphelins"]:
             msg.append(f"• {s['n_orphelins']} sans cible connue : ignoré(s)")
         msg += ["",

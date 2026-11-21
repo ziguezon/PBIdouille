@@ -55,6 +55,10 @@ Pour revenir en arrière :
 3. Si Power BI Desktop est ouvert, le fermer **sans enregistrer**, puis rouvrir le
    `.pbip`. Enregistrer dans Desktop réécrirait les fichiers qui viennent d'être restaurés.
 
+Si le projet a été copié ou déplacé avec ses sauvegardes, les fichiers du projet sont
+restaurés dans le dossier ouvert. Un classeur enregistré hors du projet conserve son
+chemin absolu. La confirmation indique ce chemin avant toute écriture.
+
 L'état actuel est sauvegardé juste avant, donc une restauration peut elle-même être
 annulée. Un fichier créé par l'opération d'origine est effacé, et un fichier qu'elle avait
 supprimé est recréé.
