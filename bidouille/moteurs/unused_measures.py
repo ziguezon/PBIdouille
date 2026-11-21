@@ -348,28 +348,63 @@ def parse_model():
     }
 
 
-def documents_rapport():
-    """Chaque JSON du rapport doit être lisible pour conclure sur ses usages."""
+def documents_rapport(illisibles: dict | None = None):
+    """(nom relatif, JSON) de chaque fichier .json du rapport, BOM accepté.
+
+    Un fichier ou un dossier qu'on ne peut pas lire n'arrête pas l'analyse :
+    il est noté dans `illisibles` (nom -> raison) et l'analyse devient
+    INCOMPLÈTE. Une mesure qu'il cite peut alors passer pour inutilisée, d'où
+    le bandeau de ChopChop et le refus de supprimer (cf. analyze). Ne pas
+    trouver le rapport, ou n'y trouver aucun JSON, arrête tout : il n'y a
+    alors rien d'analysable."""
+    if illisibles is None:
+        illisibles = {}
     if not REPORT_DIR.is_dir():
-        raise SystemExit(f"Analyse incomplète : rapport introuvable ({REPORT_DIR}).")
+        raise SystemExit(f"Rapport introuvable : {REPORT_DIR}.")
+
     def dossier_illisible(exc):
-        raise SystemExit(f"Analyse incomplète : parcours du rapport interrompu ({exc}).") from exc
+        nom = Path(getattr(exc, "filename", "") or REPORT_DIR)
+        try:
+            nom = nom.relative_to(REPORT_DIR).as_posix() + "/"
+        except ValueError:
+            nom = str(nom)
+        illisibles[nom] = f"dossier illisible ({exc.strerror or exc})"
 
     fichiers = []
     for dossier, _, noms in os.walk(REPORT_DIR, onerror=dossier_illisible):
         fichiers.extend(Path(dossier) / nom for nom in noms if nom.lower().endswith(".json"))
-    if not fichiers:
-        raise SystemExit(f"Analyse incomplète : aucun fichier JSON dans {REPORT_DIR}.")
+    if not fichiers and not illisibles:
+        raise SystemExit(f"Aucun fichier JSON dans le rapport {REPORT_DIR.name}.")
     for jf in sorted(fichiers):
         nom = jf.relative_to(REPORT_DIR).as_posix()
         try:
             data = json.loads(jf.read_text(encoding="utf-8-sig"))
         except (ValueError, OSError) as exc:
-            raise SystemExit(f"Analyse incomplète : {nom} illisible ({exc}).") from exc
+            illisibles[nom] = f"illisible ({exc})"
+            continue
         yield nom, data
 
 
-def report_used(measure_names: set[str]) -> dict[str, list[str]]:
+def avertissement_incomplet(result) -> str:
+    """Le bandeau d'une analyse incomplète, vide si elle est complète."""
+    ill = result.get("illisibles") or {}
+    if not ill:
+        return ""
+    return (f"⚠ Analyse incomplète : {len(ill)} fichier(s) du rapport illisible(s). "
+            "Une mesure ou une colonne qu'ils citent peut passer pour inutilisée.")
+
+
+def rapport_analyse(result) -> str:
+    """La colonne « Rapport analysé » des exports : le NOM du dossier du
+    rapport (un chemin complet n'a rien à faire dans un fichier qu'on partage),
+    et la mention d'une analyse incomplète. Un même modèle peut servir à
+    d'autres rapports : « inutilisée » ne vaut que pour celui-ci."""
+    nom = Path(result.get("report_path") or "").name
+    n = len(result.get("illisibles") or {})
+    return nom + (f" (analyse incomplète : {n} fichier(s) illisible(s))" if n else "")
+
+
+def report_used(measure_names: set[str], illisibles: dict | None = None) -> dict[str, list[str]]:
     """mesure -> fichiers du .Report qui la référencent (visuels, filtres,
     tris, CF, signets, layout mobile...)."""
     refs: dict[str, set[str]] = {}
@@ -394,13 +429,14 @@ def report_used(measure_names: set[str]) -> dict[str, list[str]]:
             for x in node:
                 walk(x, fname)
 
-    for nom, data in documents_rapport():
+    for nom, data in documents_rapport(illisibles):
         walk(data, nom)
 
     return {n: sorted(files) for n, files in refs.items()}
 
 
-def report_used_columns(column_keys, entities_out: set | None = None) -> dict:
+def report_used_columns(column_keys, entities_out: set | None = None,
+                        illisibles: dict | None = None) -> dict:
     """(table, colonne) -> fichiers du .Report qui la référencent. Matche en
     PAIRE table+colonne (les noms de colonnes se répètent d'une table à
     l'autre) : dicts Column{Property + SourceRef Entity/alias} et chaînes
@@ -461,7 +497,7 @@ def report_used_columns(column_keys, entities_out: set | None = None) -> dict:
             for x in node:
                 walk(x, fname, aliases)
 
-    for nom, data in documents_rapport():
+    for nom, data in documents_rapport(illisibles):
         aliases: dict = {}
         collect_aliases(data, aliases)
         walk(data, nom, aliases)
@@ -516,8 +552,10 @@ def analyze() -> dict:
     measures, other_blocks, colinfo = parse_model()
     names = set(measures)
 
-    # racines + attribution détaillée
-    report_refs = report_used(names)
+    # racines + attribution détaillée. `illisibles` se remplit pendant le
+    # parcours du rapport : non vide, l'analyse est incomplète.
+    illisibles: dict = {}
+    report_refs = report_used(names, illisibles)
     pat = {n: bracket_ref(n).lower() for n in names}
     struct_refs: dict[str, list] = {}
     for n in names:
@@ -552,7 +590,7 @@ def analyze() -> dict:
     # inutilisées -> « used by unused ». Sinon -> aucune référence.
     columns = colinfo["columns"]
     rpt_entities: set = set()
-    col_report = report_used_columns(set(columns), rpt_entities)
+    col_report = report_used_columns(set(columns), rpt_entities, illisibles)
     rel_refs = relationship_refs()
 
     # ---- Power Query : quelle requête consomme quelle requête ? -------------
@@ -760,6 +798,8 @@ def analyze() -> dict:
 
     return {
         "report_path": str(REPORT_DIR),
+        # fichier ou dossier du rapport qu'on n'a pas pu lire -> raison
+        "illisibles": dict(sorted(illisibles.items())),
         "measures": measures,
         "via": via,
         "unused": unused,
@@ -1058,6 +1098,12 @@ def main() -> None:
     col_refs       = result["column_referencers"]
 
     print(f"{len(names)} mesures et {len(columns)} colonnes dans le modèle.")
+    avis = avertissement_incomplet(result)
+    if avis:
+        print(avis)
+        for nom, raison in result["illisibles"].items():
+            print(f"    - {nom} : {raison}")
+    rapport = rapport_analyse(result)
 
     # ---- CSV : audit complet (mesures + colonnes) -----------------------------
     with CSV_PATH.open("w", newline="", encoding="utf-8-sig") as f:
@@ -1071,7 +1117,7 @@ def main() -> None:
             else:
                 statut, detail = "utilisée", via.get(n, "")
             w.writerow(["mesure", n, measures[n]["table"], statut, detail,
-                        "oui" if measures[n]["generated"] else "non", result["report_path"]])
+                        "oui" if measures[n]["generated"] else "non", rapport])
         for d in sorted(columns, key=str.lower):
             info = columns[d]
             if d in unused_cols:
@@ -1081,7 +1127,7 @@ def main() -> None:
                 detail = "référencée seulement par : " + ", ".join(col_refs.get(d, []))
             else:
                 statut, detail = "utilisée", column_via.get(d, "")
-            w.writerow(["colonne", info["name"], info["table"], statut, detail, "", result["report_path"]])
+            w.writerow(["colonne", info["name"], info["table"], statut, detail, "", rapport])
     print(f"Audit écrit : {CSV_PATH.name}")
 
     # ---- console -------------------------------------------------------------

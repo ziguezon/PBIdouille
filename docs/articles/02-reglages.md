@@ -41,7 +41,7 @@ Un réglage enregistré agit sur le modèle à la prochaine **Générer les mesu
 | **sourceTable** | `sourceTable` | La table qui contient les KPI. Défaut : `_mesures` |
 | **sourceFolder** | `sourceFolder` | Le dossier d'affichage des KPI. Vide : toutes les mesures écrites à la main dans la table |
 | **dateColumn** | `dateColumn` | La colonne qui remplace le jeton `{date}`, comme `'dim_Date'[Date]` |
-| **targetTable** | `targetTable` | La table où créer les mesures. Vide : la table de chaque KPI |
+| **targetTable** | `targetTable` | La table où créer les mesures. Vide : la même que `sourceTable` |
 | **Dossiers** | `folderLayout` | Le rangement des mesures : par variation ou par KPI |
 | **displayFolderPattern** | `displayFolderPattern` | Le dossier des variations, comme `{baseFolder}\_{variation}` |
 | **branchFolderPattern** | `branchFolderPattern` | Le dossier d'une mesure de branche, comme `{baseFolder}\__{branch}` |
@@ -49,7 +49,9 @@ Un réglage enregistré agit sur le modèle à la prochaine **Générer les mesu
 | **removeOrphans** | `removeOrphans` | L'état de départ de **Supprimer les orphelines** |
 | **dryRun** | `dryRun` | Pour la ligne de commande seulement. Dans l'app, c'est **Aperçu (dry-run)** qui décide |
 
-Exemple avec deux tables. Pour lire les mesures de base dans `Ventes` et placer leurs variations dans `Indicateurs`, régler `sourceTable` sur `Ventes` et `targetTable` sur `Indicateurs`. Les deux tables doivent déjà exister.
+Les KPI sont toujours lus dans `sourceTable`. Pour garder les KPI dans `Ventes` et
+ranger leurs variations dans `Indicateurs`, régler `sourceTable` sur `Ventes` et
+`targetTable` sur `Indicateurs`. Les deux tables doivent déjà exister.
 
 Avec `sourceFolder` vide, une cible écrite à la main devient aussi une base : garder ce
 réglage rempli quand le modèle contient d'autres mesures.

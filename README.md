@@ -1694,6 +1694,17 @@ catégories calc/import/structural). Une colonne est utilisée si référencée 
 `py bidouille\moteurs\unused_measures.py`. La suppression se fait dans
 ChopChop (édition dev), avec sauvegarde.
 
+**Analyse incomplète** : les JSON du rapport sont lus avec ou sans BOM. Un
+fichier (ou un dossier) qu'on ne peut pas lire est noté dans
+`analyze()["illisibles"]` et l'analyse continue sans lui ; ses références
+manquent, donc une mesure qu'il est seul à citer passe pour inutilisée.
+ChopChop l'affiche en bandeau, liste les fichiers au journal et **refuse de
+supprimer** tant qu'il en reste ; la suppression relance aussi l'analyse juste
+avant d'écrire, et refuse si la sélection n'est plus inutilisée. La colonne
+`Rapport analysé` des exports donne le nom du dossier du rapport (pas son
+chemin) et la mention « analyse incomplète ». Pas de rapport, ou aucun JSON
+dedans : SystemExit, il n'y a rien à analyser.
+
 ⚠ Pour les mesures marquées « générée » : les supprimer ne sert à rien, la
 prochaine génération les recrée. Retirer plutôt la variation ou la branche de
 `measures_config.json` : « Supprimer les orphelines » fera le ménage.

@@ -5,7 +5,10 @@
 L'onglet **ChopChop** repère ce que plus rien n'utilise dans un rapport : mesures,
 colonnes et tables entières.
 
-Le verdict couvre le rapport sélectionné et son modèle. D’autres rapports peuvent utiliser le même modèle. Si le dossier du rapport est vide ou inaccessible, ou si un fichier JSON est illisible, l’analyse s’interrompt et la sélection à supprimer est effacée. Corriger le problème indiqué, puis choisir **Réanalyser**. Le classeur et le CSV indiquent le rapport analysé, y compris dans le CSV de la ligne de commande.
+L'analyse se lance à l'ouverture de l'onglet, et **Réanalyser** la relance.
+
+« Inutilisée » veut dire : rien ne la cite dans **ce** rapport ni dans son modèle. Un
+autre rapport branché sur le même modèle peut s'en servir.
 
 ![L'onglet ChopChop](../ressources/images/chopchop_onglet.png)
 
@@ -19,6 +22,13 @@ La ligne du haut résume le résultat :
 |---|---|---|
 | Analyse, filtre, export | Oui | Oui |
 | Suppression | Non | Oui |
+
+### Analyse incomplète
+
+Si un fichier du rapport ne se lit pas, l'analyse continue sans lui, et un bandeau
+jaune le signale au-dessus du résumé. Le journal liste les fichiers en cause. Une mesure
+que seul ce fichier cite apparaît alors inutilisée à tort : la **suppression est
+bloquée** jusqu'à ce que les fichiers soient corrigés et le rapport réanalysé.
 
 ![Diapo du guide : ChopChop : ce que plus rien n'utilise](../ressources/guide/chopchop.png)
 
@@ -75,7 +85,8 @@ simplement conservée.
 utilisées comprises.
 
 Colonnes : `Type`, `Nom`, `Table`, `Statut`, `Référencé par`,
-`Détail des référenceurs` et `Générée`.
+`Détail des référenceurs`, `Générée` et `Rapport analysé`. La dernière donne le nom du
+rapport, et précise si l'analyse était incomplète.
 
 ## Supprimer
 

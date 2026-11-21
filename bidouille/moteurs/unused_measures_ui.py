@@ -554,8 +554,18 @@ class ChopChopPanel(QWidget):
 
         dead_txt = (f" · <b>{len(dead_tables)} table(s) entièrement inutilisée(s)</b>"
                     if dead_tables else "")
+        # analyse incomplète : un bandeau au-dessus du résumé, le détail au
+        # journal, et la suppression bloquée (cf. _update_delete_label)
+        avis = um.avertissement_incomplet(self.result)
+        if avis:
+            if not _production():
+                avis += " La suppression est bloquée tant qu'ils ne sont pas corrigés."
+            self.log.appendPlainText(avis)
+            for nom, raison in self.result["illisibles"].items():
+                self.log.appendPlainText(f"    {nom} : {raison}")
         self.info.setText(
-            f"{len(measures)} mesures · <b>{len(unused)} inutilisée(s)</b> "
+            (f"<span style='color:{YELLOW_FG.color().name()}'>{avis}</span><br>" if avis else "")
+            + f"{len(measures)} mesures · <b>{len(unused)} inutilisée(s)</b> "
             f"(dont {generated} générée(s) depuis le config) · "
             f"{len(columns)} colonnes · <b>{len(col_no_ref) + len(col_chained)} inutilisée(s)</b>"
             f"{dead_txt}."
@@ -738,7 +748,11 @@ class ChopChopPanel(QWidget):
             parts.append(f"{nc} colonne{'s' if nc > 1 else ''}")
         detail = (" (" + ", ".join(parts) + ")") if parts else " (0)"
         self.btn_delete.setText("Supprimer la sélection" + detail)
-        self.btn_delete.setEnabled(nm + nc + nt > 0)
+        incomplete = bool(self.result and self.result.get("illisibles"))
+        self.btn_delete.setEnabled(nm + nc + nt > 0 and not incomplete)
+        self.btn_delete.setToolTip(
+            "Analyse incomplète : des fichiers du rapport sont illisibles (voir le "
+            "journal). Les corriger, puis Réanalyser." if incomplete else "")
 
     # ---- sauvegardes / restauration -------------------------------------------
 
@@ -846,8 +860,9 @@ class ChopChopPanel(QWidget):
         if not path:
             return
         header, rows = self._export_rows()
+        rapport = um.rapport_analyse(self.result)
         header = list(header) + ["Rapport analysé"]
-        rows = [list(row) + [self.result["report_path"]] for row in rows]
+        rows = [list(row) + [rapport] for row in rows]
         try:
             if path.lower().endswith(".xlsx"):
                 self._write_xlsx(path, header, rows)
@@ -876,7 +891,7 @@ class ChopChopPanel(QWidget):
     # ---- suppression -----------------------------------------------------------
 
     def _delete_checked(self):
-        if _production() or not self.result:
+        if _production() or not self.result or self.result.get("illisibles"):
             return
         measures    = self.result["measures"]
         referencers = self.result["referencers"]
@@ -960,7 +975,8 @@ class ChopChopPanel(QWidget):
         try:
             # Le rapport peut avoir changé depuis la sélection.
             courant = um.analyze()
-            if (not set(selected).issubset(courant["unused"])
+            if (courant.get("illisibles")
+                    or not set(selected).issubset(courant["unused"])
                     or not set(col_selected).issubset(set(courant["unused_columns"]) | set(courant["column_chained"]))
                     or not set(tbl_selected).issubset(courant["dead_table_info"])):
                 self.refresh()
