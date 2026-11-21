@@ -119,6 +119,11 @@ def import_model(template_report_dir, template_page_id, root_id,
     tgt = report_reader.visuals(target_report_dir, target_page_id)
     base = ((int(max(d["z"] for d in tgt)) // 1000) + 1) * 1000 if tgt else 0
 
+    session = br.BackupSession(backup_root, "Import Wireframe", br.project_of(backup_root))
+    visuels = target_report_dir / "definition" / "pages" / target_page_id / "visuals"
+    for ident in mapping.values():
+        session.mark_absent(visuels / ident / "visual.json")
+    stamp_dir = session.close(f"Import de {len(mapping)} visuel(s)")
     written = []
     for i, vid in enumerate(ordered):
         data = json.loads(json.dumps(raw[vid]))        # copie profonde
@@ -143,8 +148,6 @@ def import_model(template_report_dir, template_page_id, root_id,
         written.append(str(dst))
 
     # 5. manifeste
-    stamp_dir = Path(backup_root) / datetime.now().strftime("%Y%m%d_%H%M%S")
-    stamp_dir.mkdir(parents=True, exist_ok=True)
     manifest = stamp_dir / "import_manifest.txt"
     lines = [
         "# Import de gabarit · " + datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -154,6 +157,4 @@ def import_model(template_report_dir, template_page_id, root_id,
         "# undo   : supprimer les dossiers des fichiers listés ci-dessous",
     ] + written
     manifest.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    # même ménage que les autres écritures : ce manifeste ne doit pas s'empiler
-    br.prune(Path(backup_root), protect=[stamp_dir])
     return mapping[root_id], written, manifest
