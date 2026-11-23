@@ -17,6 +17,10 @@ colonnes que l'outil lit par défaut (generate_measures.INDICATEURS_DEFAUT) et
 un libellé égal au nom. Il est mis en tableau Excel, prêt à importer dans
 Power BI.
 
+Un rapport qui A un config mais pas de TD reçoit un TD fait pour CE config
+(td_pour_config) : à l'endroit qu'il donne, avec ses noms de colonnes, une
+ligne par mesure de base telle que la génération la voit.
+
 Rien n'est jamais écrasé : un fichier déjà là fait échouer l'écriture
 (FileExistsError). Le modèle n'est que lu.
 """
@@ -138,28 +142,62 @@ def ecrire_config(chemin, config) -> Path:
     return chemin
 
 
-def ecrire_td(chemin, mesures) -> Path:
-    """TD_Indicateurs.xlsx : une ligne par mesure, dans un tableau Excel."""
+def colonnes_td(config) -> list:
+    """Les colonnes d'un TD de départ pour un config DONNÉ : sa clé, son
+    libellé, ses colonnes de couleur et, s'il en a une, sa colonne d'ordre,
+    sous les noms que le config leur donne (generate_measures.indicateurs_xlsx,
+    fieldParameter.kpiLabelLookup)."""
+    td = gm.indicateurs_xlsx(config)
+    lkp = ((config or {}).get("fieldParameter") or {}).get("kpiLabelLookup") or {}
+    cols = [td["keyColumn"], lkp.get("labelColumn") or COLONNES_TD[1],
+            td["fillColumn"], td["textColumn"]]
+    if td.get("orderColumn"):
+        cols.append(td["orderColumn"])
+    return list(dict.fromkeys(c for c in cols if c))
+
+
+def td_pour_config(config, model_dir) -> tuple:
+    """(chemin, colonnes, mesures) du TD qu'attend un config : à l'endroit
+    qu'il donne, avec ses noms de colonnes, une ligne par mesure de base telle
+    que la génération la voit (table et dossier des mesures du config). Sans
+    mesure de base selon le config, celles de la table qui en porte le plus."""
+    chemin = Path(gm.indicateurs_xlsx(config, Path(model_dir).parent)["path"])
+    _mesures, bases = gm.read_measures(model_dir, config or {})
+    if not bases:
+        _config, _notes, bases = config_de_depart(model_dir)
+    return chemin, colonnes_td(config), bases
+
+
+def ecrire_td(chemin, mesures, colonnes=None) -> Path:
+    """TD_Indicateurs.xlsx : une ligne par mesure, dans un tableau Excel.
+    `colonnes` : clé, libellé, couleurs (et ordre) ; par défaut COLONNES_TD.
+    La clé et le libellé valent le nom de la mesure, l'ordre son rang."""
     from openpyxl import Workbook
+    from openpyxl.utils import get_column_letter
     from openpyxl.worksheet.table import Table, TableStyleInfo
 
     chemin = Path(chemin)
     if chemin.exists():
         raise FileExistsError(f"existe déjà : {chemin}")
+    colonnes = list(colonnes or COLONNES_TD)
     wb = Workbook()
     ws = wb.active
     ws.title = FEUILLE_TD
-    ws.append(list(COLONNES_TD))
-    for m in mesures:
-        ws.append([m, m, "", ""])
-    fin = max(len(mesures), 1) + 1
+    ws.append(colonnes)
+    for i, m in enumerate(mesures, 1):
+        ligne = [m, m] + [""] * (len(colonnes) - 2)
+        if len(colonnes) > 4:
+            ligne[4] = i                    # l'ordre : celui de Power BI
+        ws.append(ligne[:len(colonnes)])
     if not mesures:
-        ws.append(["", "", "", ""])
-    tableau = Table(displayName=FEUILLE_TD, ref=f"A1:D{fin}")
+        ws.append([""] * len(colonnes))
+    fin = max(len(mesures), 1) + 1
+    derniere = get_column_letter(len(colonnes))
+    tableau = Table(displayName=FEUILLE_TD, ref=f"A1:{derniere}{fin}")
     tableau.tableStyleInfo = TableStyleInfo(name="TableStyleMedium2", showRowStripes=True)
     ws.add_table(tableau)
-    for col, largeur in zip("ABCD", (34, 34, 14, 14)):
-        ws.column_dimensions[col].width = largeur
+    for i in range(len(colonnes)):
+        ws.column_dimensions[get_column_letter(i + 1)].width = 34 if i < 2 else 14
     wb.save(chemin)
     wb.close()
     return chemin

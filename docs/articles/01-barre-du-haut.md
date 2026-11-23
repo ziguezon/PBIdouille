@@ -69,6 +69,19 @@ servent.
 
 Rien n'est jamais écrasé : un fichier déjà présent n'est pas touché.
 
+### Un config sans TD_Indicateurs
+
+Un rapport peut avoir son config, mais pas l'Excel des indicateurs qu'il désigne. L'onglet
+**Mesures** le dit alors par une ligne jaune, avec le chemin attendu, et propose **Créer
+TD_Indicateurs.xlsx…**. Le classeur est créé pour **ce** config :
+
+- à l'endroit que le config indique, dans [Réglages](02-reglages.md#excel-des-indicateurs) ;
+- avec ses noms de colonnes : la clé, le libellé, les deux couleurs, et l'ordre s'il en a un ;
+- une ligne par mesure de base, telle que la génération la voit : la table et le dossier
+  des mesures du config.
+
+Une fenêtre montre le chemin, le nombre de lignes et les colonnes avant d'écrire.
+
 ## Restaurer une sauvegarde
 
 Chaque outil qui écrit dans le rapport copie d'abord les fichiers touchés : génération des

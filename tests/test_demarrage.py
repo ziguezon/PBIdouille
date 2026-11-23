@@ -123,6 +123,40 @@ check("la fenêtre relit le projet : l'éditeur s'ouvre, le bouton disparaît",
       tc.inner.isEnabled() and not tc.btn_creer.isVisibleTo(tc)
       and w.btn_config.text().startswith("📄"))
 check("Créer une seconde fois n'écrase rien", tc.creer_depart(avec_td=True) == [])
+
+print("4. le TD seul, quand le config existe")
+check("config et TD présents : pas de bandeau", not tc._rang_td.isVisibleTo(tc))
+(copie / "TD_Indicateurs.xlsx").unlink()
+tc.set_project(w.project)
+qa.processEvents()
+check("le TD manque : le bandeau le dit, avec son chemin",
+      tc._rang_td.isVisibleTo(tc) and "TD_Indicateurs.xlsx" in tc.lbl_td.text())
+# un config qui nomme ses colonnes autrement, et un ordre : le TD les suit
+config_c = dict(tc._config, indicateursXlsx={"path": "Indicateurs.xlsx", "keyColumn": "cle",
+                                            "orderColumn": "ordre"})
+chemin_c, colonnes_c, bases_c = demarrage.td_pour_config(config_c, MODELE)
+check("le TD d'un config : son chemin, ses colonnes, son ordre",
+      chemin_c == copie / "Indicateurs.xlsx"
+      and colonnes_c == ["cle", "libelle_indicateur", "couleur_fill", "couleur_text", "ordre"])
+cree = tc.creer_td(config_c, confirmer=False)
+wb = openpyxl.load_workbook(cree)
+lignes_c = [[c.value for c in r] for r in wb.active.iter_rows()]
+wb.close()
+check("créé à son chemin, une ligne par mesure de base, l'ordre numéroté",
+      cree == chemin_c and lignes_c[0] == colonnes_c
+      and [r[0] for r in lignes_c[1:]] == bases_c and [r[4] for r in lignes_c[1:]]
+      == list(range(1, len(bases_c) + 1)))
+cree = tc.creer_td(confirmer=False)
+check("le bouton du bandeau : le TD du config chargé, et le bandeau disparaît",
+      cree == copie / "TD_Indicateurs.xlsx" and cree.exists()
+      and not tc._rang_td.isVisibleTo(tc))
+check("créer un TD qui existe n'écrase rien", tc.creer_td(confirmer=False) is None)
+tc.g_td_path.setText("Autre.xlsx")
+check("⚙ Réglages : « Créer… » s'allume pour un classeur qui n'existe pas, avec le "
+      "chemin du formulaire", tc.b_td_creer.isEnabled()
+      and tc._td_config_du_formulaire()["indicateursXlsx"]["path"] == "Autre.xlsx")
+tc.g_td_path.setText("TD_Indicateurs.xlsx")
+check("… et s'éteint pour un classeur qui existe", not tc.b_td_creer.isEnabled())
 w.close()
 
 shutil.rmtree(copie, onerror=lambda f, p, e: (os.chmod(p, stat.S_IWRITE), f(p)))

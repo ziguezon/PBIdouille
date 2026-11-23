@@ -1998,7 +1998,12 @@ puis :
       du `.pbip`), ou, s'il n'en a pas, **Créer un measures_config.json de
       départ ici…** dans l'onglet Mesures (`moteurs\demarrage.py` : table des
       mesures et colonne de dates devinées, TD_Indicateurs.xlsx en option,
-      rien n'est écrasé) ; vérifier dans ⚙ Réglages la colonne de dates, la table et
+      rien n'est écrasé). Un config dont l'Excel des indicateurs manque :
+      **Créer TD_Indicateurs.xlsx…** sous la barre de l'onglet Mesures, ou
+      **Créer…** dans ⚙ Réglages → Excel des indicateurs
+      (`demarrage.td_pour_config` : le chemin et les colonnes du config,
+      `generate_measures.indicateurs_xlsx` ; les mesures de base de
+      `read_measures`) ; vérifier dans ⚙ Réglages la colonne de dates, la table et
       le dossier des mesures de base ;
 - [ ] la table dimension (équivalent TD_KPI) avec une colonne = noms de
       mesures ;

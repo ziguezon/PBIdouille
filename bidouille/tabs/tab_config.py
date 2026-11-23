@@ -454,6 +454,25 @@ class ConfigTab(QWidget):
         rang_creer.addWidget(self.btn_creer)
         rang_creer.addStretch(1)
         root.addLayout(rang_creer)
+        # un config chargé dont le TD_Indicateurs n'existe pas : le dire, et
+        # proposer de le créer pour CE config
+        self.lbl_td = QLabel("")
+        self.lbl_td.setWordWrap(True)
+        self.lbl_td.setStyleSheet(f"color:{YELLOW};")
+        self.btn_creer_td = QPushButton("Créer TD_Indicateurs.xlsx…")
+        self.btn_creer_td.setToolTip(
+            "Écrit l'Excel des indicateurs là où le config l'attend, avec ses noms de "
+            "colonnes : une ligne par mesure de base, le libellé égal au nom, les "
+            "couleurs vides.\nN'écrase jamais un fichier existant.")
+        self.btn_creer_td.clicked.connect(lambda: self.creer_td())
+        rang_td = QHBoxLayout()
+        rang_td.addWidget(self.lbl_td, 1)
+        rang_td.addWidget(self.btn_creer_td)
+        self._rang_td = QWidget()
+        self._rang_td.setLayout(rang_td)
+        rang_td.setContentsMargins(0, 0, 0, 0)
+        self._rang_td.hide()
+        root.addWidget(self._rang_td)
 
         self._inner_prev = IDX_VARIATIONS
         self.inner = QTabWidget()
@@ -1302,9 +1321,16 @@ class ConfigTab(QWidget):
         # clicked(bool) passerait « False » comme premier argument : le lambda
         # garantit que le bouton FORCE bien la relecture
         b_td_rel.clicked.connect(lambda: self._td_reload_columns(force=True))
+        self.b_td_creer = QPushButton("Créer…")
+        self.b_td_creer.setToolTip(
+            "Crée ce classeur, qui n'existe pas encore : une ligne par mesure de base, "
+            "avec les colonnes choisies ci-dessous. N'écrase rien.")
+        self.b_td_creer.clicked.connect(self._td_creer_depuis_reglages)
+        self.g_td_path.textChanged.connect(lambda *_: self._td_maj_bouton_creer())
         ligne1.addWidget(QLabel("Fichier :"))
         ligne1.addWidget(self.g_td_path, 1)
         ligne1.addWidget(b_td)
+        ligne1.addWidget(self.b_td_creer)
         ligne1.addWidget(b_td_rel)
         ligne1.addWidget(self._help("Excel des indicateurs", (
             "Le classeur qui décrit les KPI, une ligne par mesure de base.\n"
@@ -2217,6 +2243,7 @@ class ConfigTab(QWidget):
             for w in (self.inner, self.btn_save, self.btn_reload):
                 w.setEnabled(False)
             self._set_dirty(False)
+            self._rang_td.hide()
             return
         self.lbl_hint.hide()
         self.btn_creer.hide()
@@ -2258,6 +2285,63 @@ class ConfigTab(QWidget):
             return
         self.creer_depart(avec_td=case_td is not None and case_td.isChecked())
 
+    def td_attendu(self, config=None) -> Path | None:
+        """Le TD_Indicateurs qu'attend le config (en mémoire, ou `config`)."""
+        if not self.project:
+            return None
+        return Path(gm.indicateurs_xlsx(self._config if config is None else config,
+                                        self.project.folder)["path"])
+
+    def _maj_td_manquant(self):
+        """Montre le bandeau « TD introuvable » quand le config en attend un
+        qui n'existe pas."""
+        td = self.td_attendu() if self.project and self.project.config_json.exists() else None
+        manque = td is not None and not td.exists() and self.project.model_dir is not None
+        if manque:
+            self.lbl_td.setText(f"⚠ L'Excel des indicateurs est introuvable : {td}\n"
+                                "Les libellés, les attributs et les couleurs des KPI en "
+                                "viennent.")
+        self._rang_td.setVisible(manque)
+
+    def creer_td(self, config=None, confirmer: bool = True) -> Path | None:
+        """Crée le TD qu'attend le config : à son chemin, avec ses colonnes,
+        une ligne par mesure de base telle que la génération la voit. Rend le
+        chemin écrit, ou None. Rien n'est écrasé."""
+        if not self.project or self.project.model_dir is None:
+            return None
+        config = self._config if config is None else config
+        try:
+            _chemin, colonnes, bases = demarrage.td_pour_config(config, self.project.model_dir)
+        except (OSError, UnicodeDecodeError) as e:
+            self.journal.erreur(f"Modèle illisible : {e}")
+            return None
+        chemin = self.td_attendu(config)
+        if chemin.exists():
+            self.journal.erreur(f"{chemin.name} existe déjà : rien n'est écrit.")
+            self._maj_td_manquant()
+            return None
+        if confirmer:
+            r = QMessageBox.question(
+                self, "Créer l'Excel des indicateurs",
+                f"Créer {chemin} ?\n\n{len(bases)} ligne(s), une par mesure de base "
+                f"(table {((config.get('settings') or {}).get('sourceTable') or '_mesures')}"
+                ").\nColonnes : " + ", ".join(colonnes)
+                + "\n\nLe libellé vaut le nom de la mesure, les couleurs sont vides.")
+            if r != QMessageBox.Yes:
+                return None
+        try:
+            chemin.parent.mkdir(parents=True, exist_ok=True)
+            demarrage.ecrire_td(chemin, bases, colonnes)
+        except (OSError, ImportError) as e:
+            self.journal.erreur(f"Création impossible : {e}")
+            return None
+        self.journal.info(f"Créé : {chemin} ({len(bases)} KPI)")
+        self.journal.info(f"{chemin.name} est à importer dans Power BI Desktop, comme "
+                          "table, pour que les libellés et les couleurs servent.")
+        self._td_entetes_cache = []      # ses en-têtes sont à relire
+        self._maj_td_manquant()
+        return chemin
+
     def creer_depart(self, avec_td: bool = False) -> list:
         """Écrit les fichiers de départ à côté du .pbip ; [chemins écrits]."""
         config, _notes, bases = demarrage.config_de_depart(self.project.model_dir)
@@ -2295,6 +2379,7 @@ class ConfigTab(QWidget):
         self.inner.blockSignals(False)
         self._inner_prev = IDX_VARIATIONS
         self._set_dirty(False)
+        self._maj_td_manquant()
         self.vue_changee.emit()          # le changement était silencieux
 
     def _reload(self):
@@ -3017,6 +3102,30 @@ class ConfigTab(QWidget):
             p = self.project.folder / p
         return p
 
+    def _td_maj_bouton_creer(self):
+        """« Créer… » n'a de sens que pour un classeur qui n'existe pas."""
+        projet = getattr(self, "project", None)
+        self.b_td_creer.setEnabled(bool(projet) and not self._td_path_resolu().exists())
+
+    def _td_config_du_formulaire(self) -> dict:
+        """Le config en mémoire, avec l'Excel tel que le formulaire le décrit
+        (chemin et colonnes pas encore enregistrés)."""
+        config = json.loads(json.dumps(self._config))
+        bloc = dict(config.get("indicateursXlsx") or {})
+        bloc.update({k: v for k, v in (
+            ("path", self.g_td_path.text().strip()),
+            ("keyColumn", self.g_td_key.currentText().strip()),
+            ("fillColumn", self.g_td_fill.currentText().strip()),
+            ("textColumn", self.g_td_text.currentText().strip()),
+            ("orderColumn", self.g_td_order.currentText().strip())) if v})
+        config["indicateursXlsx"] = bloc
+        return config
+
+    def _td_creer_depuis_reglages(self):
+        if self.creer_td(self._td_config_du_formulaire()) is not None:
+            self._td_reload_columns(force=True)
+        self._td_maj_bouton_creer()
+
     def _td_browse(self):
         depart = str(self._td_path_resolu().parent if self.project
                      else Path.home())
@@ -3231,4 +3340,5 @@ class ConfigTab(QWidget):
         self.lbl_dirty.setText(f"✔ {path.name} écrit (backup .bak), "
                                "« Générer les mesures » en tête du journal")
         self.journal.info(f"✔ {path.name} écrit (backup .bak)")
+        self._maj_td_manquant()          # le config a pu changer de TD
         return True

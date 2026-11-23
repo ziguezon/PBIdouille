@@ -91,6 +91,11 @@ seule fois, pour tout l'outil.
 
 **↻** relit les colonnes, par exemple après en avoir ajouté une dans Excel.
 
+**Créer…**, à côté de **Parcourir…**, s'allume quand le fichier indiqué n'existe pas. Il
+crée le classeur avec les colonnes choisies sur cette page : une ligne par mesure de base,
+le libellé égal au nom, les couleurs vides, et l'ordre numéroté si une colonne d'ordre est
+choisie. Il ne remplace jamais un fichier existant.
+
 ### L'ordre des KPI
 
 Mettre des nombres dans la colonne choisie, de préférence espacés : `10`, `20`, `30`. Ils
