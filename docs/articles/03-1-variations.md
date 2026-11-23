@@ -24,7 +24,8 @@ Cliquer **Ajouter** sous la liste, puis lui donner un identifiant : `MoM %`.
 
 L'identifiant n'est pas qu'un nom interne : c'est la valeur que verront les
 utilisateurs dans la colonne **Calcul** des paramètres de champ, et il sert à
-nommer le dossier d'affichage. Le choisir comme un libellé.
+nommer le dossier d'affichage. Le choisir comme un libellé, ou remplir
+**libellé (paramètres)** pour en afficher un autre.
 
 ### 2. Nommer la mesure
 
@@ -113,7 +114,7 @@ ses mesures. Une mesure écrite à la main n'en a pas : elle n'est jamais modifi
 
 | Réglage | Dans le config | Où ça se voit dans Power BI |
 |---|---|---|
-| **Identifiant** | la clé de la variation | La valeur **Calcul** des paramètres de champ, et le dossier par défaut |
+| **Identifiant** | la clé de la variation | La valeur **Calcul** des paramètres de champ (sauf libellé choisi), et le dossier par défaut |
 | **namePattern** | `namePattern` | Le **nom** de la mesure dans le volet Données |
 | **description** | `description` | La **description** de la mesure : volet Propriétés, et infobulle du volet Données |
 | **formatString** | `formatString` | Le **format** de la mesure, donc l'affichage dans les visuels |
@@ -121,6 +122,12 @@ ses mesures. Une mesure écrite à la main n'en a pas : elle n'est jamais modifi
 | **folderVariation** | `folderVariation` | Range la mesure dans le dossier d'une **autre** variation |
 | **dataCategory** | `dataCategory` | La **catégorie de données** : `ImageUrl` pour une image (SVG), `WebUrl` pour un lien |
 | **dans les paramètres de champ** | `inFieldParameter` | Ajoute une **rangée** par mesure dans les tables paramètre de champ |
+| **libellé (paramètres)** | `fieldParameterLabel` | La valeur **Calcul** de ces rangées, donc le texte du segment. Vide : l'identifiant |
+
+Pour une cible, la valeur **Calcul** commence par `Cible` (le **Calcul (libellé)** des
+[Mesures cibles](02-reglages.md#mesures-cibles)) : `Cible écart %`, pour la distinguer de
+l'`écart %` du KPI. Si le libellé contient déjà ce mot, comme `écart vs cible`, il reste
+tel quel au lieu de devenir `Cible écart vs cible`.
 
 ### formatString
 
@@ -188,6 +195,7 @@ donne pas le même résultat. Pour obtenir la variation **du cumul**, décocher
 | **namePattern** | Les mesures sont **renommées** : les anciens noms disparaissent | Les visuels qui citent une mesure directement perdent ce champ. Les paramètres de champ, eux, suivent. Relancer **Propager** |
 | **Identifiant** (Renommer) | Les noms ne bougent pas s'ils ne citent pas `{variation}` | La valeur **Calcul** change, donc les segments et filtres réglés sur l'ancienne valeur. Le dossier par défaut change aussi |
 | **dans les paramètres de champ** | La rangée entre dans les tables, ou en sort | Rien côté mesures |
+| **libellé (paramètres)** | La valeur **Calcul** change, les mesures ne bougent pas | Les segments et filtres réglés sur l'ancienne valeur |
 | **Supprimer** | Rien, tant que « Supprimer les orphelines » n'est pas coché | Avec la case, les mesures sont retirées du modèle. Vérifier d'abord qu'aucun visuel ne s'en sert |
 
 Si le nom prévu est déjà pris par une mesure écrite à la main, ou par une mesure d'une

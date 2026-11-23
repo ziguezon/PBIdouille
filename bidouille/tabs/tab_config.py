@@ -691,6 +691,17 @@ class ConfigTab(QWidget):
         self.chk_infp.setToolTip("Coché : la mesure générée entre dans les tables\n"
                                  "paramètre de champ (P_Indicateurs_*).")
         pleine(self.chk_infp)
+        self.ed_fp_label = QLineEdit()
+        add_row("libellé (paramètres) :", self.ed_fp_label,
+                help_text=(
+                    "La valeur de la colonne Calcul dans les tables paramètre de\n"
+                    "champ, c'est-à-dire ce qu'affiche le segment.\n"
+                    "Vide = l'id de la variation.\n\n"
+                    "Pour une cible, « Cible » est ajouté devant (« Cible écart % »),\n"
+                    "pour la distinguer du même calcul sur le KPI, sauf si le\n"
+                    "libellé contient déjà ce mot : « écart vs cible » reste tel quel."),
+                titre_aide="Libellé dans les paramètres de champ")
+        self.chk_infp.toggled.connect(self.ed_fp_label.setEnabled)
         mv.addWidget(gb_mesure)
 
         # ---- la portée : cette variation est-elle déclinée pour les KPI, les
@@ -896,6 +907,7 @@ class ConfigTab(QWidget):
                     self.cmb_format.currentTextChanged, self.ed_folder.textChanged,
                     self.cmb_folder_var.currentIndexChanged,
                     self.cmb_datacat.currentTextChanged,
+                    self.ed_fp_label.textChanged,
                     self.ed_dax.textChanged):
             sig.connect(self._on_edit)
         self.chk_infp.stateChanged.connect(self._on_edit)
@@ -2497,7 +2509,7 @@ class ConfigTab(QWidget):
         v = self._variations().get(self._current)
         self._loading = True
         if v is None:
-            for ed in (self.ed_name, self.ed_desc, self.ed_folder):
+            for ed in (self.ed_name, self.ed_desc, self.ed_folder, self.ed_fp_label):
                 ed.setText("")
             self.cmb_format.setCurrentText("")
             self._rebuild_folder_var("")
@@ -2515,6 +2527,7 @@ class ConfigTab(QWidget):
             self._rebuild_folder_var(v.get("folderVariation", ""))
             self.cmb_datacat.setCurrentText(v.get("dataCategory", ""))
             self.chk_infp.setChecked(bool(v.get("inFieldParameter", False)))
+            self.ed_fp_label.setText(v.get("fieldParameterLabel", ""))
             self.chk_kpi.setChecked(bool(v.get("appliesToKpi", True)))
             self.chk_cible.setChecked(bool(v.get("appliesToCibles", False)))
             self.chk_wrap.setChecked(gm.enveloppable(v))
@@ -2524,6 +2537,9 @@ class ConfigTab(QWidget):
             self.ed_include.setText(
                 ", ".join(v.get("includeNameContains") or []))
             self.ed_dax.setPlainText(dax_to_text(v.get("dax")))
+        self.ed_fp_label.setPlaceholderText(
+            (self._current or "") + "  (id de la variation)" if self._current else "")
+        self.ed_fp_label.setEnabled(self.chk_infp.isChecked())
         self._loading = False
         self.explorateur_jetons.set_variation(self._current or "")
         self._refresh_lint_preview()
@@ -2553,6 +2569,7 @@ class ConfigTab(QWidget):
         put("folderVariation", self.cmb_folder_var.currentData() or "")
         put("dataCategory", self.cmb_datacat.currentText().strip())
         v["inFieldParameter"] = self.chk_infp.isChecked()
+        put("fieldParameterLabel", self.ed_fp_label.text().strip())
         # portée : on n'écrit que le NON-défaut (appliesToKpi défaut True,
         # appliesToCibles défaut False) — garde les configs existantes propres
         # envelopper est le défaut : seule la sortie s'écrit (et l'ancien

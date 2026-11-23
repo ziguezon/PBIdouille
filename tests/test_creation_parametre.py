@@ -97,6 +97,60 @@ class Generation(unittest.TestCase):
                  "\t\tsortByColumn: Autre\n\n\tcolumn 'T Ordre'\n\t\tsourceColumn: [Value3]\n")
         self.assertEqual(gm.champs_tries(texte), texte)
 
+    def calculs(self):
+        stats = self.generer(apercu=True)
+        table, = stats["parametres"]
+        return [(r["mesure"], r["calcul"], r["branche"]) for r in table["rangees"]]
+
+    def avec_cible(self):
+        (self.tables / "Ventes.tmdl").write_text(
+            "table Ventes\n\n\tmeasure Total = 12\n\t\tdisplayFolder: Base\n\n"
+            "\tmeasure 'Total cible' = 15\n\t\tdisplayFolder: _cibles\n", encoding="utf-8")
+        self.config["kpiMeasureFolders"] = [{"folder": "_cibles", "calcul": "Cible"}]
+        self.config["fieldParameter"] = {"tables": ["Choix"]}
+
+    def test_libelle_cible_sans_doublon(self):
+        # « écart cible % » : la mesure dit « cible » une fois, le libellé aussi
+        self.avec_cible()
+        self.config["variations"] = {
+            "double": {"namePattern": "{base} double", "dax": "{baseRef} * 2",
+                       "inFieldParameter": True, "appliesToCibles": True},
+            "écart cible %": {"namePattern": "{kpi} écart cible %",
+                              "dax": "{kpiRef} / {baseRef}", "inFieldParameter": True,
+                              "appliesToKpi": False, "appliesToCibles": True}}
+        calculs = dict((m, c) for m, c, _ in self.calculs())
+        self.assertEqual(calculs["Total écart cible %"], "écart cible %")
+        # sans le mot, le préfixe reste : il distingue la cible du KPI
+        self.assertEqual(calculs["Total cible double"], "Cible double")
+        self.assertEqual(calculs["Total double"], "double")
+        self.assertEqual(calculs["Total cible"], "Cible")
+
+    def test_libelle_choisi(self):
+        self.avec_cible()
+        self.config["variations"] = {
+            "double": {"namePattern": "{base} double", "dax": "{baseRef} * 2",
+                       "inFieldParameter": True, "appliesToCibles": True,
+                       "fieldParameterLabel": " x 2 "},
+            "ec": {"namePattern": "{kpi} écart", "dax": "{kpiRef} - {baseRef}",
+                   "inFieldParameter": True, "appliesToKpi": False,
+                   "appliesToCibles": True, "fieldParameterLabel": "Écart vs CIBLE"}}
+        calculs = dict((m, c) for m, c, _ in self.calculs())
+        self.assertEqual(calculs["Total double"], "x 2")
+        self.assertEqual(calculs["Total cible double"], "Cible x 2")
+        self.assertEqual(calculs["Total écart"], "Écart vs CIBLE")
+        # le libellé ne change ni les noms de mesures ni le filtre par variation
+        self.config["fieldParameter"] = {"tables": [
+            {"name": "Choix", "excludeVariations": ["double"]}]}
+        self.assertNotIn("x 2", [c for _, c, _ in self.calculs()])
+
+    def test_libelle_calcul(self):
+        self.assertEqual(gm.libelle_calcul("PY", {}), "PY")
+        self.assertEqual(gm.libelle_calcul("PY", {}, "Cible "), "Cible PY")
+        self.assertEqual(gm.libelle_calcul("PY", {"fieldParameterLabel": ""}, "Cible "), "Cible PY")
+        # le mot entier seulement : « Ciblé » n'est pas « Cible »
+        self.assertEqual(gm.libelle_calcul("Ciblé", {}, "Cible "), "Cible Ciblé")
+        self.assertEqual(gm.libelle_calcul("vs cible", {}, "Cible "), "vs cible")
+
     def test_ordre_deja_numerique_intact(self):
         texte = ("table T\n\n\tcolumn 'T Ordre'\n\t\tisHidden\n\t\tformatString: 0\n"
                  "\t\tsourceColumn: [Value3]\n\n\tcolumn Calcul\n\t\tdataType: string\n"

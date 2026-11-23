@@ -996,6 +996,23 @@ def champs_tries(texte):
     return texte[:d2] + neuf + texte[f2:]
 
 
+def libelle_calcul(vid, tpl, prefixe=""):
+    """La valeur Calcul d'une variation dans les tables paramètre.
+
+    Le libellé choisi dans la variation (`fieldParameterLabel`), sinon son id.
+    Pour une cible, `prefixe` (« Cible ») le précède, pour ne pas confondre
+    « Cible écart % » avec l'« écart % » du KPI, SAUF si le libellé le
+    contient déjà : la variation « écart cible % » donnait « Cible écart
+    cible % » alors que sa mesure ne dit « cible » qu'une fois."""
+    libelle = vid
+    if isinstance(tpl, dict):
+        libelle = str(tpl.get("fieldParameterLabel") or "").strip() or vid
+    mot = (prefixe or "").strip()
+    if not mot or re.search(r"(?<!\w)" + re.escape(mot) + r"(?!\w)", libelle, re.I):
+        return libelle
+    return prefixe + libelle
+
+
 def fp_table_names(fp) -> list:
     """Noms des tables paramètre du config, dans l'ordre."""
     return [s["name"] for s in fp_table_specs(fp)]
@@ -1998,7 +2015,7 @@ def _generate(model_dir, config, *, dry_run=None, remove_orphans=None, log=print
                 continue
             is_branch = vid in branches
             result = process(base_name, base_fmt, base_folder, kpi_lbl, vid, tpl,
-                             None if is_branch else (calc_prefix + vid), fp_nobranch,
+                             None if is_branch else libelle_calcul(vid, tpl, calc_prefix), fp_nobranch,
                              branch_folder_pattern if is_branch else folder_pattern,
                              vid if is_branch else None, var_group)
             if result and not is_branch:
@@ -2153,7 +2170,7 @@ def _generate(model_dir, config, *, dry_run=None, remove_orphans=None, log=print
                         f"mais sa mesure Réel sur « {base_racine} » "
                         "n'a pas été générée, repli sur la substitution.")
             process(bname, bfmt, bfolder, bkpi, vid, tpl,
-                    None if no_fp else (calc_prefix + vid), branch_id,
+                    None if no_fp else libelle_calcul(vid, tpl, calc_prefix), branch_id,
                     branch_var_folder_pattern, branch_id, 1 if calc_prefix else 2,
                     dax_impose, en_branche=True, modele_impose=modele)
 
