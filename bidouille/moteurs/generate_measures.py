@@ -788,15 +788,17 @@ def param_table_file(table, expr, kpi_col, calc_col, branch_col, lineages) -> st
         + "\t\tisHidden\n"
         + "\t\tlineageTag: " + tag(fields) + "\n"
         + "\t\tsummarizeBy: none\n"
-        + "\t\tsourceColumn: [Value2]\n\n"
+        + "\t\tsourceColumn: [Value2]\n"
+        + "\t\tsortByColumn: " + quote_tmdl(ordre) + "\n\n"
         + "\t\textendedProperty ParameterMetadata =\n"
         + "\t\t\t\t{\n"
         + '\t\t\t\t  "version": 3,\n'
         + '\t\t\t\t  "kind": 2\n'
         + "\t\t\t\t}\n\n"
         + "\tcolumn " + quote_tmdl(ordre) + "\n"
-        + "\t\tdataType: string\n"
+        + "\t\tdataType: int64\n"
         + "\t\tisHidden\n"
+        + "\t\tformatString: 0\n"
         + "\t\tlineageTag: " + tag(ordre) + "\n"
         + "\t\tsummarizeBy: none\n"
         + "\t\tsourceColumn: [Value3]\n\n"
@@ -936,6 +938,62 @@ def source_parametre(texte):
     if not source:
         return None, "source introuvable", "bloc `source =` introuvable"
     return source, None, None
+
+
+ORDRE_TEXTE_RE = re.compile(r"^\t\tdataType: string[ \t]*$", re.M)
+
+
+def ordre_en_nombre(texte):
+    """Le texte d'une table paramètre dont la colonne d'ordre ([Value3]) est
+    un NOMBRE. Les tables créées par d'anciennes versions la déclaraient
+    `dataType: string` : Power BI triait alors « 100 » avant « 99 », et une
+    cible au rang 100 passait devant son Réel au rang 99. Desktop, lui, crée
+    cette colonne en nombre. Rend le texte tel quel si rien n'est à changer."""
+    membres = list(MEMBER_RE.finditer(texte))
+    for i, m in enumerate(membres):
+        if m.group(1) != "column":
+            continue
+        fin = membres[i + 1].start() if i + 1 < len(membres) else len(texte)
+        bloc = texte[m.start():fin]
+        if not re.search(r"^\t\tsourceColumn: \[Value3\][ \t]*$", bloc, re.M):
+            continue
+        neuf = ORDRE_TEXTE_RE.sub("\t\tdataType: int64", bloc, count=1)
+        if neuf != bloc and not re.search(r"^\t\tformatString:", neuf, re.M):
+            neuf = neuf.replace("\t\tdataType: int64", "\t\tdataType: int64\n"
+                                "\t\tformatString: 0", 1)
+        return texte[:m.start()] + neuf + texte[fin:]
+    return texte
+
+
+def champs_tries(texte):
+    """Le texte d'une table paramètre dont la colonne des champs ([Value2])
+    est triée par la colonne d'ordre ([Value3]), comme Desktop la crée. C'est
+    ce tri qui range les mesures dans un VISUEL : sans lui, Power BI les
+    rangeait par nom, et « [Weight cible] » passait devant « [Weight] ». Rend
+    le texte tel quel si la colonne a déjà un tri, ou si l'une des deux
+    colonnes est introuvable."""
+    membres = list(MEMBER_RE.finditer(texte))
+    blocs = {}
+    for i, m in enumerate(membres):
+        if m.group(1) != "column":
+            continue
+        fin = membres[i + 1].start() if i + 1 < len(membres) else len(texte)
+        src = re.search(r"^\t\tsourceColumn: \[(Value[23])\][ \t]*$",
+                        texte[m.start():fin], re.M)
+        if src:
+            blocs[src.group(1)] = (m.start(), fin)
+    if "Value2" not in blocs or "Value3" not in blocs:
+        return texte
+    d3, f3 = blocs["Value3"]
+    nom = re.match(r"\tcolumn[ \t]+((?:'(?:[^']|'')+')|[^\s=]+)", texte[d3:f3])
+    d2, f2 = blocs["Value2"]
+    bloc = texte[d2:f2]
+    if not nom or re.search(r"^\t\tsortByColumn:", bloc, re.M):
+        return texte
+    neuf = re.sub(r"^(\t\tsourceColumn: \[Value2\][ \t]*)$",
+                  lambda x: x.group(1) + "\n\t\tsortByColumn: " + nom.group(1),
+                  bloc, count=1, flags=re.M)
+    return texte[:d2] + neuf + texte[f2:]
 
 
 def fp_table_names(fp) -> list:
@@ -2305,9 +2363,20 @@ def _generate(model_dir, config, *, dry_run=None, remove_orphans=None, log=print
                     etats_fp[tname] = etat_fp
                     continue
                 new_ttext = ttext[: m.start(2)] + indented + "\n" + ttext[m.end(2):]
+                # les tables créées par d'anciennes versions : remises au
+                # format de Desktop pour que l'ordre tienne partout
+                retouches = []
+                avec_ordre = ordre_en_nombre(new_ttext)
+                if avec_ordre != new_ttext:
+                    retouches.append("colonne d'ordre passée en nombre")
+                avec_tri = champs_tries(avec_ordre)
+                if avec_tri != avec_ordre:
+                    retouches.append("champs triés par l'ordre")
+                new_ttext = avec_tri
                 if new_ttext != ttext:
                     fp_writes.append((tpath, new_ttext))
-                    fp_statuses.append(f"{tname} : expression mise à jour ({n_rows} rangées)")
+                    fp_statuses.append(f"{tname} : expression mise à jour ({n_rows} rangées)"
+                                       + "".join(", " + r for r in retouches))
                     etats_fp[tname] = "modifiée"
                 else:
                     fp_statuses.append(f"{tname} : inchangée ({n_rows} rangées)")

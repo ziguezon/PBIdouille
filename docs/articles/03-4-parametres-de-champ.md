@@ -38,6 +38,17 @@ Une table reçoit, pour chaque KPI :
 Dans le projet de démonstration, `Weight` a ainsi 17 rangées : 8 calculs en Réel, les
 mêmes 8 en YTD, et sa cible.
 
+Dans chaque KPI, la base vient en premier, puis ses cibles, puis les variations dans
+l'ordre de [Variations](03-1-variations.md). Comme dans une table faite par Desktop,
+l'affichage **et** la colonne `Fields` sont triés par `Ordre`, qui est un nombre :
+
+- le tri de `Fields` range les mesures dans un **visuel**. Sans lui, Power BI les range par
+  nom, et `[Weight cible]` passe devant `[Weight]` ;
+- en texte, `Ordre` rangerait `100` avant `99`.
+
+Une table créée par une version plus ancienne de l'outil n'avait ni l'un ni l'autre. Elle
+est corrigée à la génération suivante, et le journal le signale.
+
 ## Créer une table
 
 1. Cliquer **Ajouter** sous la liste et donner un nom à la table.
@@ -146,7 +157,7 @@ L'état de la table s'affiche à côté de son nom :
 | État ou situation | Résultat |
 |---|---|
 | **nouvelle** | La table est créée et ajoutée au modèle |
-| **modifiée** | Seule la liste des rangées est réécrite |
+| **modifiée** | Seule la liste des rangées est réécrite, plus le tri par `Ordre` s'il manque |
 | **inchangée** | Rien |
 | **vide** | Aucune rangée après les filtres : la table n'est pas touchée, et un avertissement le signale |
 | **conflit** | Une table qui n'est pas un paramètre de champ porte déjà ce nom, une table Power Query par exemple : elle n'est pas touchée, et le reste de la génération se fait. Choisir un autre nom |
