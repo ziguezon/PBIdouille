@@ -8,7 +8,7 @@ Vérifie :
      l'exporteur (docs\\ressources\\sources\\exporter_aide.ps1) — sinon l'un régénérerait
      des images que l'autre ne montre pas ;
   2. les images ne sont pas ignorées par git (le paquet ne prend que les
-     fichiers suivis : ignorées, elles manqueraient au travail) ;
+     fichiers suivis : ignorées, elles manqueraient dans le paquet) ;
   3. une seule fenêtre, non modale ; la rouvrir change de page ;
   4. les liens « ▣ Schéma » sont là où l'on en a besoin et ouvrent la bonne
      page : Mesures (variations, jetons), Rapport (propagation), Réglages

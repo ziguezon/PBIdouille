@@ -5,7 +5,7 @@ L'Excel reste la source de vérité : le dialogue lit les colonnes configurées
 dans l'onglet Rapport (clé/fond/texte), montre chaque KPI avec ses pastilles et
 un aperçu rendu, permet d'éditer au QColorDialog, puis réécrit UNIQUEMENT les
 cellules de couleur — en CRÉANT les colonnes d'en-tête manquantes au besoin
-(ex. l'Excel maison n'a qu'une colonne « couleur » : la première sauvegarde
+(ex. un Excel qui n'a qu'une colonne « couleur » : la première sauvegarde
 ajoute « couleur_fill »/« couleur_text » sans toucher au reste)."""
 
 from __future__ import annotations

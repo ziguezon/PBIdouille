@@ -803,7 +803,7 @@ print("13. les cibles : leurs variations ont leurs colonnes")
 c = copie("cibles")
 R = c / (PROJ + ".Report")
 M2 = c / (PROJ + ".SemanticModel")
-AVEC_CIBLE = (WEIGHT, FAT)                    # deux KPI sur cinq, comme au travail
+AVEC_CIBLE = (WEIGHT, FAT)                    # deux KPI sur cinq
 ajouter_cibles(M2, AVEC_CIBLE, FP)
 VAR_CIBLES = VARIATIONS + [("écart", "écart"), ("écart %", "écart %")]
 a = pc.analyser(R, field_parameter=FP, branches=["YTD"], variations=VAR_CIBLES,
@@ -887,7 +887,7 @@ check("l'image de la carte est de la variation qu'elle affiche (sparkline)",
 check("la grille compte ainsi le formatage de la carte, variation par variation",
       {v for (k, v) in a["reglages"] if k == WEIGHT} >= {"PY", "Δ 30d", "sparkline"})
 
-# Le cas du travail : un gabarit de base qui porte toute la carte, et un
+# Un cas réel : un gabarit de base qui porte toute la carte, et un
 # gabarit par variation pour le PY. Avant, tout tombait au Reel : la base
 # propageait tout, le gabarit du PY n'avait rien a donner.
 propager(R, {"base": WEIGHT})                 # chaque KPI a la carte de Weight

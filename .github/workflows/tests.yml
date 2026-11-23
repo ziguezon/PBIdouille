@@ -25,7 +25,8 @@ jobs:
             package: PyQt5==5.15.11
           - api: pyside6
             package: PySide6==6.12.0
-        # le poste de travail : Windows, Python 3.8 et PyQt5 (PySide6 6.12
+        # la plus ancienne combinaison prise en charge : Windows, Python 3.8
+        # et PyQt5 (PySide6 6.12
         # n'existe pas en 3.8)
         include:
           - os: windows-2025

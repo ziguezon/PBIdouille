@@ -130,7 +130,7 @@ def _style_group_header(group: "QTreeWidgetItem", dimmed: bool) -> None:
 def _write_indicator_icons() -> tuple[str, str]:
     """Peint la coche et le tiret hot pink en PNG dans le dossier temp et
     retourne leurs chemins (les stylesheets Qt exigent des fichiers).
-    PNG plutôt que SVG : PyQt5 (poste du travail) n'a pas toujours le
+    PNG plutôt que SVG : PyQt5 n'a pas toujours le
     plugin SVG, et l'échec serait silencieux."""
     d = Path(tempfile.gettempdir())
     check_path = d / "chopchop_check.png"
@@ -834,7 +834,7 @@ class ChopChopPanel(QWidget):
         return header, rows
 
     def _write_xlsx(self, path: str, header: list, rows: list):
-        """xlsx le plus simple possible : pandas si présent (cas du travail),
+        """xlsx le plus simple possible : pandas si présent,
         sinon openpyxl. ImportError remonte si ni l'un ni l'autre."""
         try:
             import pandas as pd

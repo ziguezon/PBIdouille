@@ -362,8 +362,8 @@ class ReportTab(QWidget):
             self.journal.info("⚠ Projet invalide : dossiers .Report/.SemanticModel introuvables.")
         self.prechauffer()
 
-    # La grille des sources lit TOUT le modèle et TOUS les visuels. Au bureau
-    # (OneDrive, antivirus), ouvrir un fichier coûte cher : c'était l'attente
+    # La grille des sources lit TOUT le modèle et TOUS les visuels. Dans un
+    # dossier synchronisé sous antivirus, ouvrir un fichier coûte cher : c'était l'attente
     # à l'ouverture de la grille. propagate_cf.lire_texte garde chaque texte
     # tant que son fichier ne change pas ; on le remplit ici, par bouchées de
     # quelques fichiers, quand l'app n'a rien d'autre à faire — dans le fil

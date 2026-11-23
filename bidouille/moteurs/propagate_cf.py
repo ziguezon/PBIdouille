@@ -96,7 +96,7 @@ def lire_texte(chemin) -> str:
     """Le texte d'un fichier — relu seulement s'il a CHANGÉ (date, taille).
 
     Ouvrir un fichier coûte cher dans un dossier synchronisé (OneDrive) sous
-    antivirus : plusieurs millisecondes chacun, bien plus au bureau. Lire sa
+    antivirus : plusieurs millisecondes chacun, parfois bien plus. Lire sa
     date ne coûte presque rien. La grille des sources relisait tout le modèle
     — deux fois — et tout le rapport à chaque ouverture : c'était l'essentiel
     de son temps. Un fichier qu'on vient d'écrire a une nouvelle date : il

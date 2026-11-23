@@ -44,8 +44,8 @@ def exiger_projet(racine, nom: str = PROJET_DEMO, *fichiers):
 def ajouter_cibles(semantic_dir, kpis, field_parameter="P_Indicateurs_parCalcul",
                    dossier="_cibles", calcul="Cible",
                    variations=("écart", "écart %"), branches=("YTD",)):
-    """Donne des CIBLES à quelques KPI d'une COPIE du modèle, comme au
-    travail : la cible racine (« Weight cible ») dans son dossier dédié et au
+    """Donne des CIBLES à quelques KPI d'une COPIE du modèle, comme dans un
+    vrai rapport : la cible racine (« Weight cible ») dans son dossier dédié et au
     paramètre de champ (Calcul « Cible »), ses faces de branche au paramètre
     aussi — mais ses VARIATIONS (« Weight cible écart »…) seulement dans le
     modèle, hors paramètre de champ. Rend les noms de mesures créés."""

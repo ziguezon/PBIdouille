@@ -72,7 +72,7 @@ for f in ((PROJ + ".pbip"), "TD_Indicateurs.xlsx", "measures_config.json"):
     shutil.copy2(PBI / f, c / f)
 XLSX = c / "TD_Indicateurs.xlsx"
 
-# le classeur du bureau porte des colonnes de couleurs ; celui de demo non
+# un classeur réel porte des colonnes de couleurs ; celui de demo non
 wb = openpyxl.load_workbook(XLSX)
 ws = wb.worksheets[0]
 entetes = [str(x.value).strip().lower() if x.value else "" for x in ws[1]]

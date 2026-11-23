@@ -445,7 +445,7 @@ def largeur_journal():
 largeur_avant = largeur_journal()
 fen.resize(fen.width() + 300, fen.height())
 app.processEvents()
-check("l'agrandissement va au travail, pas au journal",
+check("l'agrandissement va aux onglets, pas au journal",
       largeur_avant and abs(largeur_journal() - largeur_avant) <= 2)
 check("il ne peut pas etre reduit a rien par megarde",
       not fen.split.childrenCollapsible()
