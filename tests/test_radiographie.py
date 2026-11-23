@@ -638,6 +638,41 @@ y_vis = vl.boites[courbes].pos().y()
 check("Haut → bas : les bandes en rangées, les sources en haut", y_src < y_vis)
 vl.puces_dispo.choisir("horizontal")
 
+# une mesure seule : sa famille se déplie, sa chaîne est la sienne
+tab.aller_a("mesure", "Body Fat % YTD")
+check("la fiche d'une mesure mène au lignage",
+      any(l == ("lignage", "Body Fat % YTD") for l in tab._liens))
+tab.aller_a("lignage", "Body Fat % YTD")
+G = vl.graphe
+ytd, base, soeur = (("mesure", "Body Fat % YTD"), ("mesure", "Body Fat %"),
+                    ("mesure", "Body Fat % 30d avg"))
+check("Voir dans le lignage : la famille se déplie, la mesure est choisie",
+      tab.vues.currentWidget() is vl and vl.choix == ytd
+      and ("mesures", "Body Fat %") not in G["noeuds"] and base in G["noeuds"])
+amont_m = lgn.chaine_sens(G["liens"], ytd, amont=True)
+aval_m = lgn.chaine_sens(G["liens"], ytd, amont=False)
+check("sa chaîne : la mesure qu'elle reprend en amont, pas ses sœurs",
+      base in amont_m and soeur not in amont_m | aval_m
+      and ("table", "weight obs") in amont_m)
+check("une mesure dépliée se place après celle qu'elle reprend",
+      G["noeuds"][ytd]["couche"] > G["noeuds"][base]["couche"])
+lignes_m = vl.lignes_export()
+check("l'export d'une mesure seule : une ligne choisie, sa famille en colonne",
+      [x["Élément"] for x in lignes_m if x["Sens"] == "choisi"] == ["Body Fat % YTD"]
+      and all(x["Famille"] == "Body Fat %" for x in lignes_m if x["Sens"] == "choisi"))
+fiche_m = tab.fiche.toPlainText()
+check("sa fiche du lignage dit sa famille et propose de la replier",
+      "Une mesure de la famille" in fiche_m and "replier la famille" in fiche_m)
+vl._double(vl.boites[vl._aff[ytd]])
+check("double-clic sur une mesure : la famille se replie, la famille reste choisie",
+      ("mesures", "Body Fat %") in vl.graphe["noeuds"] and ytd not in vl.graphe["noeuds"]
+      and vl.choix == ("mesures", "Body Fat %"))
+vl._double(vl.boites[("mesures", "Body Fat %")])
+check("double-clic sur une famille : une boîte par mesure",
+      ytd in vl.graphe["noeuds"] and vl.choix == base)
+vl.replier_famille("Body Fat %")
+vl.choisir(None)
+
 # la fiche se ferme, et le choix est retenu
 tab._montrer_fiche(False)
 from core.project import lire_reglage                             # noqa: E402

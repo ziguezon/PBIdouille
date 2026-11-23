@@ -20,7 +20,9 @@ Une flèche A -> B dit « B a besoin de A » :
 
 Les mesures sont regroupées par FAMILLE (radiographie.famille_de) : un KPI et
 ses variations font une seule boîte, sinon un rapport de 300 mesures serait
-illisible. Une mesure hors famille est sa propre boîte.
+illisible. Une mesure hors famille est sa propre boîte. Une famille DÉPLIÉE
+(`deplies`) donne une boîte par mesure, avec les liens entre ses mesures :
+c'est ce qui permet de suivre la chaîne d'UNE mesure.
 
 Chaque nœud dit s'il est UTILISÉ, c'est-à-dire s'il mène à au moins un visuel
 ou un segment : ce qui n'y mène pas (une table chargée pour rien, une mesure
@@ -45,7 +47,8 @@ TITRES = {"source": "Sources", "requete": "Power Query", "calculee": "Tables cal
           "filtre": "Filtres et segments", "visuel": "Visuels"}
 # le genre d'un nœud -> sa bande (un segment est un filtre qu'on voit)
 BANDE = {"source": "source", "requete": "requete", "calculee": "calculee",
-         "mesures": "mesures", "parametre": "parametre", "filtre": "filtre",
+         "mesures": "mesures", "mesure": "mesures", "parametre": "parametre",
+         "filtre": "filtre",
          "segment": "filtre", "visuel": "visuel"}
 TERMINAUX = ("visuel", "segment")
 
@@ -63,11 +66,14 @@ def _texte_filtre(f) -> str:
     return f"{champ} {f['texte']}"
 
 
-def construire(res, lignes) -> dict:
+def construire(res, lignes, deplies=()) -> dict:
     """{"noeuds": {id: noeud}, "liens": [(id_amont, id_aval)]}
 
     noeud = {"id", "genre", "bande", "libelle", "detail", "cible", "page",
-             "couche", "utilise"} ; `cible` est (genre, clé) pour la fiche."""
+             "couche", "utilise"} ; `cible` est (genre, clé) pour la fiche.
+    Une famille ("mesures", kpi) porte ses "membres" ; une famille de
+    `deplies` donne à la place une boîte ("mesure", nom) par mesure, qui porte
+    sa "famille"."""
     noeuds: dict = {}
     liens: set = set()
     params = set(res.get("parametres") or {})
@@ -112,10 +118,21 @@ def construire(res, lignes) -> dict:
     for m in res["mesures"]:
         familles.setdefault(res["famille_de"].get(m, m), []).append(m)
 
-    def unite(m):
-        return ("mesures", res["famille_de"].get(m, m))
+    deplies = set(deplies)
 
+    def unite(m):
+        kpi = res["famille_de"].get(m, m)
+        return ("mesure", m) if kpi in deplies else ("mesures", kpi)
+
+    patrons = {x["nom"]: x["patron"] for f in res.get("kpis") or [] for x in f["membres"]}
     for kpi, membres in familles.items():
+        if kpi in deplies:
+            for m in membres:
+                nid = noeud(("mesure", m), "mesure", m,
+                            "KPI" if m == kpi else (patrons.get(m) or f"famille {kpi}"),
+                            ("mesure", m))
+                noeuds[nid]["famille"] = kpi
+            continue
         cible = ("mesure", kpi) if kpi in res["mesures"] else ("famille", kpi)
         noeud(("mesures", kpi), "mesures", kpi,
               f"{len(membres)} mesures" if len(membres) > 1 else "mesure", cible)
@@ -311,7 +328,10 @@ def lignes_export(graphe, depart, sens: str = "deux") -> list:
             base = {"Sens": nom_sens, "Distance": dist[n], "Bande": TITRES[x["bande"]],
                     "Détail": x["detail"], "Page": x["page"], "Famille": "",
                     "Mène à un visuel": "oui" if x["utilise"] else "non"}
-            if x["genre"] == "mesures" and x.get("membres"):
+            if x["genre"] == "mesure":
+                out.append(dict(base, **{"Élément": x["libelle"], "Détail": "mesure",
+                                         "Famille": x.get("famille", "")}))
+            elif x["genre"] == "mesures" and x.get("membres"):
                 for m in x["membres"]:
                     out.append(dict(base, **{"Élément": m, "Détail": "mesure",
                                              "Famille": x["libelle"]}))

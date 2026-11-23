@@ -67,6 +67,19 @@ chiffres et ce qui le filtre. Les pastilles **Sens** ne gardent que l'amont ou q
 La fiche, à droite, résume la chaîne bande par bande, puis décrit la boîte choisie. Un
 clic dans le vide efface le choix.
 
+### Suivre une seule mesure
+
+Une famille de mesures tient en une boîte, marquée **+**. Un **double-clic** la déplie en
+une boîte par mesure, avec les liens entre elles : `Body Fat % YTD` reprend `Body Fat %`,
+et `Body Fat % YTD 7d avg` reprend `Body Fat % YTD`. Un clic sur l'une d'elles allume
+alors la chaîne de cette mesure seule : ses sœurs qui n'en dépendent pas restent éteintes,
+et l'export ne garde qu'elle. Un double-clic sur une mesure dépliée, marquée **−**,
+replie sa famille.
+
+La fiche d'une mesure, dans n'importe quelle vue, a un lien **Voir dans le lignage** : il
+ouvre le lignage, déplie sa famille et la choisit. La fiche d'une famille, dans le
+lignage, a un lien pour la déplier.
+
 Un clic sur le **titre d'une bande** (▾ Mesures) la replie en une seule boîte, par
 laquelle passent ses liens ; un clic sur cette boîte, ou sur le titre, la déplie. Sur un
 gros rapport, une bande de plus de 40 éléments s'ouvre repliée.

@@ -12,6 +12,12 @@ seule ; « Exporter la chaîne… » l'écrit en CSV, une colonne disant l'amont
 ou l'aval. Un clic sur le titre d'une bande la replie en une seule boîte : sur
 un gros rapport, une bande de plus de REPLI_AUTO éléments part repliée.
 
+Une famille de mesures est une boîte ; un double-clic la DÉPLIE en une boîte
+par mesure, pour suivre la chaîne d'une seule mesure (un double-clic sur une
+de ses mesures la replie). Le graphe est alors reconstruit par le
+`constructeur` que donne la Radiographie (lignage.construire avec les
+familles dépliées).
+
 Par défaut, seul ce qui mène à un visuel est dessiné ; une case montre le
 reste, en pointillés. Ctrl + molette zoome, glisser déplace, « Ajuster » montre
 tout. Lecture seule, hors l'export qui écrit là où on le lui dit.
@@ -53,6 +59,7 @@ HAUT = 34                       # de gauche à droite : la place des titres, en 
 REPLI_AUTO = 40                 # une bande plus nombreuse part repliée
 # la couleur du liseré de chaque genre : on reconnaît une bande d'un coup d'œil
 TEINTES = {"source": ORANGE, "requete": YELLOW, "calculee": BLUE, "mesures": ACCENT,
+           "mesure": ACCENT,
            "parametre": "#A78BFA", "filtre": "#F472B6", "segment": "#F472B6",
            "visuel": TEXT_DIM}
 AMONT_C, AVAL_C = ACCENT, ORANGE  # la chaîne : d'où ça vient, ce qui en dépend
@@ -76,12 +83,20 @@ class _Boite(QGraphicsItem):
         self.survol = False
         self.setAcceptHoverEvents(True)
         self.setCursor(Qt.PointingHandCursor)
+        # « + » : une famille qui se déplie en mesures ; « − » : une mesure dont
+        # la famille se replie
+        self.repere = ("+" if noeud["genre"] == "mesures" and len(noeud.get("membres") or []) > 1
+                       else "−" if noeud["genre"] == "mesure" else "")
         if noeud["genre"] == "bande":
             tip = f"{noeud['libelle']} : {noeud['detail']}\n\nCliquer pour la déplier."
         else:
             tip = noeud["libelle"] + (f"\n{noeud['detail']}" if noeud["detail"] else "")
             if not noeud["utilise"]:
                 tip += "\n\nNe mène à aucun visuel."
+            if self.repere == "+":
+                tip += "\n\nDouble-clic : une boîte par mesure."
+            elif self.repere == "−":
+                tip += f"\nFamille {noeud.get('famille', '')}\n\nDouble-clic : replier la famille."
         self.setToolTip(tip)
 
     def boundingRect(self):
@@ -114,9 +129,13 @@ class _Boite(QGraphicsItem):
         police.setBold(bande)
         fm = QFontMetrics(police)
         p.setFont(police)
+        large = L - 20 - (14 if self.repere else 0)
+        if self.repere:
+            p.setPen(QColor(TEXT_MUTED))
+            p.drawText(QRectF(L - 18, 3, 12, 18), int(Qt.AlignCenter), self.repere)
         p.setPen(QColor(TEXT if n["utilise"] else TEXT_MUTED))
-        p.drawText(QRectF(14, 3, L - 20, 18), int(Qt.AlignLeft | Qt.AlignVCenter),
-                   fm.elidedText(n["libelle"], Qt.ElideRight, L - 20))
+        p.drawText(QRectF(14, 3, large, 18), int(Qt.AlignLeft | Qt.AlignVCenter),
+                   fm.elidedText(n["libelle"], Qt.ElideRight, large))
         if n["detail"]:
             police.setPointSizeF(7.5)
             police.setBold(False)
@@ -174,6 +193,7 @@ class _Vue(QGraphicsView):
     """Glisser déplace, Ctrl + molette zoome ; un clic choisit une boîte ou
     replie une bande, un clic dans le vide efface le choix."""
     clic = Signal(object)               # _Boite, _Titre ou None
+    double = Signal(object)             # _Boite
 
     def __init__(self, scene):
         super().__init__(scene)
@@ -193,6 +213,14 @@ class _Vue(QGraphicsView):
             event.accept()
             return
         super().mousePressEvent(event)
+
+    def mouseDoubleClickEvent(self, event):
+        cible = self._cible(event.pos())
+        if isinstance(cible, _Boite):
+            self.double.emit(cible)
+            event.accept()
+            return
+        super().mouseDoubleClickEvent(event)
 
     def mouseReleaseEvent(self, event):
         super().mouseReleaseEvent(event)
@@ -225,6 +253,8 @@ class VueLignage(QWidget):
         self.graphe: dict = {}
         self.choix = None
         self.repliees: set = set()      # les bandes repliées
+        self.deplies: set = set()       # les familles dépliées en mesures
+        self.constructeur = None        # deplies -> graphe (lignage.construire)
         self.dossier = None             # où proposer l'export
         self.boites: dict = {}          # id affiché -> _Boite
         self.liens: list = []           # [(A, B, _Lien, [(a, b) d'origine])]
@@ -277,6 +307,7 @@ class VueLignage(QWidget):
         self.scene = QGraphicsScene(self)
         self.vue = _Vue(self.scene)
         self.vue.clic.connect(self._clic)
+        self.vue.double.connect(self._double)
         v.addWidget(self.vue, 1)
 
     # ---- données ---------------------------------------------------------------
@@ -289,7 +320,11 @@ class VueLignage(QWidget):
     def vertical(self) -> bool:
         return self.puces_dispo.valeur() == "vertical"
 
-    def afficher(self, graphe: dict | None):
+    def afficher(self, graphe: dict | None, constructeur=None):
+        """Un nouveau graphe (nouveau projet, relecture). `constructeur`
+        reconstruit le graphe avec des familles dépliées."""
+        self.constructeur = constructeur
+        self.deplies = set()
         self.graphe = graphe or {}
         self.choix = None
         self.cb_chaine.blockSignals(True)
@@ -322,7 +357,64 @@ class VueLignage(QWidget):
             self._dessiner()
         else:
             self._allumer()
+        # choisie depuis un lien de la fiche, la boîte peut être hors de vue
+        boite = self.boites.get(self._aff.get(self.choix))
+        if boite is not None:
+            self.vue.ensureVisible(boite, 60, 60)
         self.choisi.emit(self.choix)
+
+    # ---- familles dépliées : la chaîne d'une seule mesure ------------------
+
+    def famille_de(self, nom):
+        """La famille d'une mesure, d'après le graphe ; None si inconnue."""
+        for x in (self.graphe.get("noeuds") or {}).values():
+            if x["genre"] == "mesure" and x["libelle"] == nom:
+                return x.get("famille")
+            if x["genre"] == "mesures" and nom in (x.get("membres") or []):
+                return x["libelle"]
+        return None
+
+    def deplier_famille(self, kpi, choix=None):
+        """Une boîte par mesure de la famille ; `choix` est choisi ensuite."""
+        self.deplies.add(kpi)
+        self._reconstruire(choix)
+
+    def replier_famille(self, kpi):
+        """Revient à une seule boîte pour la famille, choisie si l'une de ses
+        mesures l'était."""
+        dedans = self.choix is not None and self.choix[0] == "mesure" \
+            and self.graphe["noeuds"][self.choix].get("famille") == kpi
+        self.deplies.discard(kpi)
+        self._reconstruire(("mesures", kpi) if dedans else self.choix)
+
+    def choisir_mesure(self, nom):
+        """Choisit UNE mesure : sa famille se déplie si elle en a plusieurs."""
+        kpi = self.famille_de(nom)
+        if kpi is None:
+            return
+        famille = (self.graphe["noeuds"].get(("mesures", kpi)) or {})
+        if ("mesure", nom) in self.graphe["noeuds"]:
+            self.choisir(("mesure", nom))
+        elif len(famille.get("membres") or []) > 1:
+            self.deplier_famille(kpi, ("mesure", nom))
+        else:
+            self.choisir(("mesures", kpi))
+
+    def _reconstruire(self, choix=None):
+        if self.constructeur is None:
+            return
+        self.graphe = self.constructeur(set(self.deplies)) or {}
+        self.choix = None
+        self._dessiner()
+        self.choisir(choix if choix in self.graphe.get("noeuds", {}) else None)
+
+    def _double(self, boite):
+        n = boite.noeud
+        if n["genre"] == "mesures" and len(n.get("membres") or []) > 1:
+            self.deplier_famille(n["libelle"], ("mesure", n["libelle"])
+                                 if n["libelle"] in n["membres"] else None)
+        elif n["genre"] == "mesure":
+            self.replier_famille(n.get("famille"))
 
     def basculer_bande(self, bande):
         """Replie une bande dépliée, déplie une bande repliée."""
@@ -524,6 +616,7 @@ class VueLignage(QWidget):
                 ordre_page.setdefault(x["page"], len(ordre_page))
         for c in colonnes:
             colonnes[c].sort(key=lambda d: (affiches[d]["genre"],
+                                            str(affiches[d].get("famille", "")).lower(),
                                             affiches[d]["libelle"].lower()))
         amont: dict = {}
         aval: dict = {}

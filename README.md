@@ -2779,6 +2779,14 @@ seule, donc aussi en production.
     mesure pour une famille, `lignage.ecrire_csv`.
   - **Fiche** : `btn_fiche` la cache ou la montre, réglage
     `radiographie_fiche`.
+  - **Une mesure seule** : `lignage.construire(res, lignes, deplies)` donne,
+    pour chaque famille de `deplies`, une boîte `("mesure", nom)` par mesure
+    (qui porte sa `famille`) au lieu de la boîte `("mesures", kpi)` ; les liens
+    entre ses mesures en font une chaîne, posée par le plus long chemin de la
+    bande. La vue garde `deplies` et reconstruit le graphe par le
+    `constructeur` que lui passe la Radiographie (double-clic, liens de la
+    fiche) ; `choisir_mesure(nom)` déplie la famille au besoin. La propriété
+    `RadiographieTab.graphe` lit le graphe de la vue, toujours à jour.
 - **Ordre des vues** : Lignage, Par source, Par page, Par colonne, Par KPI,
   du plus large au plus fin. **Par colonne** compte, par colonne, les mesures (celles
   qui la lisent et celles qui les reprennent), les filtres et segments, les

@@ -232,7 +232,6 @@ class RadiographieTab(QWidget):
         # tout, de la source au visuel, en un graphe
         self.vue_lignage = VueLignage(self.journal)
         self.vue_lignage.choisi.connect(self._montrer_noeud)
-        self.graphe: dict = {}
         # du plus large au plus fin : le lignage, d'où viennent les données, ce
         # que montre chaque page, où sert chaque colonne, les familles de mesures
         self.vues.addTab(self.vue_lignage, "Lignage")
@@ -298,6 +297,12 @@ class RadiographieTab(QWidget):
         self.btn_fiche.setChecked(oui)
         self.btn_fiche.blockSignals(False)
         ecrire_reglage("radiographie_fiche", "1" if oui else "0")
+
+    @property
+    def graphe(self) -> dict:
+        """Le graphe du lignage, tel que la vue le montre : elle le reconstruit
+        quand une famille se déplie en mesures."""
+        return self.vue_lignage.graphe
 
     def _arbre(self, entetes, comptes=False) -> QTreeWidget:
         a = QTreeWidget()
@@ -370,7 +375,6 @@ class RadiographieTab(QWidget):
             self.lbl_resume.setText(f"Lecture impossible : {e}")
             self.journal.erreur(f"Radiographie : lecture impossible ({e})")
             self.vue_sources.afficher(self.lineage, None)
-            self.graphe = {}
             self.vue_lignage.afficher(None)
             self._vider_fiche()
             return
@@ -381,9 +385,10 @@ class RadiographieTab(QWidget):
         except (OSError, UnicodeDecodeError) as e:
             self.journal.erreur(f"Radiographie : dépendances des sources illisibles ({e})")
         self.vue_sources.afficher(self.lineage, self.impacts)
-        self.graphe = lgn.construire(self.res, self.lineage.get("lignes") or [])
+        res, lignes = self.res, self.lineage.get("lignes") or []
         self.vue_lignage.dossier = str(Path(self._pbip).parent)
-        self.vue_lignage.afficher(self.graphe)
+        self.vue_lignage.afficher(lgn.construire(res, lignes),
+                                  lambda deplies: lgn.construire(res, lignes, deplies))
         self._construire()
 
     # ---- construction --------------------------------------------------------
@@ -1110,6 +1115,9 @@ class RadiographieTab(QWidget):
             [self._a(u, ("mesure", u)) for u in r["uses"][nom]]))
         out.append("<h4>Utilisée par</h4>" + self._liste(
             [self._a(u, ("mesure", u)) for u in r["used_by"][nom]]))
+        if self.graphe:
+            out.append("<p>" + self._a("Voir dans le lignage : d'où elle vient, ce qui en "
+                                       "dépend", ("lignage", nom)) + "</p>")
         dax = (m["dax"] or "(vide)").splitlines()
         if len(dax) > DAX_LIGNES and ("dax", nom) not in self._ouverts:
             out.append("<h4>DAX</h4><pre style='font-family:Consolas,monospace'>"
@@ -1492,6 +1500,15 @@ class RadiographieTab(QWidget):
         if not n["utilise"]:
             out.append(f"<p style='color:{YELLOW}'>Ne mène à aucun visuel : rien de ce qu'on "
                        "voit dans le rapport n'en dépend.</p>")
+        if n["genre"] == "mesures" and len(n.get("membres") or []) > 1:
+            out.append("<p>" + self._a(f"▸ Déplier la famille : une boîte par mesure "
+                                       f"({len(n['membres'])})",
+                                       ("lignage_deplier", n["libelle"])) + "</p>")
+        elif n["genre"] == "mesure":
+            out.append(f"<p style='color:{TEXT_DIM}'>Une mesure de la famille "
+                       f"<b>{_e(n.get('famille', ''))}</b> · "
+                       + self._a("replier la famille", ("lignage_replier", n.get("famille")))
+                       + "</p>")
         genre, cle = n["cible"] or (None, None)
         corps = ""
         if genre == "source" and cle.get("genre") == lg.SOURCE:
@@ -1544,8 +1561,13 @@ class RadiographieTab(QWidget):
             noms = sorted({x["libelle"] for x in ns}, key=str.lower)
             texte = _e(", ".join(noms[:3])) + (f" et {len(noms) - 3} autres"
                                               if len(noms) > 3 else "")
-            # une boîte de la bande Mesures est une famille, pas une mesure
-            titre = "Familles de mesures" if bande == "mesures" else lgn.TITRES[bande]
+            # une boîte de la bande Mesures est une famille, ou une mesure
+            # d'une famille dépliée
+            titre = lgn.TITRES[bande]
+            if bande == "mesures":
+                n_fam = sum(1 for x in ns if x["genre"] == "mesures")
+                titre = ("Familles de mesures" if n_fam == len(ns) else
+                         "Mesures" if not n_fam else "Mesures et familles")
             out.append(f"<tr><td align='right' valign='top'><b>{len(ns)}</b></td>"
                        f"<td valign='top'>{_e(titre)}</td>"
                        f"<td valign='top' style='color:{TEXT_MUTED}'>{texte}</td></tr>")
@@ -1661,7 +1683,22 @@ class RadiographieTab(QWidget):
         self.aller_a(genre, cle)
 
     def aller_a(self, genre, cle) -> None:
-        """Sélectionne une mesure (vue Par KPI) ou un visuel (vue Par page)."""
+        """Sélectionne une mesure (vue Par KPI) ou un visuel (vue Par page) ;
+        ou, dans le lignage, une mesure seule, ou une famille à déplier ou
+        replier."""
+        if genre in ("lignage", "lignage_deplier", "lignage_replier"):
+            vl = self.vue_lignage
+            self.vues.setCurrentWidget(vl)
+            if genre == "lignage":
+                vl.choisir_mesure(cle)
+            elif genre == "lignage_deplier":
+                vl.deplier_famille(cle, ("mesure", cle) if ("mesures", cle) in
+                                   vl.graphe["noeuds"] and cle in
+                                   vl.graphe["noeuds"][("mesures", cle)].get("membres", [])
+                                   else None)
+            else:
+                vl.replier_famille(cle)
+            return
         if genre == "mesure":
             it, arbre = self._item_mesure.get(cle), self.arbre_kpi
         elif genre == "visuel":
