@@ -193,13 +193,13 @@ def onglets():
 
 edition.MARQUEUR_DEV = ABSENT
 t, n = onglets()
-check("production : Mesures, Rapport, Sources de données, Radiographie, ChopChop",
-      t == ["Mesures", "Rapport", "Sources de données", "Radiographie 🩻", "ChopChop 🪓"])
-check("production : « Tout recharger » ne parcourt que ces cinq-là", n == 5)
+check("production : Mesures, Rapport, Radiographie, ChopChop",
+      t == ["Mesures", "Rapport", "Radiographie 🩻", "ChopChop 🪓"])
+check("production : « Tout recharger » ne parcourt que ces quatre-là", n == 4)
 edition.MARQUEUR_DEV = PRESENT
 t, n = onglets()
 check("dev : le Wireframe est là, après la Radiographie",
-      "Wireframe" in t and n == 6 and t.index("Wireframe") == t.index("Radiographie 🩻") + 1)
+      "Wireframe" in t and n == 5 and t.index("Wireframe") == t.index("Radiographie 🩻") + 1)
 
 edition.MARQUEUR_DEV = VRAI_MARQUEUR
 prj.reglages().clear()

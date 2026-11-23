@@ -57,6 +57,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import generate_measures as gm                  # noqa: E402
 import unused_measures as um                    # noqa: E402
 import chemins                                  # noqa: E402
+import lineage as lg                            # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from core import report_reader as rr            # noqa: E402
@@ -76,6 +77,27 @@ GENERIQUES = {
 }
 
 SEGMENTS = {"slicer", "advancedSlicerVisual", "listSlicer", "textSlicer"}
+
+# Le rôle d'un champ dans son visuel (les « puits » du volet Visualisations),
+# dans l'ordre où on les lit : ce qui découpe, puis ce qui est mesuré
+ROLES = {
+    "Category": "Axe", "X": "Axe X", "Rows": "Lignes", "Columns": "Colonnes",
+    "Series": "Légende", "Legend": "Légende", "Values": "Valeurs", "Y": "Valeurs",
+    "Y2": "Axe secondaire", "Data": "Données", "Fields": "Champs", "Size": "Taille",
+    "Indicator": "Valeur", "Goal": "Cible", "TrendLine": "Tendance",
+    "MinValue": "Minimum", "MaxValue": "Maximum", "TargetValue": "Cible",
+    "Details": "Détails", "Gradient": "Couleur", "Tooltips": "Info-bulles",
+}
+ORDRE_ROLES = list(dict.fromkeys(ROLES.values()))
+
+
+def libelle_role(role: str, segment: bool = False) -> str:
+    """« Category » -> « Axe ». Un segment n'a qu'un champ : celui qu'il filtre."""
+    if not role:
+        return ""
+    if segment:
+        return "Champ"
+    return ROLES.get(role, role)
 
 TYPES = {
     "cardVisual": "Carte", "card": "Carte", "multiRowCard": "Carte multiligne",
@@ -251,21 +273,31 @@ def projections(data) -> list:
     """Les champs d'un visuel, tels que sa requête les LIE (field), rôle par
     rôle. Pas le queryRef : c'est une clé stable que Power BI GARDE quand un
     champ est renommé (« weight.weight obs avg » pour la mesure « Last
-    Weight »), donc la lire ferait passer un champ vivant pour cassé."""
+    Weight »), donc la lire ferait passer un champ vivant pour cassé.
+
+    [(rôle, field)] : le rôle est la clé du puits (Category, Y, Values…). Un
+    champ posé dans deux puits garde le premier."""
     qs = ((data.get("visual") or {}).get("query") or {}).get("queryState") or {}
     out, vus = [], set()
-    for bloc in qs.values():
+    for role, bloc in qs.items():
         for p in (bloc or {}).get("projections") or []:
             f = p.get("field") if isinstance(p, dict) else None
             cle = json.dumps(f, sort_keys=True) if f else None
             if cle and cle not in vus:
                 vus.add(cle)
-                out.append(f)
+                out.append((role, f))
     return out
 
 
-def _champ_projection(field, noms, colonnes, fps) -> dict | None:
-    """Une projection décrite comme _champ décrit un queryRef."""
+def _champ_projection(field, noms, colonnes, fps, role: str = "") -> dict | None:
+    """Une projection décrite comme _champ décrit un queryRef, avec son rôle."""
+    c = _champ_projection_sans_role(field, noms, colonnes, fps)
+    if c is not None:
+        c["role"] = role
+    return c
+
+
+def _champ_projection_sans_role(field, noms, colonnes, fps) -> dict | None:
     table, prop, genre = champ_de(field)
     if not prop:
         return None
@@ -511,10 +543,12 @@ def analyser(pbip) -> dict:
                 data = _lire_json(v["path"])
                 projs = projections(data)
                 if projs:
-                    champs = [c for c in (_champ_projection(f, noms, colinfo["columns"], fps)
-                                          for f in projs) if c]
+                    champs = [c for c in (_champ_projection(f, noms, colinfo["columns"], fps,
+                                                            role)
+                                          for role, f in projs) if c]
                 else:   # visuel sans queryState : ses queryRef, faute de mieux
-                    champs = [_champ(r, noms, colinfo["columns"], fps) for r in v["fields"]]
+                    champs = [dict(_champ(r, noms, colinfo["columns"], fps), role="")
+                              for r in v["fields"]]
                 vis = {"id": v["id"], "page": p["display"], "page_id": p["id"],
                        "type": v["type"], "libelle_type": type_visuel(v["type"]),
                        "titre": v["title"] or "", "masque": v["hidden"],
@@ -696,3 +730,124 @@ def analyser(pbip) -> dict:
         "briques": briques, "jamais": jamais,
         "patrons": patrons.most_common(),
     }
+
+
+# ---- ce qui dépend de chaque table : pourquoi une source compte -------------
+
+def dependants(res, lignes, colonnes_calc) -> dict:
+    """Pour chaque table du modèle, ce qui casserait sans elle :
+
+    {table: {"tables_calculees": [noms], "colonnes_calculees": [(table, nom)],
+             "mesures_directes": [noms], "mesures": [noms], "filtres": [usage],
+             "segments": [usage], "visuels": [visuel], "pages": int}}
+
+    Une table compte avec les tables calculées qui la reprennent (directement
+    ou par une autre) : `Weight LOCF` lit `weight obs`, donc tout ce qui lit
+    `Weight LOCF` dépend aussi de `weight obs`. Les mesures directes sont
+    celles dont le DAX cite une de ces tables ; les autres en dépendent par
+    une mesure intermédiaire. Un filtre ne compte que s'il a une valeur."""
+    reprises = lg.reprises(lignes)
+    tables = sorted({lg.nom_noeud(l) for l in lignes if l["genre"] != lg.LIVE}, key=str.lower)
+    cite = {n: set(lg.tables_citees(m["dax"], tables, "dax"))
+            for n, m in res["mesures"].items()}
+    out = {}
+    for t in tables:
+        groupe = {t} | set(reprises.get(t, []))
+        directes = sorted((n for n, c in cite.items() if c & groupe), key=str.lower)
+        toutes, pile = set(directes), list(directes)
+        while pile:
+            for u in res["used_by"].get(pile.pop(), []):
+                if u not in toutes:
+                    toutes.add(u)
+                    pile.append(u)
+        usages = [u for cu in res["colonnes_utilisees"] if cu["table"] in groupe
+                  for u in cu["usages"]]
+        visuels = []
+        for v in res["visuels"]:
+            if v["segment"]:
+                continue
+            for c in v["champs"]:
+                noms = ([c["nom"]] if c["genre"] == "mesure"
+                        else c.get("mesures") or [] if c["genre"] == "parametre" else [])
+                if (c["genre"] in ("colonne", "parametre") and c["table"] in groupe)                         or toutes & set(noms):
+                    visuels.append(v)
+                    break
+        out[t] = {
+            "tables_calculees": list(reprises.get(t, [])),
+            "colonnes_calculees": [(c["table"], c["nom"]) for c in colonnes_calc
+                                   if c["table"] in groupe or groupe & set(c["lit"])],
+            "mesures_directes": directes,
+            "mesures": sorted(toutes, key=str.lower),
+            "filtres": [u for u in usages if u["genre"].startswith("filtre")
+                        and u["texte"] != "sans valeur choisie"],
+            "segments": [u for u in usages if u["genre"] == "segment"],
+            "visuels": visuels,
+            "pages": len({v["page_id"] for v in visuels}),
+        }
+    return out
+
+
+def cumuler(impacts: dict, tables) -> dict:
+    """Ce qui dépend d'un ENSEMBLE de tables (celles d'une même source), sans
+    compter deux fois ce que deux tables partagent."""
+    out = {"tables_calculees": [], "colonnes_calculees": [], "mesures_directes": [],
+           "mesures": [], "filtres": [], "segments": [], "visuels": []}
+    for t in tables:
+        for k in out:
+            for x in impacts.get(t, {}).get(k, []):
+                if not any(x is y or x == y for y in out[k]):
+                    out[k].append(x)
+    out["pages"] = len({v["page_id"] for v in out["visuels"]})
+    return out
+
+
+def dependants_colonnes(res) -> list:
+    """Pour chaque colonne utilisée (dans l'ordre de res["colonnes_utilisees"]),
+    ce qui en dépend :
+
+    {"mesures_directes": [noms], "mesures": [noms], "filtres": [usage],
+     "segments": [usage], "visuels": [visuel], "visuels_directs": [visuel],
+     "pages": int}
+
+    Les mesures directes lisent la colonne dans leur DAX ; les autres
+    reprennent ces mesures. Les visuels directs affichent la colonne ; les
+    autres affichent une de ces mesures (ou un paramètre de champ qui en
+    propose une)."""
+    out = []
+    for cu in res["colonnes_utilisees"]:
+        us = cu["usages"]
+        directes = sorted({u["cible"][1] for u in us if u["genre"] == "mesure"},
+                          key=str.lower)
+        toutes, pile = set(directes), list(directes)
+        while pile:
+            for u in res["used_by"].get(pile.pop(), []):
+                if u not in toutes:
+                    toutes.add(u)
+                    pile.append(u)
+        cles_directes = {u["cible"][1] for u in us if u["genre"] == "visuel" and u["cible"]}
+        directs, visuels = [], []
+        for v in res["visuels"]:
+            if v["segment"]:
+                continue
+            cle = (v["page_id"], v["id"])
+            if cle in cles_directes:
+                directs.append(v)
+                visuels.append(v)
+                continue
+            for c in v["champs"]:
+                noms = ([c["nom"]] if c["genre"] == "mesure"
+                        else c.get("mesures") or [] if c["genre"] == "parametre" else [])
+                if toutes & set(noms):
+                    visuels.append(v)
+                    break
+        out.append({
+            "mesures_directes": directes,
+            "mesures": sorted(toutes, key=str.lower),
+            "filtres": [u for u in us if u["genre"].startswith("filtre")
+                        and u["texte"] != "sans valeur choisie"],
+            "segments": [u for u in us if u["genre"] == "segment"],
+            "visuels": visuels,
+            "visuels_directs": directs,
+            "pages": len({v["page_id"] for v in visuels}),
+        })
+    return out

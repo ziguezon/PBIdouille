@@ -318,8 +318,8 @@ print("   onglets :", titres)
 check("Mesures en tete", titres[0] == "Mesures")
 # le Wireframe n'existe qu'en edition dev (cf. core/edition.py)
 _dev = application.edition.dev()
-attendus = (["Rapport", "Sources de données", "Radiographie 🩻", "Wireframe", "ChopChop 🪓"]
-            if _dev else ["Rapport", "Sources de données", "Radiographie 🩻", "ChopChop 🪓"])
+attendus = (["Rapport", "Radiographie 🩻", "Wireframe", "ChopChop 🪓"]
+            if _dev else ["Rapport", "Radiographie 🩻", "ChopChop 🪓"])
 check("les autres suivent dans le meme ordre qu'avant",
       titres[1:] == attendus)
 check("« Enregistrer puis recharger » touche tous les onglets affiches",

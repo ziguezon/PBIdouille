@@ -3,8 +3,8 @@
 rapports Power BI (Fitbit ...Report\\StaticResources\\RegisteredResources\\
 Dark_Teal_Pro*.json) : vert néon sur fonds bleu nuit.
 
-Le QSS est AUTONOME (aucune dépendance qdarkstyle) → rendu identique à la
-maison (PySide6/Qt6) et au travail (PyQt5/Qt5). ChopChopRapport importe ce
+Le QSS est AUTONOME (aucune dépendance qdarkstyle) → rendu identique avec
+PySide6 (Qt 6) et PyQt5 (Qt 5). ChopChopRapport importe ce
 module ; BIdouille aussi. Icône émoji et identité Windows incluses."""
 
 from __future__ import annotations
@@ -41,7 +41,7 @@ TRAIT       = "#2E4560"
 # Segoe UI 9 pt). Bahnschrift — la DIN de Windows 10 et 11 — les distingue
 # du texte autrement que par la couleur. Nommée par son instance
 # « SemiBold » : ce nom-là marche aussi avec le moteur de polices GDI de
-# Qt 5 (poste du travail). Absente (Windows ancien) : Qt retombe sur la
+# Qt 5 (PyQt5). Absente (Windows ancien) : Qt retombe sur la
 # police par défaut.
 TITRE_POLICE = "Bahnschrift SemiBold"
 TITRE_PT = 11
@@ -70,7 +70,7 @@ def emoji_icon(emoji: str) -> QIcon:
 def _write_indicator_icons() -> tuple:
     """Peint la coche et le tiret VERT NÉON en PNG dans le dossier temp et
     retourne leurs chemins (les stylesheets Qt exigent des fichiers). PNG
-    plutôt que SVG : PyQt5 (poste du travail) n'a pas toujours le plugin SVG
+    plutôt que SVG : PyQt5 n'a pas toujours le plugin SVG
     et l'échec serait silencieux.
 
     Trait fin (1,6 px), extrémités nettes et angle vif : l'ancienne coche —
@@ -278,7 +278,7 @@ QToolTip {{
    celle du GROUPE. Le groupe la porte donc, et ses enfants directs repartent
    en poids normal (leur famille et leur taille, la règle QWidget les fixe
    déjà widget par widget). Qt 6 ne transmet pas le poids aux enfants ; Qt 5
-  , celui du poste du travail, est connu pour le faire, d'où cette remise à
+   (PyQt5) est connu pour le faire, d'où cette remise à
    zéro, sans effet ici mais sans coût. */
 QGroupBox {{
     background: {SURFACE};
@@ -313,6 +313,18 @@ QPushButton:hover {{ border-color: {ACCENT}; color: {ACCENT}; }}
 QPushButton:pressed {{ background: {BORDER}; color: {ACCENT}; }}
 QPushButton:disabled {{ color: {TEXT_MUTED}; border-color: {SURFACE_ALT}; }}
 QPushButton:default {{ border-color: {ACCENT_DIM}; }}
+/* pastilles de filtre (core/puces.py) : un choix allumé se lit en vert */
+QPushButton[puce="true"] {{
+    border-radius: 11px;
+    padding: 2px 10px;
+    color: {TEXT_DIM};
+}}
+QPushButton[puce="true"]:checked {{
+    background: {ACCENT_DIM};
+    border-color: {ACCENT};
+    color: {TEXT};
+}}
+QPushButton[puce="true"]:hover {{ border-color: {ACCENT}; }}
 
 /* ---- champs ------------------------------------------------------------- */
 QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox {{
@@ -496,8 +508,8 @@ QMessageBox {{ background: {SURFACE}; }}
 
 def apply_app_theme(app, emoji: str, app_id: str) -> None:
     """Applique le thème néon et l'identité Windows sur le QApplication (une
-    fois). Le QSS étant autonome, le rendu est le même avec PyQt5 (travail)
-    et PySide6 (maison). Pose aussi l'icône de fenêtre."""
+    fois). Le QSS étant autonome, le rendu est le même avec PyQt5 et
+    PySide6. Pose aussi l'icône de fenêtre."""
     try:
         import ctypes
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)

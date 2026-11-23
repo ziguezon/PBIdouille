@@ -20,8 +20,8 @@ est celui d'un article, et les articles se lisent dans cet ordre.
 | 3.4 | [Paramètres de champ](articles/03-4-parametres-de-champ.md) | Les tables d'un segment, et ce qu'elles contiendront |
 | 3.5 | [JSON brut](articles/03-5-json-brut.md) | Modifier directement `measures_config.json` |
 | 4 | [Rapport](articles/04-rapport.md) | Propager le formatage d'un KPI vers les autres, colorer les matrices |
-| 5 | [Sources de données](articles/05-sources-de-donnees.md) | D'où vient chaque table, et ce qui manque sur ce poste |
-| 6 | [Radiographie 🩻](articles/06-radiographie.md) | Comprendre un rapport qu'on n'a pas fait : KPI, visuels, filtres, colonnes |
+| 5 | [Sources de données](articles/05-sources-de-donnees.md) | La vue Par source de la Radiographie : d'où vient chaque table, ce qui en dépend, ce qui manque sur ce poste |
+| 6 | [Radiographie 🩻](articles/06-radiographie.md) | Comprendre un rapport qu'on n'a pas fait : le lignage de la source au visuel, KPI, visuels, filtres, colonnes |
 | 7 | [Wireframe](articles/07-wireframe.md) | Organiser les visuels d'une page (édition de développement) |
 | 8 | [ChopChop](articles/08-chopchop.md) | Repérer ce que plus rien n'utilise |
 
@@ -37,11 +37,10 @@ chaque notion sert.
 
 ![Diapo du guide : Un rapport, cinq onglets](ressources/guide/coup-d-oeil.png)
 
-Tout se passe dans cinq onglets, qui travaillent sur le même rapport. **Mesures** crée
+Tout se passe dans quatre onglets, qui travaillent sur le même rapport. **Mesures** crée
 les variations de chaque KPI et les tables paramètre de champ. **Rapport** recopie le
-formatage d'un KPI vers les autres. **Sources de données** dit d'où vient chaque table.
-**Radiographie** fait la carte d'un rapport qu'on n'a pas fait. **ChopChop** repère ce
-que plus rien n'utilise.
+formatage d'un KPI vers les autres. **Radiographie** fait la carte d'un rapport qu'on n'a
+pas fait, et dit d'où vient chaque table. **ChopChop** repère ce que plus rien n'utilise.
 
 ### Avant de commencer
 
@@ -116,8 +115,9 @@ aussi les matrices.
 
 ### Sources de données
 
-Le guide n'a pas de diapo pour cet onglet. Il dit d'où vient chaque table du rapport :
-Excel, CSV, base ODBC ou serveur SQL, et signale un fichier local introuvable sur ce poste.
+Le guide n'a pas de diapo pour cette vue de la Radiographie. Elle dit d'où vient chaque
+table du rapport (Excel, CSV, base ODBC ou serveur SQL), combien de mesures, de filtres et
+de visuels en dépendent, et signale un fichier local introuvable sur ce poste.
 
 → [5 Sources de données](articles/05-sources-de-donnees.md)
 

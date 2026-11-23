@@ -55,6 +55,7 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
+import demarrage
 from core import model_reader
 from core.journal import Journal
 from core.project import ecrire_reglage, lire_reglage
@@ -408,6 +409,8 @@ class ConfigTab(QWidget):
     # la vue affichée a changé — y compris SANS clic (un rechargement revient
     # sur Variations signaux bloqués) : la fenêtre en déduit où va le journal
     vue_changee = Signal()
+    # un measures_config.json vient d'être créé : la fenêtre recharge le projet
+    config_cree = Signal()
 
     def __init__(self, journal=None):
         super().__init__()
@@ -438,6 +441,19 @@ class ConfigTab(QWidget):
         self.lbl_hint.setStyleSheet(f"color:{YELLOW};")
         self.lbl_hint.hide()
         root.addWidget(self.lbl_hint)
+        # … et de quoi en créer un de départ, d'un clic
+        self.btn_creer = QPushButton("Créer un measures_config.json de départ ici…")
+        self.btn_creer.setToolTip(
+            "Écrit un measures_config.json à côté du .pbip, deviné d'après le modèle "
+            "(table des mesures, colonne de dates), sans variation.\nPeut aussi créer un "
+            "TD_Indicateurs.xlsx, une ligne par mesure de base.\nN'écrase jamais un "
+            "fichier existant.")
+        self.btn_creer.clicked.connect(self._proposer_depart)
+        self.btn_creer.hide()
+        rang_creer = QHBoxLayout()
+        rang_creer.addWidget(self.btn_creer)
+        rang_creer.addStretch(1)
+        root.addLayout(rang_creer)
 
         self._inner_prev = IDX_VARIATIONS
         self.inner = QTabWidget()
@@ -2193,16 +2209,73 @@ class ConfigTab(QWidget):
             self.lbl_hint.setText(
                 "Aucun measures_config.json chargé, attendu : " + str(path)
                 + "\nCliquer sur le bouton 📄 du config, sous la barre du projet, pour choisir celui de "
-                  "CE rapport (au travail il peut vivre dans un autre dossier).")
+                  "CE rapport (il peut vivre dans un autre dossier), ou en créer un de départ.")
             self.lbl_hint.show()
+            # créer n'a de sens qu'à l'endroit attendu par défaut, à côté du .pbip
+            self.btn_creer.setVisible(project.config_override is None
+                                      and project.model_dir is not None)
             for w in (self.inner, self.btn_save, self.btn_reload):
                 w.setEnabled(False)
             self._set_dirty(False)
             return
         self.lbl_hint.hide()
+        self.btn_creer.hide()
         for w in (self.inner, self.btn_save, self.btn_reload):
             w.setEnabled(True)
         self._load_from_disk()
+
+    # ---- un rapport sans config : des fichiers de départ ------------------------
+
+    def _proposer_depart(self):
+        """Montre ce qui sera écrit, et propose aussi le TD_Indicateurs.xlsx
+        s'il manque. Rien n'est écrit sans confirmation."""
+        if not self.project or self.project.model_dir is None:
+            return
+        try:
+            config, notes, bases = demarrage.config_de_depart(self.project.model_dir)
+        except (OSError, UnicodeDecodeError) as e:
+            self.journal.erreur(f"Modèle illisible : {e}")
+            return
+        boite = QMessageBox(self)
+        boite.setIcon(QMessageBox.Question)
+        boite.setWindowTitle("Créer un measures_config.json")
+        boite.setText("Créer un measures_config.json de départ dans\n"
+                      + str(self.project.folder) + " ?")
+        boite.setInformativeText(
+            "Deviné d'après le modèle :\n· " + "\n· ".join(notes)
+            + "\n\nAucune variation : la Bibliothèque en propose. Les paramètres de champ et "
+              "le switch sont désactivés ; ils s'activent dans les Réglages.")
+        case_td = None
+        if not self.project.td_xlsx.exists():
+            case_td = QCheckBox(f"Créer aussi TD_Indicateurs.xlsx ({len(bases)} mesure(s) "
+                                "de base, une par ligne)")
+            case_td.setChecked(True)
+            boite.setCheckBox(case_td)
+        b_creer = boite.addButton("Créer", QMessageBox.AcceptRole)
+        boite.addButton("Annuler", QMessageBox.RejectRole)
+        boite.exec_() if hasattr(boite, "exec_") else boite.exec()
+        if boite.clickedButton() is not b_creer:
+            return
+        self.creer_depart(avec_td=case_td is not None and case_td.isChecked())
+
+    def creer_depart(self, avec_td: bool = False) -> list:
+        """Écrit les fichiers de départ à côté du .pbip ; [chemins écrits]."""
+        config, _notes, bases = demarrage.config_de_depart(self.project.model_dir)
+        ecrits = []
+        try:
+            ecrits.append(demarrage.ecrire_config(self.project.config_json, config))
+            if avec_td and not self.project.td_xlsx.exists():
+                ecrits.append(demarrage.ecrire_td(self.project.td_xlsx, bases))
+        except (OSError, ImportError) as e:
+            self.journal.erreur(f"Création impossible : {e}")
+        for p in ecrits:
+            self.journal.info(f"Créé : {p}")
+        if any(p.name == "TD_Indicateurs.xlsx" for p in ecrits):
+            self.journal.info("TD_Indicateurs.xlsx est à importer dans Power BI Desktop, "
+                              "comme table, pour que les libellés et les couleurs servent.")
+        if ecrits:
+            self.config_cree.emit()
+        return ecrits
 
     def _load_from_disk(self):
         try:

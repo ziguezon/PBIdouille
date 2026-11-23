@@ -300,6 +300,13 @@ check("l'analyse attend que l'onglet soit visible", not tab.res)
 tab.resize(1200, 700)
 tab.show()
 qa.processEvents()
+ensemble = tab.fiche.toPlainText()
+check("sans choix, la fiche est la vue d'ensemble du rapport, page par page",
+      "Vue d'ensemble du rapport" in ensemble and "KPI affichés" in ensemble
+      and all(pg["nom"] in ensemble for pg in r["pages"]))
+check("la vue d'ensemble dit ce que chaque visuel affiche, et par quoi",
+      all(x in ensemble for x in ("Visuel", "Affiche", "Par"))
+      and any(v["libelle"] in ensemble for v in r["visuels"] if not v["segment"]))
 a = tab.arbre_kpi
 tops = [a.topLevelItem(i).text(0) for i in range(a.topLevelItemCount())]
 check("vue Par KPI : les familles, puis briques, jamais affichées et patrons",
@@ -354,6 +361,291 @@ visuel = next(v for v in r["visuels"] if any(c["genre"] == "parametre" for c in 
 tab.aller_a("visuel", (visuel["page_id"], visuel["id"]))
 check("la fiche d'un visuel nomme son paramètre de champ",
       "paramètre de champ" in tab.fiche.toPlainText() and tab.vues.currentWidget() is p)
+
+# les rôles, les familles et les pastilles « Afficher »
+check("chaque champ d'un visuel a son rôle dans le visuel",
+      all("role" in c for v in r["visuels"] for c in v["champs"])
+      and rg.libelle_role("Category") == "Axe" and rg.libelle_role("Values", True) == "Champ")
+riche = max((v for v in r["visuels"] if not v["segment"]),
+            key=lambda v: sum(c["genre"] == "mesure" for c in v["champs"]))
+it_riche = tab._item_visuel[(riche["page_id"], riche["id"])]
+
+
+def descendants(it):
+    for i in range(it.childCount()):
+        yield it.child(i)
+        yield from descendants(it.child(i))
+
+
+textes = [d.text(0) for d in descendants(it_riche)]
+check("les champs se rangent par rôle (Axe, Valeurs…)",
+      any(t.startswith(("Axe", "Valeurs", "Lignes")) for t in textes))
+n_mes = sum(c["genre"] == "mesure" for c in riche["champs"])
+familles = [d for d in descendants(it_riche) if d.text(0).endswith(" mesures")
+            and " · " in d.text(0)]
+check(f"les variations d'un KPI tiennent sur une ligne à déplier ({n_mes} mesures)",
+      familles and familles[0].childCount() >= 2 and not familles[0].isExpanded())
+tab.aller_a("visuel", (riche["page_id"], riche["id"]))
+check("la fiche du visuel : ses rôles et d'où viennent ses chiffres",
+      "D'où viennent les chiffres" in tab.fiche.toPlainText())
+
+tab.puces_pages.bouton("mesures").setChecked(False)
+tab.puces_pages.bouton("colonnes").setChecked(False)
+from tabs.tab_radiographie import CATEGORIE                       # noqa: E402
+
+
+def vu(it):
+    """Visible à l'écran : lui et tous ses parents."""
+    while it is not None:
+        if it.isHidden():
+            return False
+        it = it.parent()
+    return True
+
+
+cats = {d.data(0, CATEGORIE) for d in descendants(it_riche) if vu(d)}
+check("pastilles Mesures et Colonnes éteintes : il ne reste que les filtres",
+      cats <= {"filtres"} and not it_riche.isHidden())
+tab.puces_pages.bouton("segments").setChecked(False)
+segs = [tab._item_visuel[(v["page_id"], v["id"])] for v in r["visuels"] if v["segment"]]
+check("pastille Segments éteinte : les segments disparaissent de la liste",
+      segs and not any(vu(s) for s in segs))
+for k in ("mesures", "colonnes", "segments"):
+    tab.puces_pages.bouton(k).setChecked(True)
+check("tout rallumé : tout revient", vu(it_riche) and all(vu(s) for s in segs))
+tab.vues.setCurrentWidget(ac)
+check("chaque vue a ses pastilles : Par colonne montre les siennes",
+      tab.puces_cols.isVisibleTo(tab) and not tab.puces_pages.isVisibleTo(tab))
+tab.puces_cols.bouton("mesures").setChecked(False)
+lignes_date = [d for d in descendants(dim) if d.text(0) == "Date"]
+check("Par colonne, pastille Mesures éteinte : une colonne lue seulement par des "
+      "mesures disparaît", lignes_date and all(not vu(d) for d in lignes_date)
+      == all(u["genre"] == "mesure" for c in r["colonnes_utilisees"]
+             if c["table"] == "dim_Date" and c["nom"] == "Date" for u in c["usages"]))
+tab.puces_cols.bouton("mesures").setChecked(True)
+
+# la lisibilité : bandeaux, rôles en gris, Déplier qui garde les familles fermées
+from tabs.tab_radiographie import PREFIXE, SUFFIXE                # noqa: E402
+tab.vues.setCurrentWidget(p)
+page1 = p.topLevelItem(p.topLevelItemCount() - len(r["pages"]))
+check("chaque page est un bandeau sur toute la largeur",
+      all(page1.background(c).color().name() != "#000000" for c in range(4))
+      and page1.font(0).pointSize() > p.font().pointSize())
+check("le rôle d'un champ seul est en gris devant lui (« Axe : »)",
+      any(d.data(0, PREFIXE) and d.text(0).startswith(d.data(0, PREFIXE))
+          for d in descendants(it_riche)))
+check("le compte d'une famille est en gris derrière elle",
+      familles and familles[0].data(0, SUFFIXE) == familles[0].text(0)[len(
+          familles[0].text(0).split(" · ")[0]):])
+check("un visuel est en gras, son type en gris",
+      it_riche.font(0).bold() and it_riche.data(0, PREFIXE) == riche["libelle_type"] + " · ")
+tab._deplier(True)
+check("Déplier ouvre les visuels mais laisse les familles fermées",
+      it_riche.isExpanded() and familles and not familles[0].isExpanded())
+tab._deplier(False)
+check("Replier revient aux pages", not it_riche.isExpanded() and page1.isExpanded())
+enfants = [familles[0].child(i) for i in range(familles[0].childCount())]
+check("dans une famille, Mène à et Table ne se répètent pas sous la famille",
+      all(e.text(1) != familles[0].text(1) or not e.text(1) for e in enfants))
+tab.btn_ensemble.click()
+check("le bouton Vue d'ensemble y ramène la fiche",
+      "Vue d'ensemble du rapport" in tab.fiche.toPlainText())
+
+# Par source : d'où vient chaque table, et ce qui en dépend
+import lineage as lg                                              # noqa: E402
+import tabs.tab_lineage as tl                                     # noqa: E402
+vs = tab.vue_sources
+check("la vue Par source est une vue de la Radiographie",
+      tab.vues.indexOf(vs) >= 0 and tab.vues.tabText(tab.vues.indexOf(vs)) == "Par source")
+imp = tab.impacts
+cc = lg.colonnes_calculees(tab.lineage["modele_dir"])
+check(f"les colonnes calculées du modèle sont lues ({len(cc)})",
+      cc and all(c["dax"] for c in cc))
+check("weight obs : reprise par Weight LOCF, des mesures et des visuels en dépendent",
+      imp["weight obs"]["tables_calculees"] == ["Weight LOCF"]
+      and imp["weight obs"]["mesures_directes"] and imp["weight obs"]["visuels"]
+      and set(imp["weight obs"]["mesures_directes"]) <= set(imp["weight obs"]["mesures"]))
+check("une table calculée vit avec ses colonnes calculées",
+      len(imp["dim_Date"]["colonnes_calculees"]) == sum(1 for c in cc if c["table"] == "dim_Date"))
+tot = rg.cumuler(imp, ["sleep", "steps", "weight obs"])
+check("toute une source : chaque élément compté une fois",
+      len(tot["mesures"]) == len(set(tot["mesures"]))
+      and len(tot["visuels"]) <= sum(len(imp[t]["visuels"]) for t in ("sleep", "steps",
+                                                                         "weight obs")))
+tab.vues.setCurrentWidget(vs)
+qa.processEvents()
+check("Par source : ni pastilles Afficher ni Déplier",
+      not tab.puces_pages.isVisibleTo(tab) and not tab.btn_deplier.isVisibleTo(tab))
+lignes_vs = [vs.arbre.topLevelItem(i) for i in range(vs.arbre.topLevelItemCount())]
+wo = next(it for it in lignes_vs if it.text(tl.COL_TABLE) == "weight obs")
+check("les comptes : mesures et visuels de weight obs",
+      wo.text(tl.COL_MESURES) == str(len(imp["weight obs"]["mesures"]))
+      and wo.text(tl.COL_VISUELS) == str(len(imp["weight obs"]["visuels"]))
+      and not vs.arbre.isColumnHidden(tl.COL_MESURES))
+vs.arbre.setCurrentItem(wo)
+fiche = tab.fiche.toPlainText()
+check("la fiche d'une table : ce qui en dépend, visuels d'abord, et toute sa source",
+      "Ce qui en dépend" in fiche and "Visuels" in fiche and "Weight LOCF" in fiche
+      and fiche.index("Visuels") < fiche.index("Mesures") and "Toute la source" in fiche)
+tab.ed_filtre.setText("weight obs")
+check("le filtre de la Radiographie filtre aussi la vue Par source",
+      not wo.isHidden() and any(it.isHidden() for it in lignes_vs))
+tab.ed_filtre.clear()
+
+# l'ordre des vues, du plus large au plus fin
+check("les vues : Lignage, Par source, Par page, Par colonne, Par KPI",
+      [tab.vues.tabText(i) for i in range(tab.vues.count())]
+      == ["Lignage", "Par source", "Par page", "Par colonne", "Par KPI"])
+
+# Par colonne : ce qui dépend de chaque colonne
+deps = rg.dependants_colonnes(r)
+i_date = next(i for i, c in enumerate(r["colonnes_utilisees"])
+              if (c["table"], c["nom"]) == ("dim_Date", "Date"))
+dd = deps[i_date]
+check(f"dim_Date[Date] : {len(dd['mesures_directes'])} mesures la lisent, "
+      f"{len(dd['mesures'])} en dépendent",
+      dd["mesures_directes"] and len(dd["mesures"]) > len(dd["mesures_directes"])
+      and set(dd["mesures_directes"]) <= set(dd["mesures"]))
+ligne_d = next(ac.topLevelItem(k).child(j) for k in range(ac.topLevelItemCount())
+               for j in range(ac.topLevelItem(k).childCount())
+               if ac.topLevelItem(k).child(j).data(0, 256) == ("colonne_rapport", i_date))
+check("Par colonne : les comptes de mesures, filtres et visuels",
+      ligne_d.text(1) == str(len(dd["mesures"])) and ligne_d.text(3) == str(len(dd["visuels"])))
+enfants_d = [ligne_d.child(k).text(0) for k in range(ligne_d.childCount())]
+check("102 mesures qui la lisent tiennent sur une ligne repliée, par famille",
+      any(t.startswith("Lue par") for t in enfants_d) and len(enfants_d) < 10
+      and any(t.startswith("Reprise par") for t in enfants_d))
+tab.vues.setCurrentWidget(ac)
+ac.setCurrentItem(None)             # déjà choisie plus haut : la re-choisir
+ac.setCurrentItem(ligne_d)
+fiche_d = tab.fiche.toPlainText()
+check("la fiche d'une colonne : le résumé, puis les mesures par famille",
+      f"{len(dd['mesures'])} mesure(s)" in fiche_d and "Mesures qui les reprennent" in fiche_d)
+
+# la fiche se replie : les premières lignes, un lien pour le reste
+plis = [i for i, l in enumerate(tab._liens) if l[0] == "plier"]
+check("une longue liste de la fiche ne montre que ses premières lignes",
+      plis and "afficher les" in fiche_d)
+longueur_pliee = len(fiche_d)
+tab._lien(QUrl(f"#{plis[0]}"))
+check("un clic l'affiche en entier, au même endroit",
+      len(tab.fiche.toPlainText()) > longueur_pliee and "replier" in tab.fiche.toPlainText())
+tab.aller_a("mesure", "Weight YTD")
+check("changer de fiche replie tout", "replier" not in tab.fiche.toPlainText()
+      or all(l[0] != "plier" for l in tab._liens))
+check("la vue Par KPI dit comment elle range ses familles",
+      tab.lbl_kpi.isVisibleTo(tab) and "DAX" in tab.lbl_kpi.text())
+
+# Lignage : de la source au visuel
+import lignage as lgn                                             # noqa: E402
+g = tab.graphe
+N = g["noeuds"]
+src = next(n for n in N if n[0] == "source" and "FitbitDB" in str(n[1]))
+courbes = next(n for n, x in N.items() if x["libelle"].startswith("Courbes"))
+aval = lgn.chaine_sens(g["liens"], src, amont=False)
+check("de la source ODBC au visuel : weight obs, Weight LOCF, la famille Body Fat %",
+      {("table", "weight obs"), ("table", "Weight LOCF"), ("mesures", "Body Fat %"),
+       courbes} <= aval)
+check("en amont du visuel : ses sources, ses filtres et ses segments",
+      src in lgn.chaine_sens(g["liens"], courbes, amont=True)
+      and any(N[n]["genre"] in ("filtre", "segment")
+              for n in lgn.chaine_sens(g["liens"], courbes, amont=True)))
+ordre_b = {b: i for i, b in enumerate(lgn.BANDES)}
+check("les colonnes suivent les bandes, de la source au visuel",
+      all(N[a]["couche"] < N[b]["couche"] for a, b in g["liens"]
+          if ordre_b[N[a]["bande"]] < ordre_b[N[b]["bande"]]))
+check("une table calculée qui en lit une autre se place plus loin",
+      N[("table", "Weight LOCF")]["couche"] > N[("table", "dim_Date")]["couche"])
+check("ce qui ne mène à aucun visuel est marqué : TD_Indicateurs, Switch KPI",
+      not N[("table", "TD_Indicateurs")]["utilise"] and not N[("mesures", "Switch KPI")]["utilise"]
+      and N[("table", "weight obs")]["utilise"])
+vl = tab.vue_lignage
+tab.vues.setCurrentWidget(vl)
+qa.processEvents()
+check("la vue Lignage dessine ce qui est utilisé",
+      set(vl.boites) == {n for n, x in N.items() if x["utilise"]})
+vl.cb_tout.setChecked(True)
+check("la case montre aussi le reste", set(vl.boites) == set(N))
+vl.cb_tout.setChecked(False)
+vl.choisir(src)
+qa.processEvents()
+allumees = {n for n, b in vl.boites.items() if b.opacity() == 1}
+check("choisir la source allume sa chaîne et éteint le reste",
+      allumees == lgn.chaine(g["liens"], src) & set(vl.boites) and len(allumees) < len(vl.boites))
+fiche_l = tab.fiche.toPlainText()
+check("la fiche d'une source : ce à quoi elle mène, et tout ce qui en dépend",
+      "Mène à" in fiche_l and "Lue par 3 table(s)" in fiche_l and "Visuels" in fiche_l)
+vl.cb_chaine.setChecked(True)
+check("Seulement la chaîne : le graphe ne garde qu'elle",
+      set(vl.boites) == lgn.chaine(g["liens"], src) & {n for n, x in N.items() if x["utilise"]})
+vl.choisir(None)
+check("un clic dans le vide efface le choix et redessine tout",
+      not vl.cb_chaine.isChecked() and len(vl.boites) == sum(x["utilise"] for x in N.values()))
+
+# l'amont en vert, l'aval en orange, et le sens qui ne garde que l'un
+import tabs.vue_lignage as tvl                                    # noqa: E402
+fam = ("mesures", "Average Sleep Duration")
+vl.choisir(fam)
+couleurs = {(a, b): t.pen().color().name().lower() for a, b, t, _o in vl.liens}
+check("les liens de l'amont sont verts, ceux de l'aval orange",
+      couleurs[(("table", "sleep"), fam)] == tvl.AMONT_C.lower()
+      and any(c == tvl.AVAL_C.lower() for (a, b), c in couleurs.items() if a == fam))
+vl.puces_sens.choisir("amont")
+allumees = {n for n, b in vl.boites.items() if b.opacity() == 1}
+check("Sens Amont : seulement ce dont la famille vient",
+      allumees == lgn.chaine_sens(g["liens"], fam, amont=True) & set(vl.boites)
+      and courbes not in allumees)
+lignes_amont = vl.lignes_export()
+check("l'export suit le sens : ni aval, mais la famille mesure par mesure",
+      {x["Sens"] for x in lignes_amont} == {"amont", "choisi"}
+      and sum(x["Sens"] == "choisi" for x in lignes_amont) == len(N[fam]["membres"]))
+vl.puces_sens.choisir("deux")
+lignes_deux = vl.lignes_export()
+sortie = TMP / "chaine.csv"
+lgn.ecrire_csv(lignes_deux, sortie)
+import csv as _csv                                                # noqa: E402
+with sortie.open(encoding="utf-8-sig") as f:
+    rangs = list(_csv.reader(f, delimiter=";"))
+sortie.unlink()
+check("l'export CSV : une colonne Sens (amont, choisi, aval) et la distance",
+      rangs[0] == lgn.COLONNES_EXPORT and {r[0] for r in rangs[1:]} == {"amont", "choisi", "aval"}
+      and all(r[1].isdigit() for r in rangs[1:]))
+
+# un lien qui saute une colonne passe entre les boîtes, pas à travers
+lien = next(o for a, b, t, o in vl.liens if (a, b) == (("table", "sleep"), fam))
+pts = vl._trajet(("table", "sleep"), fam, {d: (bx.pos().x(), bx.pos().y())
+                                           for d, bx in vl.boites.items()})
+sautees = range(vl._col_de[("table", "sleep")] + 1, vl._col_de[fam])
+check("un lien qui saute une colonne la traverse par un passage libre",
+      len(pts) == 2 + 2 * len(sautees) and sautees
+      and all(not any(debut < pts[1 + 2 * j][1] < fin for debut, fin in vl._cols[k][1])
+              for j, k in enumerate(sautees)))
+
+# une bande se replie en une boîte, et ses liens passent par elle
+vl.choisir(None)
+vl.basculer_bande("filtre")
+check("une bande repliée tient en une boîte",
+      ("bande", "filtre") in vl.boites
+      and not any(N[d]["bande"] == "filtre" for d in vl.boites if d in N)
+      and any(b == ("bande", "filtre") or a == ("bande", "filtre") for a, b, _t, _o in vl.liens))
+vl._clic(vl.boites[("bande", "filtre")])
+check("un clic sur la boîte d'une bande la déplie", ("bande", "filtre") not in vl.boites)
+
+# de haut en bas : les sources au-dessus des visuels
+vl.puces_dispo.choisir("vertical")
+y_src = vl.boites[src].pos().y()
+y_vis = vl.boites[courbes].pos().y()
+check("Haut → bas : les bandes en rangées, les sources en haut", y_src < y_vis)
+vl.puces_dispo.choisir("horizontal")
+
+# la fiche se ferme, et le choix est retenu
+tab._montrer_fiche(False)
+from core.project import lire_reglage                             # noqa: E402
+check("la fiche se cache, et le réglage le retient",
+      not tab.fiche.isVisibleTo(tab) and lire_reglage("radiographie_fiche") == "0"
+      and tab.btn_fiche.text() == "Afficher la fiche")
+tab.btn_ensemble.click()
+check("Vue d'ensemble rouvre la fiche", tab.fiche.isVisibleTo(tab))
 tab.close()
 
 # ---------------------------------------------------------------------------

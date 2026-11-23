@@ -1,4 +1,5 @@
-"""Les captures de l'article 6 (Radiographie) : les trois vues de l'onglet.
+"""Les captures de l'article 6 (Radiographie) : la vue d'ensemble et les trois
+vues de l'onglet.
 
     py docs\\ressources\\sources\\capture_radiographie.py
 
@@ -65,6 +66,32 @@ def capturer(nom):
 attendre()
 r = t.res
 
+# 0. La vue d'ensemble : la fiche, avant tout choix
+t.vues.setCurrentWidget(t.arbre_pages)
+capturer("radiographie_ensemble.png")
+
+# 0b. Le lignage : une source choisie, sa chaîne allumée jusqu'aux visuels
+t.vues.setCurrentWidget(t.vue_lignage)
+w.resize(1900, 820)              # le graphe a besoin de largeur
+attendre()
+t._split.setSizes([1400, 480])
+vl = t.vue_lignage
+vl.ajuster(largeur_seule=True)
+source = next(n for n, x in vl.graphe["noeuds"].items()
+              if x["genre"] == "source" and x["detail"] == "ODBC")
+vl.choisir(source)
+capturer("radiographie_lignage.png")
+# … et la chaîne seule d'un visuel, de ses sources à lui
+visuel = next(n for n, x in vl.graphe["noeuds"].items() if x["libelle"].startswith("Courbes"))
+vl.choisir(visuel)
+vl.cb_chaine.setChecked(True)
+vl.ajuster()                     # la chaîne entière, de la source au visuel
+capturer("radiographie_lignage_chaine.png")
+vl.choisir(None)
+w.resize(1400, 820)
+attendre()
+t._split.setSizes([t.width() * 3 // 5, t.width() * 2 // 5])
+
 # 1. Par page : un visuel filtré, déplié (champs, mène à, filtré par)
 v = max((v for v in r["visuels"] if not v["segment"]),
         key=lambda v: (sum(f["actif"] for f in v["filtres"]) + len(v["segments"]),
@@ -76,6 +103,16 @@ for i in range(it.childCount()):
     if it.child(i).text(0).startswith("Filtré par"):
         it.child(i).setExpanded(True)
 capturer("radiographie_pages.png")
+
+# 1b. Par page, seulement ce qui filtre : Mesures et Colonnes éteintes, tout déplié
+for cle in ("mesures", "colonnes"):
+    t.puces_pages.bouton(cle).setChecked(False)
+t._deplier(True)
+t.arbre_pages.scrollToTop()
+capturer("radiographie_filtres.png")
+for cle in ("mesures", "colonnes"):
+    t.puces_pages.bouton(cle).setChecked(True)
+t._deplier(False)
 
 # 2. Par KPI : une variation affichée, dans sa famille
 nom = next(x["nom"] for f in r["kpis"] for x in f["membres"] if x["visuels"] and x["par"] == "dax")

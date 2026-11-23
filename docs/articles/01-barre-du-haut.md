@@ -41,10 +41,33 @@ dernier rapport utilisé.
 
 Le bouton **📄** montre le `measures_config.json` utilisé. Par défaut, c'est celui qui se
 trouve à côté du `.pbip`, et le bouton n'affiche que son nom. Cliquer dessus permet d'en
-choisir un autre, par exemple au travail si le config ne vit pas avec le rapport. Ce choix
+choisir un autre, par exemple si le config ne vit pas avec le rapport. Ce choix
 est mémorisé pour ce rapport, et le bouton affiche alors une partie du chemin.
 
 Si le fichier est introuvable, le bouton s'affiche en jaune.
+
+### Un rapport sans config
+
+Un rapport qui n'a encore jamais servi avec PBIdouille n'a pas de `measures_config.json`.
+L'onglet **Mesures** propose alors **Créer un measures_config.json de départ ici…**. Une
+fenêtre montre ce que l'outil a deviné du modèle avant d'écrire quoi que ce soit :
+
+| Réglage | Deviné ainsi |
+|---|---|
+| **Table des mesures** | La table qui porte le plus de mesures écrites à la main |
+| **Colonne de dates** | La colonne de dates de la table marquée comme table de dates, sinon d'une table dont le nom parle de date ou de calendrier |
+
+Le config de départ n'a aucune variation : le bouton **Bibliothèque…** des
+[Variations](03-1-variations.md) en propose. Les paramètres de champ et le switch y sont désactivés, et s'activent dans
+⚙ **Réglages**. Ces réglages se vérifient avant la première génération.
+
+Si le rapport n'a pas non plus de `TD_Indicateurs.xlsx`, une case propose de le créer en
+même temps : une ligne par mesure de base, avec les colonnes `mesure`,
+`libelle_indicateur`, `couleur_fill` et `couleur_text`, dans un tableau Excel. Il reste à
+l'importer dans Power BI Desktop, comme table, pour que les libellés et les couleurs
+servent.
+
+Rien n'est jamais écrasé : un fichier déjà présent n'est pas touché.
 
 ## Restaurer une sauvegarde
 

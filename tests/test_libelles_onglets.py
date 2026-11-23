@@ -24,7 +24,7 @@ class LibellesOnglets(unittest.TestCase):
         onglets.setObjectName("ongletsPrincipaux")
         barre = onglets.tabBar()
         barre.setFocusPolicy(Qt.NoFocus)
-        for libelle in ("Mesures", "Rapport", "Sources de données", "Radiographie 🩻", "ChopChop 🪓"):
+        for libelle in ("Mesures", "Rapport", "Radiographie 🩻", "ChopChop 🪓"):
             onglets.addTab(QWidget(), libelle)
         onglets.resize(1600, 180)
         onglets.show()

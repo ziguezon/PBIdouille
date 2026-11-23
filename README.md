@@ -141,8 +141,7 @@ TD_Indicateurs.xlsx               mesures de base (_mesures\_indicateurs)
                              │
    Rapport › Propager ───────┤ (formatage conditionnel, KPI par KPI)
    Rapport › Colorer ────────┤ (couleurs de matrice par KPI)
-   Sources de données ───────┤ (d'où vient chaque table)
-   Radiographie ─────────────┤ (KPI, visuels, filtres, colonnes)
+   Radiographie ─────────────┤ (KPI, visuels, filtres, colonnes, sources)
    ChopChop ─────────────────┘ (ce que plus rien n'utilise)
 ```
 
@@ -152,8 +151,7 @@ Les onglets :
 |---|---|
 | **Mesures** | Éditeur des variations, arbre des mesures, tables paramètre de champ, et la génération (en tête du journal) |
 | **Rapport** | Propage le formatage d'un KPI gabarit vers les autres (grille des sources) ; colore les matrices |
-| **Sources de données** | Le lineage du rapport ouvert : chaque table et sa source |
-| **Radiographie 🩻** | La carte d'un rapport qu'on n'a pas fait : KPI et variations, ce que chaque visuel affiche et ce qui le filtre, où sert chaque colonne |
+| **Radiographie 🩻** | La carte d'un rapport qu'on n'a pas fait : KPI et variations, ce que chaque visuel affiche et ce qui le filtre, où sert chaque colonne, et d'où vient chaque table (vue Par source) |
 | **ChopChop 🪓** | Mesures, colonnes et tables que plus rien n'utilise ; export ; restauration des sauvegardes |
 | **Wireframe** | Plan des pages et des visuels (édition dev seulement) |
 
@@ -176,7 +174,9 @@ doublon. Tout ce qui est réécrit est d'abord sauvegardé.
 | `bidouille\moteurs\unused_measures.py` | analyse de ce qui ne sert plus (mesures, colonnes, tables) |
 | `bidouille\moteurs\unused_measures_ui.py` | le panneau ChopChop |
 | `bidouille\moteurs\lineage.py` | les sources de données du rapport ouvert |
-| `bidouille\moteurs\radiographie.py` | la radiographie d'un rapport : familles de KPI, visuels, filtres, colonnes |
+| `bidouille\moteurs\radiographie.py` | la radiographie d'un rapport : familles de KPI, visuels, filtres, colonnes, ce qui dépend de chaque table |
+| `bidouille\moteurs\lignage.py` | le graphe du rapport, de la source de données au visuel |
+| `bidouille\moteurs\demarrage.py` | le measures_config.json et le TD_Indicateurs.xlsx de départ d'un rapport qui n'en a pas |
 | `bidouille\moteurs\backup_restore.py` | sauvegardes horodatées et restauration (manifeste : d'où vient chaque copie) |
 | `bidouille\moteurs\xlsx_lecture.py` | lecture de l'Excel qui relâche toujours le fichier |
 | `bidouille\moteurs\chemins.py` | où vivent l'outil et les projets |
@@ -211,6 +211,14 @@ contenu change sont sauvegardés puis écrits). Le manifeste de la sauvegarde es
 restaurer. Les lineageTags
 existants sont préservés ; une table paramètre créée est ajoutée aux
 `ref table` de model.tmdl (penser à la relation TD → Indicateur ensuite).
+
+**Le DAX sous le « = »** : `measure_block` écrit toujours une ligne vide
+indentée (`\t\t\t`) juste après `measure 'Nom' =`, puis le DAX. C'est la forme
+que Desktop enregistre pour une mesure tapée avec un retour à la ligne après
+le `=` : l'éditeur de Power BI montre alors le DAX à partir de la deuxième
+ligne. La lecture (`expression_mesure`) saute cette ligne : l'éditeur de
+PBIdouille commence à la première. Les mesures générées avant ce changement
+(DAX collé au `=`) sont réécrites une fois, à la génération suivante.
 
 **Collisions de nom** : les noms de mesures sont uniques dans le modèle, à la
 casse près et toutes tables confondues. Un nom déjà pris par une mesure écrite à
@@ -1976,18 +1984,21 @@ générées, retirer la variation du config plutôt que la mesure.
 
 ---
 
-## 12. Installer au travail
+## 12. Installer
 
 Télécharger le zip de la branche `stable` sur GitHub (**Code → Download
 ZIP**) ; il contient l'app et le guide (`docs\`). L'extraire où l'on veut,
 puis :
 
 - [ ] Python 3.8+ disponible (`py --version`) ;
-- [ ] `qtpy` et un binding Qt : PyQt5 (déjà au travail) ou PySide6
-      (`py -m pip install qtpy pyside6` à la maison) ; `openpyxl` ;
+- [ ] `qtpy` et un binding Qt, PySide6 ou PyQt5
+      (`py -m pip install qtpy pyside6`, ou `qtpy pyqt5`) ; `openpyxl` ;
 - [ ] `py app.py`, puis le bouton du rapport → **Ouvrir un autre rapport…** ;
 - [ ] le `measures_config.json` du rapport (bouton 📄 s'il n'est pas à côté
-      du `.pbip`) ; vérifier dans ⚙ Réglages la colonne de dates, la table et
+      du `.pbip`), ou, s'il n'en a pas, **Créer un measures_config.json de
+      départ ici…** dans l'onglet Mesures (`moteurs\demarrage.py` : table des
+      mesures et colonne de dates devinées, TD_Indicateurs.xlsx en option,
+      rien n'est écrasé) ; vérifier dans ⚙ Réglages la colonne de dates, la table et
       le dossier des mesures de base ;
 - [ ] la table dimension (équivalent TD_KPI) avec une colonne = noms de
       mesures ;
@@ -2028,7 +2039,7 @@ où l'image simple, agrandie, redevenait floue — donc ronde.
 py PBIdouille\app.py
 ```
 
-Dépendances : `qtpy` + PySide6 (maison) ou PyQt5 (travail). L'app rouvre le
+Dépendances : `qtpy` + PySide6 ou PyQt5. L'app rouvre le
 dernier projet utilisé (mémorisé), sinon « Fitbit.pbip » dans
 le dossier des projets.
 
@@ -2079,10 +2090,10 @@ directement sur la bonne page, là où la notion sert : à côté de
 « Bibliothèque… » et de « Jetons disponibles » (Mesures), de « Grille des
 sources… » (Rapport) et dans Mesures → Paramètres de champ.
 
-Les images (`bidouilleide\*.png`) **sont** les diapos du guide, exportées
+Les images (`bidouille\guide\*.png`) **sont** les diapos du guide, exportées
 par `docs\ressources\sources\exporter_aide.ps1` (PowerPoint requis) — une seule source,
 le guide et l'app montrent le même dessin. Les diapos y sont retrouvées par
-leur titre. Le guide lui-même se reconstruit avec `docs\sourcesuild_deck.py`
+leur titre. Le guide lui-même se reconstruit avec `docs\sources\build_deck.py`
 (captures : `docs\ressources\sources\capture.py`).
 
 ### Disposition : l'outil d'un côté, les projets de l'autre
@@ -2121,7 +2132,7 @@ son dossier de sauvegardes les garde restaurables.
 **measures_config.json** : par défaut, celui à côté du `.pbip` ; sinon le
 bouton **📄**, à côté du nom du rapport, montre le config utilisé et
 permet d'en choisir un autre d'un clic (mémorisé PAR
-projet — utile au travail si le config ne vit pas avec le rapport). La table
+projet, utile si le config ne vit pas avec le rapport). La table
 paramètre des KPI est résolue dans l'ordre : celles du config
 (`fieldParameter.tables`, dans l'ordre de la liste) → la première qui
 existe dans le modèle → sinon **scan du modèle** (première table contenant
@@ -2273,7 +2284,7 @@ fenêtre descend de ~2300 px de large à ~1860, journal compris.
 
 ### Édition production / dev — la version qu'on partage
 
-La version partagée au travail est l'édition **production** : ce qui n'est
+La version partagée est l'édition **production** : ce qui n'est
 pas encore assez éprouvé pour être confié à d'autres y est **masqué** (le code
 reste, il n'est pas offert) :
 
@@ -2313,7 +2324,8 @@ il vit hors du dépôt (cf. `PBIDOUILLE_PROJETS`).
 
 GitHub Actions lance la même commande, hors écran, pour chaque PR et chaque
 poussée vers `experimental` et `stable` : sous Ubuntu et Windows avec PyQt5 et
-PySide6, et sous Windows en Python 3.8 avec PyQt5, comme au travail. Faute du
+PySide6, et sous Windows en Python 3.8 avec PyQt5, la plus ancienne
+combinaison prise en charge. Faute du
 projet de démonstration, la CI n'y exécute que les suites autonomes.
 
 Pour un essai sans le projet de démonstration, `py tests/projet_minimal.py
@@ -2335,6 +2347,7 @@ bidouille\
     runner.py       ToolRunner (QThread) : lance un outil, ligne à ligne vers le journal
     theme.py        palette, QSS, icône émoji ; police_code (chasse fixe du
                     code) et rangee_transparente (rangées dans un groupe)
+    puces.py        rangée de pastilles de filtre (un choix, ou plusieurs)
   tabs\                 (dans l'ordre des onglets)
     tab_config.py       onglet « Mesures » (Variations, JSON brut) + la fenêtre ⚙ Réglages
     arbre_mesures.py    Mesures → « Arbre des mesures » (par KPI / par variation)
@@ -2344,7 +2357,9 @@ bidouille\
     fp_tables.py        l'éditeur de la liste des tables paramètre
     tab_model.py        panneau « Génération des mesures », posé en tête du journal (generate_measures.py)
     tab_report.py       onglet « Rapport » (propagation, couleurs des matrices)
-    tab_lineage.py      onglet « Sources de données » (moteurs\lineage.py)
+    tab_lineage.py      vue « Par source » de la Radiographie (moteurs\lineage.py)
+    tab_radiographie.py onglet « Radiographie 🩻 » (moteurs\radiographie.py)
+    vue_lignage.py      vue « Lignage » de la Radiographie (moteurs\lignage.py)
     dialog_sources.py   la grille des sources du formatage (propagation.json)
     tab_wireframe.py    onglet « Wireframe » (plan des pages, niveaux actifs, gabarits)
     tab_chopchop.py     onglet « ChopChop 🪓 » (embarque le panneau de unused_measures_ui)
@@ -2653,17 +2668,55 @@ en silence. Workflow : éditer → **Générer les mesures** (qui enregistre si
 besoin) → rouvrir Desktop. Le bouton **« Sauvegarder »** s'allume en
 **orange** dès que le config a des modifications en attente.
 
-### Onglet « Sources de données »
+### Radiographie, vue « Par source » (ex-onglet « Sources de données »)
 
 D'où vient chaque table du rapport ouvert — le lineage de `scan_lineage.py`
-(section 9), pour ce projet-ci, sans CSV à charger. Lecture seule.
+(section 9), pour ce projet-ci, sans CSV à charger. Lecture seule. La vue est
+`LineageTab(integre=True)` : la Radiographie lit le lineage (`lineage.scan_projet`),
+lui passe ses dépendances par `afficher()`, lui transmet son filtre, et montre
+la fiche de la ligne choisie (signal `choisi`). Seule, `LineageTab()` garde son
+filtre et son Relire (tests).
 
-- **Regrouper par source** (défaut) : une ligne par source distincte — l'Excel
-  des indicateurs, la base ODBC, un CSV, un serveur SQL… — avec son détail
-  (chemin, DSN, serveur / base, URL) et, dessous, les tables qui la lisent
-  et leur mode (import, directQuery…). **Regrouper par table** : l'inverse.
-- Les **tables calculées** (DAX : paramètres de champ, calendrier…) ne lisent
-  rien de l'extérieur : elles sont rangées à part, repliées.
+- **Ce qui dépend de chaque table** (`radiographie.dependants`) : colonnes
+  **Mesures**, **Filtres**, **Visuels** et **Calculées**, juste après la
+  source. Une table compte avec les tables calculées qui la reprennent
+  (`lineage.reprises`). Les mesures sont celles dont le DAX cite une de ces
+  tables (`lineage.tables_citees`), plus celles qui les reprennent
+  (`used_by`) ; les filtres, ceux du volet avec une valeur et les segments,
+  sur leurs colonnes (`colonnes_utilisees`) ; les visuels, ceux qui affichent
+  une de leurs colonnes, un de leurs paramètres de champ ou une de ces
+  mesures. Les colonnes calculées viennent de `lineage.colonnes_calculees`
+  (`column X = …` dans les .tmdl). La fiche liste le tout, visuels d'abord,
+  mesures reprises regroupées par famille, et le total de toute la source
+  (`radiographie.cumuler`, sans doublon).
+
+- Une **liste à plat**, une ligne par table et par source : **Type** (Excel,
+  CSV, ODBC…), **Source** (le nom du fichier, ou le serveur, le DSN, l'URL),
+  **Élément lu**, **Mode** et **Emplacement** (le dossier du fichier). Les
+  colonnes se trient ; trier par Source range ensemble les tables qui lisent
+  le même fichier, et l'infobulle de la source les nomme. L'ancien
+  regroupement en sections, une par source, devenait illisible dès qu'une
+  même source servait plusieurs tables.
+- **Élément lu** vient du pas de navigation de la requête
+  (`Source{[Item="Table1",Kind="Table"]}`) : la feuille ou le tableau d'un
+  classeur, la table d'une base avec son schéma (`dbo.Ventes`), ou
+  `requête SQL` quand la requête est écrite à la main (`Value.NativeQuery`,
+  option `Query=`, `Odbc.Query`). Il n'est attribué que si le bloc M n'a
+  qu'un connecteur. L'export CSV l'ajoute en colonne `Objet`.
+- Les **pastilles** du haut ne gardent qu'un type de source, les **tables
+  calculées** (DAX : paramètres de champ, calendrier…, grisées et triées en
+  dernier), ou les fichiers **⚠ Introuvables**. Les partitions d'une même
+  table qui lisent la même source font une seule ligne.
+- Une **table calculée** a pour Source les tables du modèle que son DAX cite
+  (`lineage.tables_citees` : `'Nom'`, ou un nom nu qui n'est ni une fonction
+  ni une variable, après avoir effacé chaînes, commentaires et `[colonnes]`) ;
+  une requête M sans connecteur, les requêtes qu'elle cite (`#"Nom"`). La
+  colonne **Reprise par** donne, pour chaque table, les tables qui la lisent,
+  directement ou par une autre (`lineage.reprises`) : une table qu'aucun
+  visuel n'affiche mais qu'une table calculée reprend ne se supprime pas.
+  L'infobulle de la source d'une table calculée donne la source de chaque
+  table lue, et les sources externes au bout de la chaîne
+  (`lineage.sources_au_bout`). L'export CSV l'ajoute en colonne `Tables lues`.
 - Un argument qui nomme un **paramètre M** (`Sql.Database(Serveur, Base)`)
   montre aussi sa valeur, lue dans `expressions.tmdl`.
 - Un **fichier local** cité qui n'existe pas sur ce poste est marqué **⚠** :
@@ -2680,13 +2733,77 @@ La carte d'un rapport qu'on n'a pas fait (section 9b), en trois vues, avec à
 droite la fiche de l'élément choisi et des liens de l'une à l'autre. Lecture
 seule, donc aussi en production.
 
-- **Par page** (défaut) : page → visuel → champs. Pour chaque mesure, **Mène
-  à** donne ses mesures de base (colonnes lues en infobulle) ; chaque visuel
-  a sa ligne **Filtré par** (filtres avec leur valeur, filtres de page et de
-  rapport, segments de la page avec leur sélection). Les champs du volet sans
-  valeur tiennent sur une ligne grisée. Un champ introuvable dans le modèle
-  est marqué **⚠**. Un visuel sans titre est nommé par son type et son
-  premier champ.
+- **Par page** (défaut) : page → visuel → champs, rangés par **rôle** comme
+  dans le volet Visualisations (Axe, Valeurs, Légende, Lignes… : la clé du
+  `queryState`, traduite par `radiographie.libelle_role`). Les mesures d'une
+  même famille tiennent sur une ligne repliée (« Body Fat % · 16 mesures »).
+  **Mène à** donne les mesures de base, pour chaque mesure et pour le visuel
+  entier ; chaque visuel a sa ligne **Filtré par** (filtres avec leur valeur,
+  filtres de page et de rapport, segments de la page avec leur sélection),
+  ou « Filtré par : rien ». Un champ introuvable dans le modèle est marqué
+  **⚠**. Un visuel sans titre est nommé par son type et son premier champ.
+  Les segments viennent après les visuels de leur page.
+- Lisibilité : chaque page (et chaque table, par colonne) est un **bandeau**
+  dans la police des titres ; un visuel est en gras, son type en gris. Le
+  délégué `_NomEnDeuxTons` grise le début et la fin d'un nom (données
+  `PREFIXE` et `SUFFIXE`) : le rôle d'un champ seul (« Axe : »), le compte
+  d'une famille (« · 16 mesures »). Sous une famille, Mène à et Table ne
+  répètent pas la ligne de la famille. **Déplier** ouvre tout sauf les
+  familles et les paramètres de champ (`REPLIES`) : tout déplié, un visuel
+  reste une ligne par rôle.
+- **Lignage** (`moteurs\lignage.py`, `tabs\vue_lignage.py`) : un graphe de
+  la source au visuel, en bandes (sources, Power Query, tables calculées,
+  mesures par famille, paramètres de champ, filtres et segments, visuels par
+  page). `lignage.construire(res, lignes)` donne les nœuds et les liens
+  (A → B : B a besoin de A) ; la colonne de chaque nœud est le plus long
+  chemin dans sa bande, une bande commençant après la précédente. Un nœud est
+  `utilise` s'il mène à un visuel ou à un segment ; seuls ceux-là sont
+  dessinés par défaut. Un segment ne relie pas les autres segments (cela
+  étirait la bande sur dix colonnes). Dans une colonne, l'ordre suit le
+  barycentre des voisins (aller puis retour, deux fois), les visuels restant
+  groupés par page. Un clic allume `chaine_sens` en amont (liens verts,
+  `AMONT_C`) et en aval (orange, `AVAL_C`) ; les pastilles Sens n'en gardent
+  qu'un. La fiche du nœud (`_fiche_noeud`) résume ces deux côtés bande par
+  bande, puis montre la fiche habituelle de ce qu'il est.
+  - **Bandes repliables** : `_affichage` remplace les nœuds d'une bande de
+    `repliees` par une boîte `("bande", b)` et y fait passer leurs liens (chaque
+    lien affiché garde ses liens d'origine, pour la couleur). Plus de
+    `REPLI_AUTO` éléments : la bande part repliée.
+  - **Tracé** : `_placer` retient la colonne de chaque boîte et la place des
+    boîtes de chaque colonne ; `_trajet` fait traverser chaque colonne sautée
+    par le passage (entre deux boîtes, au-dessus, en dessous) le plus proche de
+    la droite du lien. Les points sont en (axe principal, axe transversal) : le
+    même code sert de gauche à droite et de haut en bas.
+  - **Export** : `lignage.lignes_export(graphe, choix, sens)` (Sens, Distance,
+    Bande, Élément, Détail, Page, Famille, Mène à un visuel), une ligne par
+    mesure pour une famille, `lignage.ecrire_csv`.
+  - **Fiche** : `btn_fiche` la cache ou la montre, réglage
+    `radiographie_fiche`.
+- **Ordre des vues** : Lignage, Par source, Par page, Par colonne, Par KPI,
+  du plus large au plus fin. **Par colonne** compte, par colonne, les mesures (celles
+  qui la lisent et celles qui les reprennent), les filtres et segments, les
+  visuels (directs ou par une mesure) : `radiographie.dependants_colonnes`.
+  Plus de `PLIER_APRES` mesures directes tiennent sur une ligne repliée
+  « Lue par N mesures », par famille ; les reprises et les visuels indirects
+  ont chacun la leur.
+- **Fiche pliable** : toute fiche passe par `_afficher(fabrique, *args)`, qui
+  retient la fabrique pour la rendre à nouveau. `_liste` ne montre que
+  `PREMIERES` lignes d'une liste de plus de `PLIER_APRES`, avec un lien
+  « afficher les N autres » (cible `("plier", clé)`, la clé étant le rang de
+  la liste dans la fiche) ; le DAX d'une mesure se replie au-delà de
+  `DAX_LIGNES`. Le clic rend la même fiche, à la même position ; changer de
+  fiche vide `_ouverts`.
+- **Par KPI** dit en une ligne (`lbl_kpi`) comment elle range : familles par
+  le DAX et les noms, rien du config ni de TD_Indicateurs.
+- **Vue d'ensemble** : sans choix, ou par son bouton, la fiche résume le
+  rapport : ses KPI affichés, ses filtres, puis page par page les segments
+  et leur sélection, et un tableau Visuel / Affiche / Par (familles
+  regroupées, filtres propres au visuel, segment dont il se passe).
+- Sous les vues Par page et Par colonne, les pastilles **Afficher** éteignent
+  une catégorie de lignes (mesures, colonnes, filtres, segments, visuels
+  masqués ; ou, par colonne, les usages par genre). Chaque ligne porte sa
+  catégorie (`CATEGORIE`) ; un nœud qui n'a de sens qu'avec un enfant (un
+  rôle, une colonne) se cache quand tout son contenu est éteint.
 - **Par KPI** : les familles, de la plus affichée à la moins affichée ; les
   familles « par le nom » en italique, leur variation en jaune ; puis les
   groupes **Briques**, **Jamais affichées** et **Variations repérées**.

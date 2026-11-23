@@ -2,7 +2,7 @@
 """PBIdouille — cockpit unique des outils Power BI du pipeline Fitbit.
 
 Lancement   : py app.py  (à la racine du dossier de l'app)
-Dépendances : qtpy + (PySide6 à la maison / PyQt5 au travail) ; openpyxl ou
+Dépendances : qtpy + PySide6 ou PyQt5 ; openpyxl ou
               pandas pour les couleurs. Les scripts racine (propagate_cf,
               color_matrix_by_kpi) restent utilisables en CLI comme avant."""
 
@@ -55,7 +55,6 @@ from tabs.dialog_guide import ouvrir_guide  # noqa: E402
 from tabs.tab_wireframe import WireframeTab  # noqa: E402
 from tabs.tab_config import ConfigTab  # noqa: E402
 from tabs.tab_chopchop import ChopChopTab  # noqa: E402
-from tabs.tab_lineage import LineageTab  # noqa: E402
 from tabs.tab_radiographie import RadiographieTab  # noqa: E402
 
 APP_NAME = "PBIdouille"          # PBI + bidouille ; réglages QSettings gardés sous « BIdouille »
@@ -180,7 +179,7 @@ class BidouilleWindow(QMainWindow):
             "touché au modèle dans Desktop. Les modifications en attente sont\n"
             "signalées avant de recharger.")
         btn_reload_all.clicked.connect(self._reload_all)
-        # le journal occupe une colonne : de quoi la rendre au travail quand on
+        # le journal occupe une colonne : de quoi la rendre aux onglets quand on
         # n'en a pas besoin. Le libellé dit ce que le clic FERA — le thème ne
         # style pas l'état « enfoncé » d'un bouton, donc une case cochée ne se
         # verrait pas.
@@ -208,11 +207,9 @@ class BidouilleWindow(QMainWindow):
         self.tabs.addTab(self.tab_config, "Mesures")
         self.tab_report = ReportTab(self.journal)
         self.tabs.addTab(self.tab_report, "Rapport")
-        # d'où vient chaque table : lecture seule, donc aussi en production
-        self.tab_lineage = LineageTab(self.journal)
-        self.tabs.addTab(self.tab_lineage, "Sources de données")
         # ce que contient un rapport qu'on n'a pas fait : KPI, variations,
-        # visuels. Lecture seule, donc aussi en production
+        # visuels, et d'où vient chaque table (vue Par source, qui était
+        # l'onglet Sources de données). Lecture seule, donc aussi en production
         self.tab_radio = RadiographieTab(self.journal)
         self.tabs.addTab(self.tab_radio, "Radiographie 🩻")
         self.tab_wireframe = WireframeTab(self.journal)
@@ -228,7 +225,7 @@ class BidouilleWindow(QMainWindow):
 
         self.split.addWidget(gauche)
         self.split.addWidget(self.journal)
-        self.split.setStretchFactor(0, 1)   # tout l'agrandissement va au travail
+        self.split.setStretchFactor(0, 1)   # tout l'agrandissement va aux onglets
         self.split.setStretchFactor(1, 0)
         self.journal.setMinimumWidth(JOURNAL_MINI)
         self._largeur_posee = False         # cf. showEvent
@@ -251,6 +248,8 @@ class BidouilleWindow(QMainWindow):
         # vue_changee plutôt que inner.currentChanged : un rechargement revient
         # sur Variations SANS signal, et le journal doit suivre quand même
         self.tab_config.vue_changee.connect(self._colonne_selon_la_vue)
+        # un config de départ vient d'être créé : tout le monde le relit
+        self.tab_config.config_cree.connect(self._apres_creation_config)
 
         # une generation qui ecrit change le modele : les onglets qui le
         # lisent doivent revoir la liste des KPI, sans rechargement manuel
@@ -259,10 +258,9 @@ class BidouilleWindow(QMainWindow):
         # le lien de la fiche Excel ouvre la fenêtre SUR la page de l'Excel
         self.tab_report.ouvrir_reglages.connect(lambda: self._ouvrir_reglages("excel"))
 
-        self._tabs = [self.tab_config, self.tab_report, self.tab_lineage, self.tab_radio,
-                      self.tab_chopchop]
+        self._tabs = [self.tab_config, self.tab_report, self.tab_radio, self.tab_chopchop]
         if edition.dev():
-            self._tabs.insert(4, self.tab_wireframe)
+            self._tabs.insert(3, self.tab_wireframe)
         self._load_initial_project()
         self._colonne_selon_la_vue()
 
@@ -485,6 +483,11 @@ class BidouilleWindow(QMainWindow):
         self.settings.setValue("config::" + str(self.project.pbip), path)
         self._update_config_label()
         for t in self._tabs:            # re-peuple KPI/branches/éditeur
+            t.set_project(self.project)
+
+    def _apres_creation_config(self):
+        self._update_config_label()
+        for t in self._tabs:
             t.set_project(self.project)
 
     def _update_config_label(self):
