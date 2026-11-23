@@ -735,10 +735,18 @@ def measure_block(name, dax, fmt, folder, desc, tag, data_cat, lineage) -> str:
             out.append("\t/// " + dl)
     qname = "'" + name.replace("'", "''") + "'"
     dax_lines = (dax or "").split("\n")
-    if len(dax_lines) == 1:
-        out.append("\tmeasure " + qname + " = " + dax_lines[0])
+    while len(dax_lines) > 1 and not dax_lines[0].strip():
+        dax_lines.pop(0)
+    if not dax_lines[0].strip() and len(dax_lines) == 1:
+        out.append("\tmeasure " + qname + " = ")
     else:
+        # le DAX commence à la DEUXIÈME ligne de l'éditeur de Power BI, sous
+        # « Nom = » : Desktop l'enregistre ainsi, une ligne vide indentée juste
+        # après le « = ». Sans elle, la première ligne du DAX s'affiche collée
+        # au « = ». La lecture (expression_mesure) saute cette ligne vide :
+        # l'éditeur de PBIdouille montre le DAX dès sa première ligne.
         out.append("\tmeasure " + qname + " =")
+        out.append("\t\t\t")
         for l in dax_lines:
             out.append("\t\t\t" + l)
     if fmt:

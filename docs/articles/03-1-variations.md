@@ -43,6 +43,10 @@ VAR Precedent = CALCULATE({baseRef}, DATEADD({date}, -1, MONTH))
 RETURN DIVIDE(Actuel - Precedent, Precedent)
 ```
 
+La première ligne de l'éditeur est la **deuxième** ligne dans Power BI : la mesure générée
+s'y affiche avec `Nom =` seul sur la première ligne, et le DAX en dessous, comme une
+mesure écrite à la main avec un retour à la ligne après le `=`.
+
 Les [jetons](03-2-jetons.md) se colorent à la frappe : bleu pour `{…}`, vert pour
 `<<…>>`, **rouge souligné** pour un jeton inconnu. Sous l'éditeur, le bouton
 **Jetons disponibles…** montre ce que vaut chaque jeton pour le KPI choisi,

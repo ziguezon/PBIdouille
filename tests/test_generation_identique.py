@@ -39,6 +39,15 @@ class Generation(unittest.TestCase):
         self.assertEqual(dates, {p: (self.modele / p).stat().st_mtime_ns for p in fichiers})
         self.assertEqual(br.list_sessions(self.projet), sessions)
 
+    def test_dax_sous_le_egal(self):
+        """Le DAX généré commence à la 2e ligne de l'éditeur de Power BI : une
+        ligne vide indentée juste après « = », comme Desktop l'enregistre."""
+        self.generer()
+        texte = (self.tables / "Ventes.tmdl").read_text(encoding="utf-8")
+        self.assertIn("\tmeasure 'Total double' =\n\t\t\t\n\t\t\t[Total] * 2\n", texte)
+        bloc = texte[texte.index("\tmeasure 'Total double'"):]
+        self.assertEqual(gm.measure_info(bloc)["expression"], "[Total] * 2")
+
 
 if __name__ == "__main__":
     unittest.main()
