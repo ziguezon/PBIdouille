@@ -280,7 +280,7 @@ def colorize(report_dir=REPORT_DIR, model_dir=MODEL_DIR, xlsx=TD_XLSX, *,
     if not kpi_colors:
         raise SystemExit(f"Aucune couleur lue dans {Path(xlsx).name} "
                          f"(colonnes '{fill_col}' / '{text_col}').")
-    log("Couleurs par KPI :")
+    log("Couleurs par ICP :")
     for k, c in kpi_colors.items():
         log(f"  {k}: fond={c['fill']} texte={c['text']}")
 
@@ -298,7 +298,7 @@ def colorize(report_dir=REPORT_DIR, model_dir=MODEL_DIR, xlsx=TD_XLSX, *,
                 "text": normalize_hex(c["text"]) if c["text"] else None,
             }
     if not measure_colors:
-        raise SystemExit("Aucune mesure ne correspond aux KPI de l'Excel "
+        raise SystemExit("Aucune mesure ne correspond aux ICP de l'Excel "
                          "(la colonne clé doit contenir les noms de mesures de base).")
     log(f"{len(measure_colors)} mesures à colorer.")
     if dry_run:

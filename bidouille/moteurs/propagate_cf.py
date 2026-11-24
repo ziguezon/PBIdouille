@@ -361,15 +361,15 @@ def resoudre_groupes(groupes, tous_les_kpis, log=print) -> list:
     inconnus = sorted({g["gabarit"] for g in groupes if g["gabarit"] not in connus})
     if inconnus:
         raise SystemExit(
-            "Gabarit de groupe introuvable parmi les KPI : "
+            "Gabarit de groupe introuvable parmi les ICP : "
             + ", ".join(inconnus) + ".\nKPI connus : " + ", ".join(connus))
 
     defauts = [g for g in groupes if not g["kpis"]]
     if len(defauts) > 1:
         raise SystemExit(
-            "Plusieurs groupes par défaut (sans liste de KPI) : "
+            "Plusieurs groupes par défaut (sans liste d'ICP) : "
             + ", ".join(g["nom"] for g in defauts)
-            + ".\nUn seul groupe peut ramasser les KPI restants.")
+            + ".\nUn seul groupe peut ramasser les ICP restants.")
 
     pris: dict = {}          # KPI -> nom du groupe qui l'a revendiqué
     conflits: list = []
@@ -389,13 +389,13 @@ def resoudre_groupes(groupes, tous_les_kpis, log=print) -> list:
     for g in groupes:
         for k in g["kpis"]:
             if k not in connus:
-                log(f"⚠ groupe « {g['nom']} » : KPI « {k} » absent du modèle, "
+                log(f"⚠ groupe « {g['nom']} » : ICP « {k} » absent du modèle, "
                     "ignoré.")
                 continue
             revendiquer(k, g["nom"])
     if conflits:
         raise SystemExit(
-            "KPI revendiqué par deux groupes : "
+            "ICP revendiqué par deux groupes : "
             + " ; ".join(f"« {k} » ({a} et {b})" for k, a, b in conflits)
             + ".\nLe retirer de l'un des deux.")
 
@@ -415,9 +415,9 @@ def resoudre_groupes(groupes, tous_les_kpis, log=print) -> list:
 
     orphelins = [k for k in connus if k not in pris]
     if orphelins:
-        log(f"⚠ {len(orphelins)} KPI dans aucun groupe, donc non traités : "
+        log(f"⚠ {len(orphelins)} ICP dans aucun groupe, donc non traités : "
             + ", ".join(orphelins)
-            + ".\n  (un groupe sans liste de KPI les ramasserait tous.)")
+            + ".\n  (un groupe sans liste d'ICP les ramasserait tous.)")
     return resolus
 
 
@@ -1492,9 +1492,9 @@ def propagate(report_dir, template_kpi, *, branches=BRANCHES, targets=None,
     sans_equiv: set = set()      # (mesure source, KPI) laissés de côté
 
     if entete is None:
-        log(f"KPI template : {template_kpi}")
+        log(f"ICP template : {template_kpi}")
         cibles_hors_gabarit = [k for k in targets if k != template_kpi]
-        log("KPI cibles   : " + (", ".join(cibles_hors_gabarit)
+        log("ICP cibles   : " + (", ".join(cibles_hors_gabarit)
                                   or "aucune, le gabarit est seul"))
     else:
         for ligne in entete:
@@ -1535,7 +1535,7 @@ def propagate(report_dir, template_kpi, *, branches=BRANCHES, targets=None,
         par_kpi: dict = {}
         for mesure, kpi in sans_equiv:
             par_kpi.setdefault(kpi, []).append(mesure)
-        log(f"KPI sans équivalent ({len(par_kpi)}), rien ne leur a été écrit "
+        log(f"ICP sans équivalent ({len(par_kpi)}), rien ne leur a été écrit "
             "pour ces attributs (le paramètre de champ ne leur donne pas ce "
             "calcul) :")
         for kpi in sorted(par_kpi):
@@ -1804,11 +1804,11 @@ def journal_contexte(ctx, cible_folders, log) -> None:
     """Le compte rendu de ce qu'on a lu du modèle — une fois par action."""
     if ctx["fp_reverse"]:
         log(f"Paramètre de champ : {len(ctx['fp_reverse'])} mesure(s) "
-            f"mappée(s) (KPI/Calcul/Branche).")
+            f"mappée(s) (ICP/Calcul/Branche).")
     if ctx["cibles"]:
         log(f"Cibles       : {len(ctx['cibles'])} mesure(s) dans "
             + ", ".join(str(d) for d in cible_folders)
-            + " (un KPI sans cible ne recevra pas celle du gabarit).")
+            + " (un ICP sans cible ne recevra pas celle du gabarit).")
     if ctx["known"]:
         log(f"Modèle : {len(ctx['known'])} mesure(s) connues (référence "
             f"vérifiée avant écriture).")
@@ -2183,7 +2183,7 @@ class Sources:
         g._sources_gardent_leur_variation()
         if absents:
             g.avertissements.append(
-                "KPI absent(s) du modèle, ignoré(s) : "
+                "ICP absent(s) du modèle, ignoré(s) : "
                 + ", ".join(dict.fromkeys(absents)) + ".")
         return g
 
@@ -2383,27 +2383,27 @@ class Sources:
 
         if inconnue(self.base):
             erreurs.append(
-                f"Gabarit de base introuvable parmi les KPI : « {self.base} ».")
+                f"Gabarit de base introuvable parmi les ICP : « {self.base} ».")
         if self.base in self.groupe_de:
             erreurs.append(
                 f"« {self.base} » est le gabarit de base : il ne peut pas être "
                 f"dans un groupe (« {self.groupe_de[self.base]} »).")
         for v, s in self.colonnes.items():
             if inconnue(s):
-                erreurs.append(f"Tous les KPI, « {v} » : source « {s} » "
-                               "introuvable parmi les KPI.")
+                erreurs.append(f"Tous les ICP, « {v} » : source « {s} » "
+                               "introuvable parmi les ICP.")
         for nom, gr in self.groupes.items():
             if inconnue(gr["base"]):
                 erreurs.append(f"Groupe « {nom} » : gabarit « {gr['base']} » "
-                               "introuvable parmi les KPI.")
+                               "introuvable parmi les ICP.")
             for v, s in gr["colonnes"].items():
                 if inconnue(s):
                     erreurs.append(f"Groupe « {nom} », « {v} » : source "
-                                   f"« {s} » introuvable parmi les KPI.")
+                                   f"« {s} » introuvable parmi les ICP.")
         for s in dict.fromkeys(list(self.lignes.values())
                                + list(self.cases.values())):
             if inconnue(s):
-                erreurs.append(f"Source introuvable parmi les KPI : « {s} ».")
+                erreurs.append(f"Source introuvable parmi les ICP : « {s} ».")
         if erreurs:
             return erreurs, list(dict.fromkeys(avert))
 
@@ -2425,24 +2425,24 @@ class Sources:
                 + ", sans effet tant qu'aucun visuel ne les formate.")
         for nom, gr in self.groupes.items():
             if not gr["kpis"]:
-                avert.append(f"Le groupe « {nom} » n'a aucun KPI.")
+                avert.append(f"Le groupe « {nom} » n'a aucun ICP.")
         hors = [k for k in self.kpis
                 if all(self.source(k, v) is None
                        for v in self._toutes_variations())]
         if hors:
-            avert.append(f"{len(hors)} KPI non propagé(s) (ni gabarit, ni "
+            avert.append(f"{len(hors)} ICP non propagé(s) (ni gabarit, ni "
                          "règle), ni remplis ni nettoyés : "
                          + ", ".join(hors) + ".")
         return erreurs, list(dict.fromkeys(avert))
 
     def _chaine(self, k, v, s, s2) -> str:
         quoi = "toutes ses variations" if v == AUTRE else f"« {v} »"
-        s2_ = f"« {s2} »" if s2 else "aucun KPI"
+        s2_ = f"« {s2} »" if s2 else "aucun ICP"
         if s == self.base and self.niveau(k, v)[0] == "base":
-            return (f"« {s} » est le gabarit de base : les KPI qui le suivent "
+            return (f"« {s} » est le gabarit de base : les ICP qui le suivent "
                     f"copient son {quoi}, il ne peut pas lui-même le copier "
-                    f"de {s2_}. Donner {quoi} à tous les KPI depuis {s2_} "
-                    f"(ligne « Tous les KPI »), ou mettre « {s} » à la main "
+                    f"de {s2_}. Donner {quoi} à tous les ICP depuis {s2_} "
+                    f"(ligne « Tous les ICP »), ou mettre « {s} » à la main "
                     "pour cette variation.")
         return (f"« {k} » copie {quoi} de « {s} », qui le copie lui-même de "
                 f"{s2_} : une copie de copie dépendrait de l'ordre des "
@@ -2479,7 +2479,7 @@ class Sources:
                     else f"  {s} → {vs} : {qui}")
 
         for s, vs in par_source(self.colonnes):
-            out.append(ligne(s, vs, "tous les KPI"))
+            out.append(ligne(s, vs, "tous les ICP"))
         for nom, gr in self.groupes.items():
             tete = groupe_en_mots(nom, majuscule=True)
             if gr["base"] == MANUEL:
@@ -2490,8 +2490,8 @@ class Sources:
                     tete += ", indépendant"
                 elif self.base or self.colonnes:
                     tete += (", par-dessus la base" if self.base
-                             else ", par-dessus « Tous les KPI »")
-            out.append(f"  {tete} : " + (", ".join(gr["kpis"]) or "aucun KPI"))
+                             else ", par-dessus « Tous les ICP »")
+            out.append(f"  {tete} : " + (", ".join(gr["kpis"]) or "aucun ICP"))
             for s, vs in par_source(gr["colonnes"]):
                 out.append(ligne(s, vs, groupe_en_mots(nom)))
         par_ligne: dict = {}
@@ -2537,8 +2537,8 @@ class Sources:
                                    "gabarits par variation"))
         n = len(self.exceptions_de_kpi())
         if n:
-            morceaux.append(compte(n, "KPI avec une exception",
-                                   "KPI avec des exceptions"))
+            morceaux.append(compte(n, "ICP avec une exception",
+                                   "ICP avec des exceptions"))
         return " · ".join(morceaux)
 
     # ---- édition : les cases (la fenêtre de l'onglet Rapport) -------------------
@@ -2897,7 +2897,7 @@ class Sources:
             self.groupes[nom]["independant"] = bool(independant)
             if independant:
                 return [f"Groupe « {nom} » indépendant : son gabarit ne reçoit "
-                        "plus rien de la base ni de « Tous les KPI »."]
+                        "plus rien de la base ni de « Tous les ICP »."]
             return [f"Groupe « {nom} » : son gabarit se pose par-dessus la "
                     "base, ce qu'il ne règle pas vient d'elle."]
         return self._structure(changer)
@@ -2924,7 +2924,7 @@ class Sources:
             del self.groupes[nom]
             self._auto = {c for c in self._auto
                           if not (c[0] == "groupe" and c[1] == nom)}
-            return [f"Groupe « {nom} » supprimé : ses KPI suivent les "
+            return [f"Groupe « {nom} » supprimé : ses ICP suivent les "
                     "règles générales."]
         return self._structure(changer)
 
@@ -3016,7 +3016,7 @@ def ecrire_memoire(chemin, memoire, rapport="") -> None:
         "version": 1,
         "rapport": rapport,
         "role": "ce que la propagation a posé sous les gabarits de groupe "
-                "(depuis la base ou « Tous les KPI »), pour qu'un "
+                "(depuis la base ou « Tous les ICP »), pour qu'un "
                 "changement du maître y descende aussi",
         "visuels": memoire}, indent=1, ensure_ascii=False) + "\n",
         encoding="utf-8")
@@ -3235,8 +3235,8 @@ def propagate_groupes(report_dir, groupes=None, *, branches=BRANCHES,
     if not resolus:
         raise SystemExit(
             "Aucun groupe de propagation utilisable, vérifier " + str(chemin)
-            + "\n(un groupe = un nom, un gabarit, et ses KPI ; une liste de "
-              "KPI vide ramasse tous ceux qui restent).")
+            + "\n(un groupe = un nom, un gabarit, et ses ICP ; une liste "
+              "d'ICP vide ramasse tous ceux qui restent).")
 
     log(f"Propagation par GROUPES : {len(resolus)} groupe(s)")
     for g in resolus:

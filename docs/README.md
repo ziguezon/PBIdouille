@@ -1,8 +1,8 @@
 # Documentation de PBIdouille
 
 PBIdouille écrit ce qui se répète dans un rapport Power BI au format PBIP, directement dans
-ses fichiers : les mesures dérivées de chaque KPI, les tables paramètre de champ, le
-formatage recopié d'un KPI vers les autres, et le ménage de ce que plus rien n'utilise.
+ses fichiers : les mesures dérivées de chaque ICP, les tables paramètre de champ, le
+formatage recopié d'un ICP vers les autres, et le ménage de ce que plus rien n'utilise.
 
 Cette page en fait le tour en images, puis renvoie au détail. Chaque numéro de la capture
 est celui d'un article, et les articles se lisent dans cet ordre.
@@ -19,9 +19,9 @@ est celui d'un article, et les articles se lisent dans cet ordre.
 | 3.3 | [Arbre des mesures](articles/03-3-arbre-des-mesures.md) | Tout ce que la génération produira, et le DAX final |
 | 3.4 | [Paramètres de champ](articles/03-4-parametres-de-champ.md) | Les tables d'un segment, et ce qu'elles contiendront |
 | 3.5 | [JSON brut](articles/03-5-json-brut.md) | Modifier directement `measures_config.json` |
-| 4 | [Rapport](articles/04-rapport.md) | Propager le formatage d'un KPI vers les autres, colorer les matrices |
+| 4 | [Rapport](articles/04-rapport.md) | Propager le formatage d'un ICP vers les autres, colorer les matrices |
 | 5 | [Sources de données](articles/05-sources-de-donnees.md) | La vue Par source de la Radiographie : d'où vient chaque table, ce qui en dépend, ce qui manque sur ce poste |
-| 6 | [Radiographie 🩻](articles/06-radiographie.md) | Comprendre un rapport qu'on n'a pas fait : le lignage de la source au visuel, KPI, visuels, filtres, colonnes |
+| 6 | [Radiographie 🩻](articles/06-radiographie.md) | Comprendre un rapport qu'on n'a pas fait : le lignage de la source au visuel, ICP, visuels, filtres, colonnes |
 | 7 | [Wireframe](articles/07-wireframe.md) | Organiser les visuels d'une page (édition de développement) |
 | 8 | [ChopChop](articles/08-chopchop.md) | Repérer ce que plus rien n'utilise |
 
@@ -38,8 +38,8 @@ chaque notion sert.
 ![Diapo du guide : Un rapport, cinq onglets](ressources/guide/coup-d-oeil.png)
 
 Tout se passe dans quatre onglets, qui travaillent sur le même rapport. **Mesures** crée
-les variations de chaque KPI et les tables paramètre de champ. **Rapport** recopie le
-formatage d'un KPI vers les autres. **Radiographie** fait la carte d'un rapport qu'on n'a
+les variations de chaque ICP et les tables paramètre de champ. **Rapport** recopie le
+formatage d'un ICP vers les autres. **Radiographie** fait la carte d'un rapport qu'on n'a
 pas fait, et dit d'où vient chaque table. **ChopChop** repère ce que plus rien n'utilise.
 
 ### Avant de commencer
@@ -68,7 +68,7 @@ accès aux réglages, aux sauvegardes et au journal.
 ![Diapo du guide : Comment les variations se ramifient](ressources/guide/variations.png)
 
 Une **variation** s'écrit une fois, comme `7d avg` ou `PY`, et PBIdouille en génère une
-mesure pour chaque KPI. Une **branche**, comme YTD, applique ensuite les autres variations à
+mesure pour chaque ICP. Une **branche**, comme YTD, applique ensuite les autres variations à
 l'intérieur d'elle-même. L'arbre des mesures montre tout ce qui sera produit, avant
 d'écrire.
 
@@ -78,7 +78,7 @@ d'écrire.
 
 ![Diapo du guide : Les jetons à connaître](ressources/guide/jetons.png)
 
-Les **jetons** sont les parties du DAX qui changent d'un KPI à l'autre : `{baseRef}` devient
+Les **jetons** sont les parties du DAX qui changent d'un ICP à l'autre : `{baseRef}` devient
 `[Weight]`, `<<unite>>` devient la valeur de la colonne `unite` de TD_Indicateurs.
 
 → [3.2 Les jetons](articles/03-2-jetons.md)
@@ -88,7 +88,7 @@ Les **jetons** sont les parties du DAX qui changent d'un KPI à l'autre : `{base
 ![Diapo du guide : Ce que reçoivent les paramètres de champ](ressources/guide/parametres-de-champ.png)
 
 Les tables paramètre de champ permettent de choisir, dans un segment, quelle mesure un
-visuel affiche. PBIdouille les remplit avec les KPI, leurs cibles et leurs variations.
+visuel affiche. PBIdouille les remplit avec les ICP, leurs cibles et leurs variations.
 
 → [3.4 Paramètres de champ](articles/03-4-parametres-de-champ.md)
 
@@ -105,8 +105,8 @@ défaut, montre tout sans rien écrire.
 
 ![Diapo du guide : Comment le formatage se propage](ressources/guide/propagation.png)
 
-Le formatage se fait une fois sur un KPI **gabarit** dans Power BI Desktop. La propagation le
-recopie sur les mesures équivalentes des autres KPI, visuel par visuel. L'onglet colore
+Le formatage se fait une fois sur un ICP **gabarit** dans Power BI Desktop. La propagation le
+recopie sur les mesures équivalentes des autres ICP, visuel par visuel. L'onglet colore
 aussi les matrices.
 
 ![Diapo du guide : Propager et colorer](ressources/guide/propager-colorer.png)
@@ -125,7 +125,7 @@ de visuels en dépendent, et signale un fichier local introuvable sur ce poste.
 
 ![L'onglet Radiographie, vue Par page](ressources/images/radiographie_pages.png)
 
-Pour un rapport fait par quelqu'un d'autre, cet onglet montre quels KPI sont affichés et
+Pour un rapport fait par quelqu'un d'autre, cet onglet montre quels ICP sont affichés et
 où, à quelles mesures de base et à quelles colonnes mène chaque mesure, et ce qui filtre
 chaque visuel : filtres, segments, interactions. Il ne s'appuie sur rien de PBIdouille ;
 il lui faut un modèle local (TMDL) et un rapport au format PBIR.

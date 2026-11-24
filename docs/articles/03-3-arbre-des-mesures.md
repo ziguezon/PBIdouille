@@ -10,7 +10,7 @@ mesure.
 C'est un aperçu. L'onglet ne modifie ni le modèle, ni `measures_config.json`, et
 rien ne s'y édite : les changements se font dans [Variations](03-1-variations.md).
 
-![L'arbre rangé par KPI, avec la fiche de Weight YTD MoM %](../ressources/images/arbre_par_kpi.png)
+![L'arbre rangé par ICP, avec la fiche de Weight YTD MoM %](../ressources/images/arbre_par_kpi.png)
 
 La ligne du haut résume l'ensemble :
 
@@ -31,7 +31,7 @@ La ligne du haut résume l'ensemble :
 La liste en haut à gauche change le rangement. Le choix est conservé d'une session
 à l'autre, et la fiche reste sur la même mesure.
 
-### Par KPI
+### Par ICP
 
 Chaque mesure est placée sous celle dont elle dérive :
 
@@ -48,7 +48,7 @@ Weight                          KPI, écrit à la main
 
 | Apparence | Mesure |
 |---|---|
-| **Gras** | Un KPI, écrit à la main |
+| **Gras** | Un ICP, écrit à la main |
 | **Gras orange** | Une cible, écrite à la main |
 | Bleu | La mesure d'une branche, comme `Weight YTD` |
 | Normal | Une variation |
@@ -56,13 +56,13 @@ Weight                          KPI, écrit à la main
 ### Par variation
 
 Ce rangement répond à une autre question : qu'est-ce que cette variation produit,
-pour tous les KPI ?
+pour tous les ICP ?
 
 ![L'arbre rangé par variation, avec les groupes MoM % et YTD › MoM %](../ressources/images/arbre_par_variation.png)
 
 | Groupe | Contenu |
 |---|---|
-| **Mesures écrites à la main** | Les KPI et les cibles |
+| **Mesures écrites à la main** | Les ICP et les cibles |
 | Une **variation**, comme `MoM %` | Ses mesures hors branche |
 | Une **branche**, comme `YTD` | Les mesures de la branche, puis ses sous-groupes |
 | Un **sous-groupe**, comme `YTD › MoM %` | Cette variation dans cette branche |
@@ -83,7 +83,7 @@ table.
 
 | État | Ce que la génération fera |
 |---|---|
-| **à la main** | Rien : c'est un KPI ou une cible, écrit dans Power BI |
+| **à la main** | Rien : c'est un ICP ou une cible, écrit dans Power BI |
 | **nouvelle** | Créer la mesure |
 | **modifiée** | Réécrire la mesure, car son contenu change |
 | **inchangée** | Rien : le modèle contient déjà ce résultat |
@@ -96,12 +96,12 @@ DAX à droite.
 Le **DAX** est celui qui sera écrit, jetons remplacés. Ce qui vient d'un jeton `{…}`
 est en bleu, ce qui vient d'un `<<…>>` est en vert, comme dans l'éditeur. Le survol
 liste chaque jeton et sa valeur, et le texte peut être sélectionné pour le copier.
-Pour un KPI ou une cible, c'est le DAX du modèle.
+Pour un ICP ou une cible, c'est le DAX du modèle.
 
 | Attribut | Ce qu'il indique |
 |---|---|
-| **type** | Base (un KPI), cible racine, variation ou branche |
-| **KPI** | Le KPI d'origine, avec « (cible) » pour une mesure dérivée d'une cible |
+| **type** | Base (un ICP), cible racine, variation ou branche |
+| **ICP** | L'ICP d'origine, avec « (cible) » pour une mesure dérivée d'une cible |
 | **variation**, **branche** | La variation et la branche qui produisent la mesure |
 | **en branche** | Si la mesure enveloppe la variation Réel ou recopie son DAX : voir [Envelopper ou recopier](03-1-variations.md#envelopper-ou-recopier-en-branche) |
 | **format**, **dossier**, **description**, **catégorie** | Les propriétés écrites dans le modèle |
@@ -123,7 +123,7 @@ compte des majuscules. Il peut donc viser plus que des noms :
 | `cible racine` | Les cibles écrites à la main |
 | `P_Indicateurs_parKPI` | Les mesures de cette table paramètre |
 
-Par KPI, les mesures parentes restent visibles pour garder le chemin. Par variation,
+Par ICP, les mesures parentes restent visibles pour garder le chemin. Par variation,
 un groupe sans résultat disparaît.
 
 **◆ seulement** limite l'arbre aux mesures présentes dans une table paramètre.
@@ -144,7 +144,7 @@ elle fait ce que l'arbre annonce. Ses avertissements s'affichent en jaune sous l
 - **Les orphelines.** Les mesures d'une variation retirée disparaissent de l'arbre,
   mais restent dans le modèle tant qu'une génération ne les supprime pas avec
   **Supprimer les orphelines**.
-- **Les autres mesures du modèle.** Seuls les KPI, les cibles et les mesures générées
+- **Les autres mesures du modèle.** Seuls les ICP, les cibles et les mesures générées
   y figurent.
 
 ---

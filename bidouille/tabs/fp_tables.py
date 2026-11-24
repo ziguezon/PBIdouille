@@ -108,12 +108,12 @@ class EditeurTablesParametre(QWidget):
 
         self.cmb_rows = QComboBox()
         self.cmb_rows.addItem("le calcul (Réel, 7d avg, PY…)", "calcul")
-        self.cmb_rows.addItem("le KPI", "kpi")
+        self.cmb_rows.addItem("l'ICP", "kpi")
         self.cmb_rows.setToolTip(
-            "« le calcul » : on y choisit un CALCUL. Usage : UN KPI × plusieurs\n"
-            "calculs : le KPI vient d'un segment sur TD_KPI, relié à la colonne\n"
+            "« le calcul » : on y choisit un CALCUL. Usage : UN ICP × plusieurs\n"
+            "calculs : l'ICP vient d'un segment sur TD_KPI, relié à la colonne\n"
             "Indicateur.\n\n"
-            "« le KPI » : on y choisit un KPI. Usage : UN calcul × plusieurs KPI :\n"
+            "« l'ICP » : on y choisit un ICP. Usage : UN calcul × plusieurs ICP :\n"
             "le calcul vient d'un segment sur la colonne Calcul.")
         self.cmb_rows.currentIndexChanged.connect(self._edite)
         g.addWidget(QLabel("Chaque rangée affiche :"), r, 0)
@@ -122,11 +122,11 @@ class EditeurTablesParametre(QWidget):
 
         self.cmb_base = QComboBox()
         self.cmb_base.addItem("", "calcul")          # libellé fixé par set_base_label
-        self.cmb_base.addItem("le KPI", "kpi")
+        self.cmb_base.addItem("l'ICP", "kpi")
         self.cmb_base.setToolTip(
-            "La rangée de la mesure de BASE (le KPI tel quel) peut afficher le\n"
-            "KPI au lieu du libellé de base : un segment UNIQUE où l'on choisit\n"
-            "à la fois le KPI et ses calculs (« Poids », 7d avg, PY…).\n"
+            "La rangée de la mesure de BASE (l'ICP tel quel) peut afficher\n"
+            "l'ICP au lieu du libellé de base : un segment UNIQUE où l'on choisit\n"
+            "à la fois l'ICP et ses calculs (« Poids », 7d avg, PY…).\n"
             "Les variations, elles, affichent toujours leur calcul.")
         self.cmb_base.currentIndexChanged.connect(self._edite)
         self.lbl_base = QLabel("La rangée de base affiche :")
@@ -135,7 +135,7 @@ class EditeurTablesParametre(QWidget):
         r += 1
 
         self.chk_libelle = QCheckBox(
-            "Afficher le KPI sous son libellé (« Poids ») plutôt que sa mesure (« Weight »)")
+            "Afficher l'ICP sous son libellé (« Poids ») plutôt que sa mesure (« Weight »)")
         self.chk_libelle.setToolTip(
             "Le libellé vient de la table de correspondance (réglages communs,\n"
             "plus bas). Si elle manque au modèle, on retombe sur le nom de la\n"
@@ -147,7 +147,7 @@ class EditeurTablesParametre(QWidget):
         garde = QHBoxLayout()
         self.chk_base = QCheckBox("la rangée de base")
         self.chk_base.setToolTip(
-            "Décoché : seules les variations du KPI y figurent (la mesure de\n"
+            "Décoché : seules les variations de l'ICP y figurent (la mesure de\n"
             "base d'une BRANCHE, « YTD », reste : c'est un calcul de la branche).")
         self.chk_base.stateChanged.connect(self._edite)
         self.chk_cibles = QCheckBox("les cibles")
@@ -165,7 +165,7 @@ class EditeurTablesParametre(QWidget):
         self.cmb_vars = CheckCombo()
         self.cmb_branches = CheckCombo()
         for cmb, lib, tip in (
-                (self.cmb_kpis, "KPI :", "Les KPI de la table. Un KPI ajouté plus tard au modèle y entre\n"
+                (self.cmb_kpis, "ICP :", "Les ICP de la table. Un ICP ajouté plus tard au modèle y entre\n"
                                          "de lui-même, sauf à le décocher ici."),
                 (self.cmb_vars, "Variations :", "Les variations de la table (celles marquées « au paramètre »).\n"
                                                 "En décocher une l'écarte aussi de ses branches."),
@@ -388,12 +388,12 @@ class EditeurTablesParametre(QWidget):
             self.lbl_usage.setText("")
             return
         if self.cmb_rows.currentData() == "kpi":
-            t = ("On y choisit un KPI : UN calcul × plusieurs KPI, le calcul venant "
+            t = ("On y choisit un ICP : UN calcul × plusieurs ICP, le calcul venant "
                  "d'un segment sur la colonne Calcul.")
         elif self.cmb_base.currentData() == "kpi":
-            t = ("On y choisit le KPI ET ses calculs dans un même segment : la base "
-                 "affiche le KPI, les variations leur calcul.")
+            t = ("On y choisit l'ICP ET ses calculs dans un même segment : la base "
+                 "affiche l'ICP, les variations leur calcul.")
         else:
-            t = (f"On y choisit un calcul ({self._base_label}, 7d avg, PY…) : UN KPI × "
-                 "plusieurs calculs, le KPI venant d'un segment relié à Indicateur.")
+            t = (f"On y choisit un calcul ({self._base_label}, 7d avg, PY…) : UN ICP × "
+                 "plusieurs calculs, l'ICP venant d'un segment relié à Indicateur.")
         self.lbl_usage.setText(t)

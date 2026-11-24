@@ -92,9 +92,9 @@ class ReportTab(QWidget):
         ligne = QHBoxLayout()
         self.btn_sources = QPushButton("Grille des sources…")
         self.btn_sources.setToolTip(
-            "De quel KPI chaque KPI copie le formatage de chaque variation :\n"
-            "le gabarit de base pour tout le monde, un gabarit par groupe de\n"
-            "KPI, un gabarit par variation, et des règles case par case.")
+            "De quel ICP chaque ICP copie le formatage de chaque variation :\n"
+            "le gabarit de base pour tout le monde, un gabarit par groupe\n"
+            "d'ICP, un gabarit par variation, et des règles case par case.")
         self.btn_sources.clicked.connect(self._open_sources_dialog)
         ligne.addWidget(self.btn_sources)
         ligne.addWidget(bouton_schema(self, "propagation"))
@@ -128,7 +128,7 @@ class ReportTab(QWidget):
         return box
 
     def _build_colors_group(self) -> QGroupBox:
-        box = QGroupBox("Couleurs des matrices par KPI")
+        box = QGroupBox("Couleurs des matrices par ICP")
         grid = QGridLayout(box)
 
         # L'Excel des indicateurs est défini UNE fois, dans le config
@@ -166,7 +166,7 @@ class ReportTab(QWidget):
         self.chk_col_dry.setChecked(True)
         opts.addWidget(self.chk_col_dry)
         btn_palette = QPushButton("Aperçu && édition des couleurs…")
-        btn_palette.setToolTip("Voir chaque KPI avec ses couleurs fond/texte, les\n"
+        btn_palette.setToolTip("Voir chaque ICP avec ses couleurs fond/texte, les\n"
                                "éditer au sélecteur de couleurs, et réécrire l'Excel\n"
                                "(les colonnes manquantes sont créées).")
         btn_palette.clicked.connect(self._open_colors_dialog)
@@ -174,7 +174,7 @@ class ReportTab(QWidget):
         opts.addStretch()
         self.btn_colorize = QPushButton("Colorer")
         self.btn_colorize.setToolTip(
-            "Donne à chaque colonne de KPI d'une matrice la couleur de son KPI, "
+            "Donne à chaque colonne d'ICP d'une matrice la couleur de son ICP, "
             "lue dans l'Excel. Une couleur posée à la main sur une autre colonne "
             "reste.\n"
             "Chaque matrice modifiée est copiée dans _backupsPBIdouille\\_propagate_backups\\ "
@@ -410,7 +410,7 @@ class ReportTab(QWidget):
         try:
             return model_reader.kpis(self.project)
         except Exception as e:      # RuntimeError (tmdl absent) ou autre
-            self.journal.info("⚠ KPI illisibles : " + str(e))
+            self.journal.info("⚠ ICP illisibles : " + str(e))
             return []
 
     def reload(self):
@@ -449,7 +449,7 @@ class ReportTab(QWidget):
 
         if nouveaux:
             self.journal.info(
-                "Liste des KPI rafraîchie, nouveau(x) : " + ", ".join(nouveaux)
+                "Liste des ICP rafraîchie, nouveau(x) : " + ", ".join(nouveaux)
                 + " (ils suivent la base de la grille des sources).")
         self._refresh_sources_label()
 

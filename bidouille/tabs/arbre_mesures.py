@@ -55,7 +55,7 @@ COL_NOM, COL_PARAM, COL_ETAT = 0, 1, 2
 MARQUEUR = "◆"
 COULEUR_ETAT = {"nouvelle": ACCENT, "modifiée": YELLOW}
 # rangements de la vue : (clé mémorisée, libellé)
-RANGEMENTS = (("kpi", "par KPI"), ("variation", "par variation"))
+RANGEMENTS = (("kpi", "par ICP"), ("variation", "par variation"))
 CLE_RANGEMENT = "arbre_mesures/rangement"
 # un GROUPE (rangement par variation) n'est pas une mesure : sa clé de
 # pliage est préfixée « groupe| », et element() l'ignore
@@ -75,7 +75,7 @@ class ArbreMesures(QWidget):
         for cle, lib in RANGEMENTS:
             self.cmb_rangement.addItem(lib, cle)
         self.cmb_rangement.setToolTip(
-            "par KPI : chaque mesure sous celle dont elle dérive.\n"
+            "par ICP : chaque mesure sous celle dont elle dérive.\n"
             "par variation : un groupe par variation et par branche,\n"
             "tout ce qu'une variation produit, d'un coup d'œil.")
         i = self.cmb_rangement.findData(lire_reglage(CLE_RANGEMENT, "kpi"))
@@ -319,7 +319,7 @@ class ArbreMesures(QWidget):
         for n in gen:
             par[n.get("etat")] = par.get(n.get("etat"), 0) + 1
         dans = sum(1 for n in ns if n.get("tables"))
-        morceaux = [f"{bases} KPI", f"{len(gen)} mesures générées"]
+        morceaux = [f"{bases} ICP", f"{len(gen)} mesures générées"]
         detail = ", ".join(f"{par[k]} {k}{'s' if par[k] > 1 else ''}"
                            for k in ("nouvelle", "modifiée", "inchangée") if par.get(k))
         if detail:

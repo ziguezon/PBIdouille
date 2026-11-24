@@ -62,7 +62,7 @@ def attributs(n: dict) -> list:
     façon). Seul ce qui a une valeur est rendu."""
     out = [("type", TYPES.get(n.get("type"), n.get("type") or ""))]
     if n.get("type") in ("variation", "branche") and n.get("kpi"):
-        out.append(("KPI", n["kpi"] + (" (cible)" if n.get("cible") else "")))
+        out.append(("ICP", n["kpi"] + (" (cible)" if n.get("cible") else "")))
     if n.get("variation") and n.get("type") != "branche":
         out.append(("variation", n["variation"]))
     if n.get("branche"):

@@ -649,7 +649,7 @@ class ConfigTab(QWidget):
         self.ed_name = QLineEdit()
         add_row("namePattern :", self.ed_name,
                 "Nom de la mesure générée.\n{base} = mesure de base (branche incluse), "
-                "{kpi} = KPI racine, {variation} = id de la variation.")
+                "{kpi} = ICP racine, {variation} = id de la variation.")
         self.ed_desc = QLineEdit()
         add_row("description :", self.ed_desc,
                 "Description de la mesure générée (placeholders permis).")
@@ -670,16 +670,16 @@ class ConfigTab(QWidget):
                 "Dossier d'affichage des mesures générées.\n"
                 "Vide = le displayFolderPattern des settings. Placeholders : "
                 "{folder} {baseFolder} {variation} {kpi} {branch}.\n"
-                "Dossiers rangés PAR KPI (⚙ Réglages → Génération) : {baseFolder}\n"
-                "y est le dossier du KPI (_indicateurs\\Weight), pour que la\n"
-                "mesure reste avec son KPI."),
+                "Dossiers rangés PAR ICP (⚙ Réglages → Génération) : {baseFolder}\n"
+                "y est le dossier de l'ICP (_indicateurs\\Weight), pour que la\n"
+                "mesure reste avec son ICP."),
         self.cmb_folder_var = QComboBox()   # non éditable : ids existants
         add_row("folderVariation :", self.cmb_folder_var,
                 "Dossier HÔTE : range les mesures générées dans le DOSSIER d'une\n"
                 "AUTRE variation.\n"
                 "Ex. « CF Δ 30d » vit dans le dossier de « Δ 30d » (la couleur à côté\n"
                 "de la mesure qu'elle met en forme). Vide = son propre dossier.\n"
-                "Sans effet quand les dossiers sont rangés PAR KPI.")
+                "Sans effet quand les dossiers sont rangés PAR ICP.")
         self.cmb_datacat = QComboBox()
         self.cmb_datacat.setEditable(True)
         self.cmb_datacat.addItems(["", "ImageUrl", "WebUrl"])
@@ -698,7 +698,7 @@ class ConfigTab(QWidget):
                     "champ, c'est-à-dire ce qu'affiche le segment.\n"
                     "Vide = l'id de la variation.\n\n"
                     "Pour une cible, « Cible » est ajouté devant (« Cible écart % »),\n"
-                    "pour la distinguer du même calcul sur le KPI, sauf si le\n"
+                    "pour la distinguer du même calcul sur l'ICP, sauf si le\n"
                     "libellé contient déjà ce mot : « écart vs cible » reste tel quel."),
                 titre_aide="Libellé dans les paramètres de champ")
         self.chk_infp.toggled.connect(self.ed_fp_label.setEnabled)
@@ -707,8 +707,8 @@ class ConfigTab(QWidget):
         # ---- la portée : cette variation est-elle déclinée pour les KPI, les
         #      cibles, et sur quelles bases ? ----
         gb_portee, add_row, pleine = formulaire("Portée")
-        self.chk_kpi = QCheckBox("générer pour les KPI")
-        self.chk_kpi.setToolTip("Décline cette variation sur les mesures de BASE (KPI).\n"
+        self.chk_kpi = QCheckBox("générer pour les ICP")
+        self.chk_kpi.setToolTip("Décline cette variation sur les mesures de BASE (ICP).\n"
                                 "Défaut : coché.")
         self.chk_cible = QCheckBox("générer pour les cibles")
         self.chk_cible.setToolTip(
@@ -718,11 +718,11 @@ class ConfigTab(QWidget):
             "     Réel →  [Weight]      - [Weight cible]\n"
             "     YTD  →  [Weight YTD]  - [Weight cible YTD]\n"
             "\n"
-            "⚠ Ne PAS écrire « [{kpi}] - {baseRef} » : {kpi} est le KPI RACINE,\n"
+            "⚠ Ne PAS écrire « [{kpi}] - {baseRef} » : {kpi} est l'ICP RACINE,\n"
             "sans branche, donc en YTD on comparerait le réel COURANT à la\n"
             "cible YTD. {kpiRef} suit la branche, {kpi} non, c'est voulu.\n"
             "\n"
-            "Une variation « écart » se coche ici mais se DÉCOCHE côté KPI\n"
+            "Une variation « écart » se coche ici mais se DÉCOCHE côté ICP\n"
             "(elle vaudrait 0). Défaut : décoché.")
         # types de base acceptés : une combo à cases (le vocabulaire
         # s'allonge avec la colonne « type » de TD_Indicateurs)
@@ -796,14 +796,14 @@ class ConfigTab(QWidget):
             "EXCLURE : sert à ce que le formatString ne dit pas : un ratio en\n"
             "décimal (0,85) s'écrit comme un nombre, mais son NOM le trahit\n"
             "souvent (« Ratio … », « … / … », « Taux … »). Le nom complet d'un\n"
-            "KPI y a sa place aussi, pour l'écarter entièrement.\n\n"
+            "ICP y a sa place aussi, pour l'écarter entièrement.\n\n"
             "MAIS GARDER : le rattrapage nommé, qui PRIME sur tout : sur\n"
             "l'exclusion ci-contre ET sur le filtre de type.\n"
             "   exclure : average    mais garder : Average Steps\n"
             "écarte toutes les moyennes sauf celle-là, utile quand une\n"
             "mesure porte « average » dans son nom mais est en fait une somme.\n\n"
             "Insensible à la casse ET aux accents (« duree » attrape « Durée »).\n"
-            "Le nom du KPI est testé en plus de celui de la base, donc exclure\n"
+            "Le nom de l'ICP est testé en plus de celui de la base, donc exclure\n"
             "« Weight » écarte aussi « Weight cible ». Les branches héritent.\n\n"
             "L'aperçu (colonne de droite) suit ces filtres."))
         mv.addWidget(gb_portee)
@@ -846,7 +846,7 @@ class ConfigTab(QWidget):
         self.explorateur_jetons.attribut_valeur.connect(self._attribut_valeur)
         self.explorateur_jetons.attribut_retire.connect(self._attribut_retire)
         self.btn_jetons = QPushButton("Jetons disponibles…")
-        self.btn_jetons.setToolTip("Ce que vaut chaque jeton pour le KPI ou la cible\n"
+        self.btn_jetons.setToolTip("Ce que vaut chaque jeton pour l'ICP ou la cible\n"
                                    "choisie, et où il se règle.")
         self.btn_jetons.clicked.connect(self.fenetre_jetons.montrer)
         rang_jetons = QHBoxLayout()
@@ -860,7 +860,7 @@ class ConfigTab(QWidget):
         gb_apercu.setToolTip("Bases × branches, selon la PORTÉE cochée.")
         av = QVBoxLayout(gb_apercu)
         legende = QLabel(
-            f"<span style='color:{COULEURS_APERCU['racine']}'>KPI ou cible</span>"
+            f"<span style='color:{COULEURS_APERCU['racine']}'>ICP ou cible</span>"
             f"  <span style='color:{COULEURS_APERCU['branche']}'>+ branche</span>"
             f"  <span style='color:{COULEURS_APERCU['variation']}'>"
             f"+ variation</span>")
@@ -942,7 +942,7 @@ class ConfigTab(QWidget):
         self.g_fp_enabled = check("Générer les tables paramètre de champ")
         self.g_fp_tables = EditeurTablesParametre()
         self.g_fp_tables.changed.connect(self._mark_dirty)
-        self.g_fp_kpiColumn = line("Colonne KPI (défaut Indicateur).")
+        self.g_fp_kpiColumn = line("Colonne ICP (défaut Indicateur).")
         self.g_fp_calcColumn = line("Colonne Calcul (défaut Calcul).")
         self.g_fp_branchColumn = line("Colonne Branche (défaut Branche).")
         self.g_fp_baseLabel = line("Libellé de la rangée « base » (ex. Réel).")
@@ -963,10 +963,10 @@ class ConfigTab(QWidget):
                   "affiche. Autant de tables qu'il en faut, chacune avec ses "
                   "réglages : ce qu'affichent ses rangées, et ce qu'elle garde.")
         communs = self._form_group("Réglages communs à toutes les tables", [
-            ("Colonne KPI :", self.g_fp_kpiColumn,
-             "Nom de la colonne (cachée) qui porte le KPI dans chaque table\n"
+            ("Colonne ICP :", self.g_fp_kpiColumn,
+             "Nom de la colonne (cachée) qui porte l'ICP dans chaque table\n"
              "paramètre : le nom de sa mesure de base. C'est la CLÉ : la relier à\n"
-             "TD_KPI pour filtrer par KPI :\n"
+             "TD_KPI pour filtrer par ICP :\n"
              "   TD_KPI[mesure] → P_Indicateurs_…[Indicateur]\n\n"
              "Défaut : Indicateur."),
             ("Colonne Calcul :", self.g_fp_calcColumn,
@@ -979,7 +979,7 @@ class ConfigTab(QWidget):
              "Défaut : Branche."),
             ("Libellé de la base :", self.g_fp_baseLabel,
              "Libellé, dans la colonne Calcul, de la rangée de la mesure de\n"
-             "BASE : le KPI lui-même, sans variation (case « Garder : la rangée de base »).\n\n"
+             "BASE : l'ICP lui-même, sans variation (case « Garder : la rangée de base »).\n\n"
              "Ex. Réel → le segment Calcul propose Réel, PY, 7d avg…\n"
              "Vide = Base."),
             ("Branche « hors branche » :", self.g_fp_noBranchLabel,
@@ -988,12 +988,12 @@ class ConfigTab(QWidget):
              "Ex. Réel → un segment Branche propose Réel et YTD.\n"
              "Vide = Base."),
             ("Libellés (table) :", self.g_lkp_table,
-             "Table de CORRESPONDANCE KPI → libellé, pour les tables « par KPI »\n"
+             "Table de CORRESPONDANCE ICP → libellé, pour les tables « par ICP »\n"
              "(case libellé) et « mixtes ». Le libellé y est lu par\n"
              "LOOKUPVALUE, dans le DAX des tables paramètre.\n\n"
              "Ex. TD_Indicateurs"),
             ("Libellés (colonne clé) :", self.g_lkp_key,
-             "Colonne de cette table qui contient le NOM DE LA MESURE du KPI :\n"
+             "Colonne de cette table qui contient le NOM DE LA MESURE de l'ICP :\n"
              "la clé de recherche.\n\n"
              "Ex. mesure"),
             ("Libellés (colonne affichée) :", self.g_lkp_label,
@@ -1288,7 +1288,7 @@ class ConfigTab(QWidget):
         self.g_folderLayout = QComboBox()
         self.g_folderLayout.addItem("par variation : _indicateurs\\_7d avg\\Weight 7d avg",
                                     "variation")
-        self.g_folderLayout.addItem("par KPI : _indicateurs\\Weight\\Weight 7d avg", "kpi")
+        self.g_folderLayout.addItem("par ICP : _indicateurs\\Weight\\Weight 7d avg", "kpi")
         self.g_folderLayout.currentIndexChanged.connect(self._on_folder_layout)
         self.g_overwrite = check("overwriteExisting : réécrit les mesures générées existantes")
         self.g_removeOrphans = check("removeOrphans : supprime les mesures générées absentes du config")
@@ -1310,9 +1310,9 @@ class ConfigTab(QWidget):
         gb_td = QGroupBox("Excel des indicateurs (TD_Indicateurs)")
         tdv = QVBoxLayout(gb_td)
         tdv.addWidget(self._resume(
-            "Le classeur qui décrit les KPI, une ligne par mesure de base, "
+            "Le classeur qui décrit les ICP, une ligne par mesure de base, "
             "défini ici une fois, utilisé par tout l'outil (attributs, "
-            "couleurs des matrices, ordre des KPI)."))
+            "couleurs des matrices, ordre des ICP)."))
         ligne1 = QHBoxLayout()
         self.g_td_path = QLineEdit()
         self.g_td_path.setPlaceholderText(
@@ -1345,10 +1345,10 @@ class ConfigTab(QWidget):
         ligne1.addWidget(self.b_td_creer)
         ligne1.addWidget(b_td_rel)
         ligne1.addWidget(self._help("Excel des indicateurs", (
-            "Le classeur qui décrit les KPI, une ligne par mesure de base.\n"
+            "Le classeur qui décrit les ICP, une ligne par mesure de base.\n"
             "Défini ICI une seule fois, et utilisé par TOUT l'outil :\n\n"
             "  · jetons <<label>> figés dans le DAX (colonnes ci-dessous) ;\n"
-            "  · couleurs des matrices par KPI (onglet Rapport).\n\n"
+            "  · couleurs des matrices par ICP (onglet Rapport).\n\n"
             "L'onglet Rapport lit ce réglage au lieu d'avoir le sien :\n"
             "un seul endroit à tenir à jour, et plus de divergence possible.\n\n"
             "Chemin relatif = résolu depuis le dossier du .pbip, ce qui garde\n"
@@ -1367,14 +1367,14 @@ class ConfigTab(QWidget):
         ligne2.addStretch()
         tdv.addLayout(ligne2)
         ligne3 = QHBoxLayout()
-        ligne3.addWidget(QLabel("Ordre des KPI :"))
+        ligne3.addWidget(QLabel("Ordre des ICP :"))
         self.g_td_order = self._td_combo("")
         self.g_td_order.setToolTip(
-            "Colonne qui fixe l'ordre des KPI dans les tables paramètre.\n"
+            "Colonne qui fixe l'ordre des ICP dans les tables paramètre.\n"
             "Vide = ordre alphabétique (celui de Power BI).")
         ligne3.addWidget(self.g_td_order)
-        ligne3.addWidget(self._help("Ordre des KPI", (
-            "Par défaut, les KPI sortent dans l'ordre ALPHABÉTIQUE : celui que\n"
+        ligne3.addWidget(self._help("Ordre des ICP", (
+            "Par défaut, les ICP sortent dans l'ordre ALPHABÉTIQUE : celui que\n"
             "Power BI applique de lui-même. Cette colonne prend la main :\n"
             "sa valeur devient la colonne Ordre des tables paramètre, et donc\n"
             "l'ordre du slicer (sortByColumn).\n\n"
@@ -1382,7 +1382,7 @@ class ConfigTab(QWidget):
             "renuméroter). Ils sont comparés comme des NOMBRES, donc 10 vient\n"
             "bien après 9. Une valeur texte est acceptée et se range après les\n"
             "nombres, alphabétiquement.\n\n"
-            "Un KPI absent de la colonne (ou à cellule vide) part à la FIN,\n"
+            "Un ICP absent de la colonne (ou à cellule vide) part à la FIN,\n"
             "pas en tête, et le journal de génération le nomme.\n\n"
             "L'ordre vit dans l'Excel, avec le rapport : ce config-ci reste\n"
             "transportable puisqu'il ne retient que le nom de la colonne.")))
@@ -1392,10 +1392,10 @@ class ConfigTab(QWidget):
 
         groupes["generation"] = self._form_group("Génération (settings)", [
             ("sourceTable :", self.g_sourceTable,
-             "Table où le générateur cherche les mesures de BASE : les KPI.\n\n"
+             "Table où le générateur cherche les mesures de BASE : les ICP.\n\n"
              "Défaut : _mesures."),
             ("sourceFolder :", self.g_sourceFolder,
-             "Dossier d'affichage (displayFolder) qui contient les KPI à\n"
+             "Dossier d'affichage (displayFolder) qui contient les ICP à\n"
              "décliner. Seules ses mesures deviennent des bases : le reste de\n"
              "la table est ignoré.\n\n"
              "Ex. _indicateurs\n"
@@ -1411,13 +1411,13 @@ class ConfigTab(QWidget):
              "Vide = la table de chaque mesure de base (le cas courant)."),
             ("Dossiers :", self.g_folderLayout,
              "Comment ranger les mesures générées.\n\n"
-             "PAR VARIATION : un dossier par variation, tous KPI confondus :\n"
+             "PAR VARIATION : un dossier par variation, tous ICP confondus :\n"
              "   _indicateurs\\Weight\n"
              "   _indicateurs\\_7d avg\\Weight 7d avg\n"
              "   _indicateurs\\__YTD\\Weight YTD\n"
              "   _indicateurs\\__YTD\\_7d avg\\Weight YTD 7d avg\n"
              "Les deux motifs ci-dessous décident des noms.\n\n"
-             "PAR KPI : un dossier par KPI, la base restant dehors ; dedans,\n"
+             "PAR ICP : un dossier par ICP, la base restant dehors ; dedans,\n"
              "toutes ses variations et un dossier par branche :\n"
              "   _indicateurs\\Weight\n"
              "   _indicateurs\\Weight\\Weight 7d avg\n"
@@ -1450,7 +1450,7 @@ class ConfigTab(QWidget):
              "lui-même généré."),
             (None, self.g_removeOrphans,
              "Supprime du modèle les mesures générées qui ne correspondent plus\n"
-             "au config : variation retirée, KPI disparu, branche supprimée…\n\n"
+             "au config : variation retirée, ICP disparu, branche supprimée…\n\n"
              "C'est l'état de DÉPART de la case « Supprimer les orphelines »\n"
              "du panneau de génération (colonne 🚀 Lancements), c'est elle\n"
              "qui décide, au moment de générer."),
@@ -1459,7 +1459,7 @@ class ConfigTab(QWidget):
              "calcule tout, n'écrit rien.\n\n"
              "Dans l'app, c'est la case « Aperçu (dry-run) » du panneau de\n"
              "génération qui décide : ce réglage-ci y est sans effet."),
-        ], resume="Où le générateur trouve les KPI, où il range ce qu'il crée, "
+        ], resume="Où le générateur trouve les ICP, où il range ce qu'il crée, "
                   "et ce qu'il a le droit de modifier.")
 
         gb_d = QGroupBox("Formats « delta »")
@@ -1497,10 +1497,10 @@ class ConfigTab(QWidget):
         # -- mesures cibles (dossier dédié : bases supplémentaires) --
         gb_c = QGroupBox("Mesures cibles (dossier dédié)")
         cv = QVBoxLayout(gb_c)
-        note_c = QLabel("Créer À LA MAIN la cible RACINE par KPI (ex. « Weight cible ») dans "
+        note_c = QLabel("Créer À LA MAIN la cible RACINE par ICP (ex. « Weight cible ») dans "
                         "un dossier dédié : le générateur la décline en TOUTES les variations "
-                        "(comme un KPI, enveloppant [Weight cible]). Au paramètre : Indicateur "
-                        "= le KPI (préfixe du nom), Calcul = « Cible » / « Cible 7d avg »… "
+                        "(comme un ICP, enveloppant [Weight cible]). Au paramètre : Indicateur "
+                        "= l'ICP (préfixe du nom), Calcul = « Cible » / « Cible 7d avg »… "
                         "(préfixé par le libellé ci-dessous), Branche normale. Ne mettre que la "
                         "racine ; le dossier doit différer de sourceFolder (imbriqué = OK, "
                         "matché par sa feuille).")
@@ -1532,9 +1532,9 @@ class ConfigTab(QWidget):
         hcv = QVBoxLayout(gb_hc)
         note_hc = QLabel("N'importe quelle colonne de l'Excel peut devenir un jeton. Dans une "
                          "variation, « <<label>> » est remplacé par la valeur de la colonne pour "
-                         "le KPI : un nombre, un texte (entre guillemets dans le DAX), un nom de "
-                         "variable, ou du DAX propre à chaque KPI, jetons compris. "
-                         "Cellule vide : pas de mesure pour ce KPI.")
+                         "l'ICP : un nombre, un texte (entre guillemets dans le DAX), un nom de "
+                         "variable, ou du DAX propre à chaque ICP, jetons compris. "
+                         "Cellule vide : pas de mesure pour cet ICP.")
         note_hc.setWordWrap(True)
         note_hc.setStyleSheet(f"color:{TEXT_DIM};")
         hcv.addWidget(note_hc)
@@ -2311,7 +2311,7 @@ class ConfigTab(QWidget):
         manque = td is not None and not td.exists() and self.project.model_dir is not None
         if manque:
             self.lbl_td.setText(f"⚠ L'Excel des indicateurs est introuvable : {td}\n"
-                                "Les libellés, les attributs et les couleurs des KPI en "
+                                "Les libellés, les attributs et les couleurs des ICP en "
                                 "viennent.")
         self._rang_td.setVisible(manque)
 
@@ -2347,7 +2347,7 @@ class ConfigTab(QWidget):
         except (OSError, ImportError) as e:
             self.journal.erreur(f"Création impossible : {e}")
             return None
-        self.journal.info(f"Créé : {chemin} ({len(bases)} KPI)")
+        self.journal.info(f"Créé : {chemin} ({len(bases)} ICP)")
         self.journal.info(f"{chemin.name} est à importer dans Power BI Desktop, comme "
                           "table, pour que les libellés et les couleurs servent.")
         self._td_entetes_cache = []      # ses en-têtes sont à relire
@@ -2754,7 +2754,7 @@ class ConfigTab(QWidget):
                                     self.ed_include.text().split(",") if x.strip()],
         }
         if self.chk_kpi.isChecked():
-            roots += [(k, k, "KPI") for k in self._preview_kpis(kinds, tpl_ex)
+            roots += [(k, k, "ICP") for k in self._preview_kpis(kinds, tpl_ex)
                       if not gm.name_excluded(tpl_ex, k)
                       or gm.name_included(tpl_ex, k)]
         if self.chk_cible.isChecked():
@@ -2767,7 +2767,7 @@ class ConfigTab(QWidget):
                              "cibles dans ⚙ Réglages)")
         if not roots:
             self._ecrire_apercu([[(
-                "Portée vide : cocher « générer pour les KPI » et/ou « générer "
+                "Portée vide : cocher « générer pour les ICP » et/ou « générer "
                 "pour les cibles »,\nsinon cette variation n'est générée nulle part."
                 + ("\n" + "\n".join(notes) if notes else ""), "etiquette")]])
             return
@@ -3211,11 +3211,11 @@ class ConfigTab(QWidget):
         l'aperçu montre alors exactement les bases qui recevront la
         variation, et aucune autre."""
         if not self.project:
-            return ["KPI"]
+            return ["ICP"]
         try:
             noms = model_reader.kpis(self.project)
         except Exception:
-            return ["KPI"]
+            return ["ICP"]
         if kinds:
             try:
                 ex, _ = gm.read_measures(self.project.model_dir, self._config)
@@ -3230,7 +3230,7 @@ class ConfigTab(QWidget):
         """[(cible racine, KPI)] — via generate_measures.scan_cibles, donc
         exactement ce que la génération déclinera."""
         if not self.project:
-            return [("KPI cible", "KPI")]
+            return [("ICP cible", "ICP")]
         try:
             return gm.scan_cibles(self.project.model_dir, self._config)[:6]
         except Exception:

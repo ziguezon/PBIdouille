@@ -302,7 +302,7 @@ tab.show()
 qa.processEvents()
 ensemble = tab.fiche.toPlainText()
 check("sans choix, la fiche est la vue d'ensemble du rapport, page par page",
-      "Vue d'ensemble du rapport" in ensemble and "KPI affichés" in ensemble
+      "Vue d'ensemble du rapport" in ensemble and "Mesures affichées" in ensemble
       and all(pg["nom"] in ensemble for pg in r["pages"]))
 check("la vue d'ensemble dit ce que chaque visuel affiche, et par quoi",
       all(x in ensemble for x in ("Visuel", "Affiche", "Par"))
@@ -356,7 +356,7 @@ page_lien = next((i for i, l in enumerate(tab._liens) if l[0] == "page"), None)
 from qtpy.QtCore import QUrl as _QUrl                              # noqa: E402
 if page_lien is not None:
     tab._lien(_QUrl(f"#{page_lien}"))
-check("un lien vers une page ouvre sa fiche", "KPI affichés" in tab.fiche.toPlainText())
+check("un lien vers une page ouvre sa fiche", "Mesures affichées" in tab.fiche.toPlainText())
 visuel = next(v for v in r["visuels"] if any(c["genre"] == "parametre" for c in v["champs"]))
 tab.aller_a("visuel", (visuel["page_id"], visuel["id"]))
 check("la fiche d'un visuel nomme son paramètre de champ",
@@ -493,9 +493,9 @@ check("le filtre de la Radiographie filtre aussi la vue Par source",
 tab.ed_filtre.clear()
 
 # l'ordre des vues, du plus large au plus fin
-check("les vues : Lignage, Par source, Par page, Par colonne, Par KPI",
+check("les vues : Lignage, Par source, Par page, Par colonne, Par base",
       [tab.vues.tabText(i) for i in range(tab.vues.count())]
-      == ["Lignage", "Par source", "Par page", "Par colonne", "Par KPI"])
+      == ["Lignage", "Par source", "Par page", "Par colonne", "Par base"])
 
 # Par colonne : ce qui dépend de chaque colonne
 deps = rg.dependants_colonnes(r)
@@ -787,12 +787,12 @@ check("sa chaîne : la mesure qu'elle reprend en amont, pas ses sœurs",
 check("une mesure dépliée se place après celle qu'elle reprend",
       G["noeuds"][ytd]["couche"] > G["noeuds"][base]["couche"])
 lignes_m = vl.lignes_export()
-check("l'export d'une mesure seule : une ligne choisie, sa famille en colonne",
+check("l'export d'une mesure seule : une ligne choisie, sa base en colonne",
       [x["Élément"] for x in lignes_m if x["Sens"] == "choisi"] == ["Body Fat % YTD"]
-      and all(x["Famille"] == "Body Fat %" for x in lignes_m if x["Sens"] == "choisi"))
+      and all(x["Base"] == "Body Fat %" for x in lignes_m if x["Sens"] == "choisi"))
 fiche_m = tab.fiche.toPlainText()
-check("sa fiche du lignage dit sa famille et propose de la replier",
-      "Une mesure de la famille" in fiche_m and "replier la famille" in fiche_m)
+check("sa fiche du lignage dit sa base et propose de la replier",
+      "Une mesure de la base" in fiche_m and "replier la base" in fiche_m)
 vl._double(vl.boites[vl._aff[ytd]])
 check("double-clic sur une mesure : la famille se replie, la famille reste choisie",
       ("mesures", "Body Fat %") in vl.graphe["noeuds"] and ytd not in vl.graphe["noeuds"]

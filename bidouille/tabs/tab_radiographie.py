@@ -191,7 +191,7 @@ class RadiographieTab(QWidget):
         b_relire.setToolTip("Relit le modèle et les pages du rapport.")
         b_relire.clicked.connect(self.reload)
         self.btn_ensemble = QPushButton("Vue d'ensemble")
-        self.btn_ensemble.setToolTip("Résume le rapport dans la fiche : ses KPI, et page par "
+        self.btn_ensemble.setToolTip("Résume le rapport dans la fiche : ses mesures de base, et page par "
                                      "page, ce que chaque visuel affiche.")
         self.btn_ensemble.clicked.connect(self._vider_fiche)
         # la fiche se ferme pour laisser la place au graphe ou aux listes ;
@@ -238,7 +238,7 @@ class RadiographieTab(QWidget):
         self.vues.addTab(self.vue_sources, "Par source")
         self.vues.addTab(self.arbre_pages, "Par page")
         self.vues.addTab(self.arbre_cols, "Par colonne")
-        self.vues.addTab(self.arbre_kpi, "Par KPI")
+        self.vues.addTab(self.arbre_kpi, "Par base")
         self.vues.setCornerWidget(self.lbl_resume, Qt.TopRightCorner)
         self.lineage: dict = {}
         self.impacts: dict | None = None
@@ -246,7 +246,7 @@ class RadiographieTab(QWidget):
         vg.addWidget(self.vues, 1)
         # la vue Par KPI dit comment elle range : rien n'y vient d'un config
         self.lbl_kpi = QLabel(
-            "Une <b>famille</b> : un KPI et les mesures dont le DAX le reprend en ajoutant "
+            "Une <b>base</b> et ses variations : les mesures dont le DAX la reprend en ajoutant "
             "quelque chose à son nom (<i>Ventes YTD</i> utilise <i>[Ventes]</i>). La colonne "
             "Variation donne cet ajout. Tout vient du DAX et des noms, sur n'importe quel "
             "rapport. Nom en <i>italique</i> ou variation en "
@@ -269,7 +269,7 @@ class RadiographieTab(QWidget):
         self.btn_deplier.setToolTip("Déplie tout ce que la vue montre.")
         self.btn_deplier.clicked.connect(lambda: self._deplier(True))
         self.btn_replier = QPushButton("Replier")
-        self.btn_replier.setToolTip("Replie la vue sur ses pages, ses familles ou ses tables.")
+        self.btn_replier.setToolTip("Replie la vue sur ses pages, ses bases ou ses tables.")
         self.btn_replier.clicked.connect(lambda: self._deplier(False))
         bas.addStretch(1)
         bas.addWidget(self.btn_deplier)
@@ -435,11 +435,11 @@ class RadiographieTab(QWidget):
         r = self.res
         nv = len(r["visuels"])
         n_fam = sum(1 for f in r["kpis"] if f["membres"])
-        self.lbl_resume.setText(f"{len(r['mesures'])} mesures · {len(r['kpis'])} KPI · "
+        self.lbl_resume.setText(f"{len(r['mesures'])} mesures · {n_fam} bases · "
                                 f"{nv} visuels · {len(r['pages'])} page(s)")
         self.lbl_resume.setToolTip(
-            f"{len(r['mesures'])} mesures\n{len(r['kpis'])} KPI, dont {n_fam} avec des "
-            f"variations\n{nv} visuels sur {len(r['pages'])} page(s)\n"
+            f"{len(r['mesures'])} mesures\n{n_fam} base(s) avec leurs variations, "
+            f"{len(r['kpis']) - n_fam} mesure(s) affichée(s) sans variation\n{nv} visuels sur {len(r['pages'])} page(s)\n"
             f"{len(r['parametres'])} paramètre(s) de champ\n{len(r['briques'])} brique(s)\n"
             f"{len(r['colonnes_utilisees'])} colonne(s) utilisée(s)")
         self._construire_kpi()
@@ -479,12 +479,12 @@ class RadiographieTab(QWidget):
             if f["reel"]:
                 top = self._feuille_mesure(f["kpi"], var)
                 top.setText(C_VUS, _vus(f["visuels"], f["pages"]))
-                top.setToolTip(C_VUS, f"Le KPI et ses variations : {_vus(f['visuels'], f['pages'])}"
-                                      f"\nLe KPI lui-même : {_vus(f['visuels_kpi'])}")
+                top.setToolTip(C_VUS, f"La base et ses variations : {_vus(f['visuels'], f['pages'])}"
+                                      f"\nLa base elle-même : {_vus(f['visuels_kpi'])}")
             else:
                 top = self._item([f["kpi"] + " …", var, _vus(f["visuels"], f["pages"]), ""],
                                  ("famille", f["kpi"]))
-                top.setToolTip(C_NOM, "Famille rapprochée par le NOM : ces mesures commencent "
+                top.setToolTip(C_NOM, "Base rapprochée par le NOM : ces mesures commencent "
                                       "par les mêmes mots, mais aucune ne référence l'autre.")
             top.setFont(C_NOM, italique if f["genre"] == rg.NOM else gras)
             if f["genre"] == rg.NOM:
@@ -512,18 +512,18 @@ class RadiographieTab(QWidget):
             it.setToolTip(C_VAR, "Utilisée par :\n" + "\n".join(b["utilisateurs"][:MAX_LISTE]))
             briques.append(it)
         groupe(GROUPE_BRIQUES, "Mesures que d'autres mesures reprennent, hors de leur "
-                               "propre famille : souvent invisibles dans les visuels, et "
+                               "propre base : souvent invisibles dans les visuels, et "
                                "ce qu'il faut lire en premier.", briques)
-        groupe(GROUPE_JAMAIS, "Ni affichées par un visuel, ni dans une famille, ni "
+        groupe(GROUPE_JAMAIS, "Ni affichées par un visuel, ni dans une base, ni "
                               "reprises par d'autres mesures. ChopChop dit si on peut "
                               "les supprimer.",
                [self._feuille_mesure(n) for n in r["jamais"]])
         patrons = []
         for p, n in r["patrons"]:
-            it = self._item([p, f"{n} KPI", "", ""], ("patron", p))
+            it = self._item([p, f"{n} bases", "", ""], ("patron", p))
             patrons.append(it)
-        g = groupe(GROUPE_PATRONS, "Les variations écrites pour plusieurs KPI : le nom de "
-                                   "la variation, son KPI remplacé par « … ».", patrons)
+        g = groupe(GROUPE_PATRONS, "Les variations écrites pour plusieurs bases : le nom de "
+                                   "la variation, sa base remplacée par « … ».", patrons)
         g.setExpanded(False)
         a.setUpdatesEnabled(True)
 
@@ -739,7 +739,7 @@ class RadiographieTab(QWidget):
         bases = list(dict.fromkeys(b for n in noms for b in (r["bases"][n] or [n])))
         tables = {r["mesures"][n]["table"] for n in noms}
         n_var = sum(1 for n in noms if n != kpi)
-        detail = (("KPI et " if kpi in noms else "")
+        detail = (("base et " if kpi in noms else "")
                   + f"{n_var} variation" + ("s" if n_var > 1 else ""))
         it = self._item([f"{kpi} · {len(noms)} mesures", ", ".join(bases), detail,
                          tables.pop() if len(tables) == 1 else ""], ("mesure", kpi)
@@ -752,7 +752,7 @@ class RadiographieTab(QWidget):
             sub = self._feuille_champ({"genre": "mesure", "nom": n})
             f = self._famille(kpi)
             x = next((x for x in (f["membres"] if f else []) if x["nom"] == n), None)
-            sub.setText(C_VUS, "KPI" if n == kpi else (x["patron"] if x else ""))
+            sub.setText(C_VUS, "base" if n == kpi else (x["patron"] if x else ""))
             # ce que la ligne de la famille dit déjà ne se répète pas 16 fois
             for c in (C_VAR, C_TABLE):
                 if sub.text(c) == it.text(c):
@@ -766,10 +766,10 @@ class RadiographieTab(QWidget):
         kpi = self.res["famille_de"].get(nom)
         if not kpi:
             return ""
-        if kpi == nom:
-            return "KPI"
         f = self._famille(kpi)
-        return f"variation de {kpi}" if f and f["reel"] else f"famille {kpi} … (par le nom)"
+        if kpi == nom:
+            return "base" if f and f["membres"] else ""
+        return f"variation de {kpi}" if f and f["reel"] else f"base {kpi} … (par le nom)"
 
     def _feuille_champ(self, c) -> QTreeWidgetItem:
         r = self.res
@@ -921,7 +921,8 @@ class RadiographieTab(QWidget):
         ns = len(r["visuels"]) - nv
         out = ["<h3>Vue d'ensemble du rapport</h3>",
                f"<p style='color:{TEXT_DIM}'>{len(r['pages'])} page(s) · {nv} visuel(s) · "
-               f"{ns} segment(s) · {len(r['kpis'])} KPI. Choisir une ligne à gauche pour "
+               f"{ns} segment(s) · {sum(1 for f in r['kpis'] if f['membres'])} base(s). "
+               "Choisir une ligne à gauche pour "
                "sa fiche.</p>"]
         casses = [v for v in r["visuels"]
                   if any(c["genre"] == "colonne" and not c["connue"] for c in v["champs"])]
@@ -930,7 +931,7 @@ class RadiographieTab(QWidget):
                        "introuvable : " + ", ".join(self._ou(v) for v in casses) + "</p>")
         vus = [f for f in r["kpis"] if f["visuels"]]
         if vus:
-            out.append("<h4>KPI affichés</h4>" + self._liste(
+            out.append("<h4>Mesures affichées</h4>" + self._liste(
                 [(self._a(f["kpi"], ("mesure", f["kpi"])) if f["kpi"] in r["mesures"]
                   else _e(f["kpi"] + " …"))
                  + f" <span {gris}>· {_vus(f['visuels'], f['pages'])}"
@@ -1086,7 +1087,8 @@ class RadiographieTab(QWidget):
         f = self._famille(kpi) if kpi else None
         if f and kpi == nom:
             n = len(f["membres"])
-            out.append(f"<p><b>KPI</b>" + (f", {n} variation(s)" if n else "") + "</p>")
+            out.append("<p><b>Base</b>, " + f"{n} variation(s)</p>" if n
+                       else "<p><b>Mesure sans variation</b></p>")
         elif f:
             x = next(x for x in f["membres"] if x["nom"] == nom)
             if f["reel"]:
@@ -1096,7 +1098,7 @@ class RadiographieTab(QWidget):
                 out.append(f"<p>Variation de {self._a(base, ('mesure', base))} : "
                            f"<b>{_e(x['patron'])}</b> ({par})</p>")
             else:
-                out.append(f"<p>Dans la famille <b>{_e(kpi)} …</b>, "
+                out.append(f"<p>Dans la base <b>{_e(kpi)} …</b>, "
                            f"<span style='color:{YELLOW}'>rapprochée par le nom "
                            "seulement</span> : aucune mesure de base commune.</p>")
         details = [f"table <b>{_e(m['table'])}</b>"]
@@ -1138,7 +1140,7 @@ class RadiographieTab(QWidget):
     def _fiche_famille(self, kpi) -> str:
         f = self._famille(kpi)
         out = [f"<h3>{_e(kpi)} …</h3>",
-               f"<p style='color:{YELLOW}'>Famille rapprochée par le nom : ces mesures "
+               f"<p style='color:{YELLOW}'>Base rapprochée par le nom : ces mesures "
                "commencent par les mêmes mots, mais aucune ne référence l'autre. À "
                "vérifier.</p>", f"<p>{_vus(f['visuels'], f['pages'])}</p>"]
         out.append(self._liste([self._a(x["nom"], ("mesure", x["nom"])) for x in f["membres"]]))
@@ -1223,7 +1225,7 @@ class RadiographieTab(QWidget):
         f = self._famille(kpi)
         patrons = {x["nom"]: x["patron"] for x in (f["membres"] if f else [])}
         noms = sorted(noms, key=lambda n: n != kpi)       # le KPI d'abord
-        liens = [self._a("KPI" if n == kpi else patrons.get(n) or n, ("mesure", n))
+        liens = [self._a("base" if n == kpi else patrons.get(n) or n, ("mesure", n))
                  for n in noms]
         tete = (self._a(kpi, ("mesure", kpi)) if kpi in self.res["mesures"] else _e(kpi + " …"))
         return f"<b>{tete}</b> <span {gris}>· {len(noms)} mesures :</span> " + ", ".join(liens)
@@ -1279,7 +1281,7 @@ class RadiographieTab(QWidget):
         out = [f"<h3>{_e(p['nom'])}</h3>",
                f"<p style='color:{TEXT_DIM}'>{len(p['visuels']) - n_seg} visuel(s) · "
                f"{n_seg} segment(s)</p>",
-               "<h4>KPI affichés</h4>",
+               "<h4>Mesures affichées</h4>",
                self._liste([self._a(k, ("mesure", k)) if k in self.res["mesures"] else _e(k)
                             for k in kpis]),
                "<h4>Visuels</h4>", self._bloc_page(p)]
@@ -1518,13 +1520,13 @@ class RadiographieTab(QWidget):
             out.append(f"<p style='color:{YELLOW}'>Ne mène à aucun visuel : rien de ce qu'on "
                        "voit dans le rapport n'en dépend.</p>")
         if n["genre"] == "mesures" and len(n.get("membres") or []) > 1:
-            out.append("<p>" + self._a(f"▸ Déplier la famille : une boîte par mesure "
+            out.append("<p>" + self._a(f"▸ Déplier la base : une boîte par mesure "
                                        f"({len(n['membres'])})",
                                        ("lignage_deplier", n["libelle"])) + "</p>")
         elif n["genre"] == "mesure":
-            out.append(f"<p style='color:{TEXT_DIM}'>Une mesure de la famille "
+            out.append(f"<p style='color:{TEXT_DIM}'>Une mesure de la base "
                        f"<b>{_e(n.get('famille', ''))}</b> · "
-                       + self._a("replier la famille", ("lignage_replier", n.get("famille")))
+                       + self._a("replier la base", ("lignage_replier", n.get("famille")))
                        + "</p>")
         genre, cle = n["cible"] or (None, None)
         corps = ""
@@ -1580,13 +1582,13 @@ class RadiographieTab(QWidget):
             noms = sorted({x["libelle"] for x in ns}, key=str.lower)
             texte = _e(", ".join(noms[:3])) + (f" et {len(noms) - 3} autres"
                                               if len(noms) > 3 else "")
-            # une boîte de la bande Mesures est une famille, ou une mesure
-            # d'une famille dépliée
+            # une boîte de la bande Mesures est une BASE (avec ses variations),
+            # ou une mesure : seule, ou d'une base dépliée
             titre = lgn.TITRES[bande]
             if bande == "mesures":
-                n_fam = sum(1 for x in ns if x["genre"] == "mesures")
-                titre = ("Familles de mesures" if n_fam == len(ns) else
-                         "Mesures" if not n_fam else "Mesures et familles")
+                n_bases = sum(1 for x in ns if len(x.get("membres") or []) > 1)
+                titre = ("Bases" if n_bases == len(ns) else
+                         "Mesures" if not n_bases else "Bases et mesures")
             out.append(f"<tr><td align='right' valign='top'><b>{len(ns)}</b></td>"
                        f"<td valign='top'>{_e(titre)}</td>"
                        f"<td valign='top' style='color:{TEXT_MUTED}'>{texte}</td></tr>")
@@ -1685,7 +1687,7 @@ class RadiographieTab(QWidget):
             if autres:
                 # une ligne par famille : 64 mesures en font souvent 3
                 lignes = self._lignes_familles(autres)
-                out.append(f"<p {gris}>Reprennent ces mesures ({len(autres)}), par famille :</p>"
+                out.append(f"<p {gris}>Reprennent ces mesures ({len(autres)}), par base :</p>"
                            + self._liste(lignes))
         return "".join(out)
 

@@ -73,10 +73,10 @@ les retirer casserait l'actualisation de cette requête.
 La supprimer ici ne sert à rien : la prochaine génération la recrée. Pour la faire
 disparaître :
 
-1. Retirer sa variation, ou l'exclure pour ce KPI, dans [Variations](03-1-variations.md).
+1. Retirer sa variation, ou l'exclure pour cet ICP, dans [Variations](03-1-variations.md).
 2. Lancer **Générer les mesures** avec **Supprimer les orphelines** coché.
 
-Si la variation doit rester pour d'autres KPI, la mesure inutilisée peut aussi être
+Si la variation doit rester pour d'autres ICP, la mesure inutilisée peut aussi être
 simplement conservée.
 
 ## Exporter l'audit

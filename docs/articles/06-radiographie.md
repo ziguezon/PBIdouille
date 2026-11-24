@@ -2,7 +2,7 @@
 
 [Documentation](../README.md) › **Radiographie** · voir aussi [Sources de données](05-sources-de-donnees.md), [ChopChop](08-chopchop.md)
 
-L'onglet **Radiographie** fait la carte d'un rapport qu'on n'a pas fait : quels KPI il
+L'onglet **Radiographie** fait la carte d'un rapport qu'on n'a pas fait : quelles mesures il
 affiche et où, ce que chaque mesure calcule vraiment, et ce qui filtre chaque visuel. Il
 sert à savoir où regarder avant de modifier un rapport, ou quand un chiffre semble faux.
 
@@ -11,7 +11,7 @@ noms et les fichiers des visuels. Il lui faut donc un modèle local, au format T
 rapport au format PBIR : un rapport en connexion live n'a aucune mesure à lui donner. Il
 ne modifie rien dans le projet.
 
-La ligne du haut résume le rapport : le nombre de mesures, de KPI, de visuels et de pages,
+La ligne du haut résume le rapport : le nombre de mesures, de bases, de visuels et de pages,
 de paramètres de champ, de briques et de colonnes utilisées.
 
 ## Les quatre vues
@@ -24,7 +24,7 @@ Les vues vont du plus large au plus fin :
 | **Par source** | Chaque table, sa source, et combien d'éléments du rapport en dépendent | D'où viennent les données, et que perdrait-on sans cette source ? |
 | **Par page** | Chaque page, ses visuels, leurs champs et ce qui les filtre | Que montre ce visuel, et d'où vient le chiffre ? |
 | **Par colonne** | Chaque colonne utilisée, combien d'éléments en dépendent, et où elle sert | Qu'est-ce qui touche à cette colonne ? |
-| **Par KPI** | Les familles de mesures, de la plus affichée à la moins affichée | Quels sont les KPI de ce rapport ? |
+| **Par base** | Les mesures de base et leurs variations, de la plus affichée à la moins affichée | Quelles mesures ce rapport calcule-t-il ? |
 
 La vue **Par source** a son propre article : [Sources de données](05-sources-de-donnees.md).
 
@@ -45,14 +45,14 @@ bas (menu **Affichage**) :
 | **Sources** | Les fichiers, bases et serveurs que lit le modèle |
 | **Power Query** | Les tables qui lisent une source, et les requêtes partagées, y compris celles qui ne font qu'en reprendre une autre et les requêtes-fonctions |
 | **Tables calculées** | Les tables écrites en DAX qui en lisent d'autres |
-| **Mesures** | Une boîte par famille de mesures : un KPI et ses variations |
+| **Mesures** | Une boîte par base : la mesure de base et ses variations ; une mesure seule a sa boîte |
 | **Paramètres de champ** | Les tables qui proposent des mesures à un segment |
 | **Filtres et segments** | Les filtres du volet qui ont une valeur, et les segments |
 | **Visuels** | Les visuels, rangés par page |
 | **Pages** | Les pages du rapport : chaque visuel mène à la sienne |
 
 Un trait relie ce qui est lu à ce qui le lit : une table aux mesures dont le DAX la cite,
-une famille aux visuels qui l'affichent, un filtre aux visuels qu'il filtre. Le liseré de
+une base aux visuels qui l'affichent, un filtre aux visuels qu'il filtre. Le liseré de
 couleur d'une boîte dit sa bande. Un trait qui saute une colonne passe entre ses boîtes,
 jamais à travers. Les traits qui vont vers une même boîte lointaine se rejoignent dès la
 sortie de leur colonne, puis font le trajet ensemble, en un seul trait. Plus un trait
@@ -72,7 +72,7 @@ visuel ; avec seulement **Sources** et **Pages**, on voit quelle source sert à 
 
 Le menu **Colonnes** masque des bandes entières. Leurs boîtes disparaissent, et les traits
 passent à travers elles : avec **Sources**, **Mesures** et **Visuels** seuls, chaque source
-mène droit aux familles qui la lisent, puis aux visuels. Le bouton dit combien de colonnes
+mène droit aux bases qui la lisent, puis aux visuels. Le bouton dit combien de colonnes
 restent, et **Toutes les colonnes** les remet.
 
 Le menu **Pages** ne garde que ce qui mène aux pages cochées : leurs visuels, leurs filtres
@@ -94,20 +94,22 @@ Sous le graphe, une ligne donne les dépendances de la boîte choisie : combien 
 de **directes**, c'est-à-dire reliées à elle par un seul trait, et combien **en tout**,
 dans chaque sens. La fiche, à droite, les reprend en tableau avec le nombre de
 **niveaux**, c'est-à-dire de pas jusqu'à la plus lointaine. Elle détaille ensuite la
-chaîne bande par bande, puis décrit la boîte choisie. Une famille repliée compte pour
+chaîne bande par bande, puis décrit la boîte choisie. Une base repliée compte pour
 une boîte.
 
 ### Suivre une seule mesure
 
-Une famille de mesures tient en une boîte, marquée **+**. Un **double-clic** la déplie en
+Une **base** tient en une boîte, marquée **+** : la mesure de base et toutes ses
+variations. Une base n'est pas forcément un ICP : c'est la mesure que d'autres
+reprennent en ajoutant quelque chose à son nom. Un **double-clic** la déplie en
 une boîte par mesure, avec les liens entre elles : `Body Fat % YTD` reprend `Body Fat %`,
 et `Body Fat % YTD 7d avg` reprend `Body Fat % YTD`. Un clic sur l'une d'elles allume
 alors la chaîne de cette mesure seule : ses sœurs qui n'en dépendent pas restent éteintes,
 et l'export ne garde qu'elle. Un double-clic sur une mesure dépliée, marquée **−**,
-replie sa famille.
+replie sa base.
 
 La fiche d'une mesure, dans n'importe quelle vue, a un lien **Voir dans le lignage** : il
-ouvre le lignage, déplie sa famille et la choisit. La fiche d'une famille, dans le
+ouvre le lignage, déplie sa base et la choisit. La fiche d'une base, dans le
 lignage, a un lien pour la déplier.
 
 Un clic sur le **titre d'une bande** (▾ Mesures) la replie en une seule boîte, par
@@ -120,7 +122,7 @@ gros rapport, une bande de plus de 40 éléments s'ouvre repliée.
 |---|---|
 | **Sens** : Amont et aval, Amont, Aval | Choisit la partie de la chaîne qui s'allume, qui se dessine seule et qui s'exporte |
 | **Chaîne seule** | Redessine le graphe avec la chaîne de la boîte choisie, rien d'autre |
-| **Exporter…** | Écrit la chaîne en CSV : une ligne par élément, une par mesure pour une famille |
+| **Exporter…** | Écrit la chaîne en CSV : une ligne par élément, une par mesure pour une base |
 | **Affichage** : Gauche → droite, Haut → bas | La disposition du graphe |
 | **Clic sur le titre d'une bande** | La replie ou la déplie |
 | **Colonnes** | Masque des bandes ; leurs traits passent à travers |
@@ -145,7 +147,7 @@ vient et les visuels qui l'affichent.
 | **Distance** | Le nombre de liens entre l'élément et la boîte choisie |
 | **Bande** | Sources, Power Query, Mesures… |
 | **Élément**, **Détail**, **Page** | Son nom, son détail, la page d'un visuel |
-| **Famille** | Pour une mesure, sa famille : une famille s'exporte mesure par mesure |
+| **Base** | Pour une mesure, sa base : une base s'exporte mesure par mesure |
 | **Mène à un visuel** | `non` pour ce que rien de visible n'utilise |
 
 ### Fermer la fiche
@@ -161,7 +163,7 @@ la rouvre, comme **Vue d'ensemble**. Le choix est retenu d'une session à l'autr
 **Vue d'ensemble** y revient à tout moment. On y lit, de haut en bas :
 
 - les visuels qui ont un champ introuvable, s'il y en a ;
-- les **KPI affichés**, du plus vu au moins vu, avec leur nombre de visuels, de pages et
+- les **mesures affichées**, de la plus vue à la moins vue, avec leur nombre de visuels, de pages et
   de variations ;
 - les filtres du rapport ;
 - chaque page, avec ses segments et leur sélection, puis un tableau de ses visuels.
@@ -169,7 +171,7 @@ la rouvre, comme **Vue d'ensemble**. Le choix est retenu d'une session à l'autr
 | Colonne | Contenu |
 |---|---|
 | **Visuel** | Son nom, ses filtres propres, et le segment de la page qui ne le filtre pas, s'il y en a un |
-| **Affiche** | Ses mesures, une famille par ligne : `Body Fat % (16)` pour 16 mesures de la famille |
+| **Affiche** | Ses mesures, une base par ligne : `Body Fat % (16)` pour 16 mesures de la base |
 | **Par** | Ses colonnes : axe, lignes, légende |
 
 Chaque nom est un lien vers sa fiche. C'est la page à lire pour savoir ce que contient un
@@ -188,16 +190,16 @@ Un visuel se déplie sur ses champs, rangés par **rôle** comme dans le volet V
 de Power BI : **Axe**, **Valeurs**, **Légende**, **Lignes**, **Info-bulles**… Un rôle qui
 n'a qu'un champ tient sur une ligne, le rôle en gris, comme `Axe : 'dim_Date'[1 month]`.
 
-Quand un visuel affiche plusieurs mesures d'une même famille, elles tiennent sur une ligne
+Quand un visuel affiche plusieurs mesures d'une même base, elles tiennent sur une ligne
 repliée, comme `Body Fat % · 16 mesures`. La déplier donne chaque mesure, avec ce que sa
-variation ajoute au nom du KPI, comme `… YTD`. Ce que la ligne de la famille dit déjà,
+variation ajoute au nom de la base, comme `… YTD`. Ce que la ligne de la base dit déjà,
 comme la table ou la mesure de base, ne se répète pas sur chaque mesure.
 
 | Colonne | Contenu |
 |---|---|
 | **Page / visuel / champ** | La page, le visuel, puis ses champs, rôle par rôle |
 | **Mène à** | Pour une mesure, les mesures de base qu'elle utilise au bout du compte ; pour un visuel, celles de tout ce qu'il affiche |
-| **Détail** | Pour un visuel, ses mesures et ses filtres ; pour une mesure, sa place dans sa famille |
+| **Détail** | Pour un visuel, ses mesures et ses filtres ; pour une mesure, sa place dans sa base |
 | **Table** | La table de la mesure ou de la colonne |
 
 **Mène à** répond à la question « d'où vient ce chiffre ? ». Une mesure de base est une
@@ -244,43 +246,44 @@ Toutes sont allumées au départ.
 
 Par exemple, éteindre **Mesures** et **Colonnes** ne laisse sous chaque visuel que ce qui
 le filtre. **Déplier** ouvre alors tous les visuels d'un coup, et **Replier** revient aux
-pages. **Déplier** laisse fermés les familles et les paramètres de champ : tout déplié,
-un visuel garde une ligne par rôle. Un clic sur la flèche d'une famille l'ouvre.
+pages. **Déplier** laisse fermés les bases et les paramètres de champ : tout déplié,
+un visuel garde une ligne par rôle. Un clic sur la flèche d'une base l'ouvre.
 
 ![Seulement les filtres : Mesures et Colonnes éteintes](../ressources/images/radiographie_filtres.png)
 
-## Par KPI : les familles de mesures
+## Par base : les mesures de base et leurs variations
 
-![La vue Par KPI, une variation et sa fiche](../ressources/images/radiographie_kpi.png)
+![La vue Par base, une variation et sa fiche](../ressources/images/radiographie_kpi.png)
 
-Un rapport compte souvent des centaines de mesures. Cette vue les range en **familles** :
-un KPI et ses variations. Les familles qu'on voit le plus dans les visuels viennent en
+Un rapport compte souvent des centaines de mesures. Cette vue les range par **base** :
+une mesure de base et ses variations. Les bases qu'on voit le plus dans les visuels
+viennent en
 premier.
 
-Cette vue marche sur n'importe quel rapport, fait ou non avec PBIdouille : les familles se
+Cette vue marche sur n'importe quel rapport, fait ou non avec PBIdouille : les bases se
 déduisent du DAX et des noms des mesures, jamais de `TD_Indicateurs` ni du
 `measures_config.json`. Une ligne sous la vue le rappelle.
 
 Une mesure est une **variation** quand elle utilise une autre mesure dont le nom est contenu
 dans le sien : `Body Fat % 30d avg` utilise `[Body Fat %]`, elle en est donc une variation.
-La colonne **Variation** donne ce qui s'ajoute au nom du KPI, comme `… 30d avg`.
+La colonne **Variation** donne ce qui s'ajoute au nom de la base, comme `… 30d avg`.
 
 | Ce qu'on voit | Signification |
 |---|---|
-| Nom en **gras** | Un KPI, avec le nombre de ses variations |
-| Nom en *italique*, variation en jaune | Une famille rapprochée **par le nom seulement** : les mesures commencent par les mêmes mots, mais aucune n'utilise l'autre. À vérifier |
+| Nom en **gras** | Une base, avec le nombre de ses variations |
+| Nom en *italique*, variation en jaune | Une base rapprochée **par le nom seulement** : les mesures commencent par les mêmes mots, mais aucune n'utilise l'autre. À vérifier |
 | Ligne grisée | Une mesure qu'aucun visuel n'affiche |
 
 Un premier mot générique comme `Total` ou `Average` ne suffit pas à rapprocher deux mesures
 par le nom.
 
-Sous les familles, trois groupes :
+Sous les bases, trois groupes :
 
 | Groupe | Contenu |
 |---|---|
-| **Briques** | Les mesures que d'autres mesures reprennent, hors de leur famille. Souvent invisibles dans les visuels, et ce qu'il faut lire en premier |
-| **Jamais affichées** | Les mesures qu'aucun visuel n'affiche, hors famille et hors brique. [ChopChop](08-chopchop.md) dit si on peut les supprimer |
-| **Variations repérées** | Les variations écrites pour plusieurs KPI, et pour combien |
+| **Briques** | Les mesures que d'autres mesures reprennent, hors de leur base. Souvent invisibles dans les visuels, et ce qu'il faut lire en premier |
+| **Jamais affichées** | Les mesures qu'aucun visuel n'affiche, hors base et hors brique. [ChopChop](08-chopchop.md) dit si on peut les supprimer |
+| **Variations repérées** | Les variations écrites pour plusieurs bases, et pour combien |
 
 ## Par colonne : où sert chaque colonne
 
@@ -309,7 +312,7 @@ est faux :
 | **Mesure** | Une mesure dont le DAX lit cette colonne |
 
 Quand plus de quatre mesures lisent la colonne, elles tiennent sur une ligne repliée,
-**Lue par 102 mesures**, qui se déplie sur leurs familles. Deux autres lignes repliées
+**Lue par 102 mesures**, qui se déplie sur leurs bases. Deux autres lignes repliées
 disent ce qui en dépend par une mesure : **Reprise par N autres mesures**, et les visuels
 qui affichent ces mesures.
 
@@ -326,11 +329,11 @@ lesquelles le rapport filtre.
 | Choix | Ce que montre la fiche |
 |---|---|
 | **Rien**, ou le bouton **Vue d'ensemble** | Le résumé du rapport, page par page (voir [La vue d'ensemble](#la-vue-densemble)) |
-| **Mesure** | Sa famille, sa table et son dossier, où elle est affichée, les paramètres de champ qui la proposent, ce à quoi elle mène, ce qu'elle utilise, qui l'utilise, et son DAX |
-| **Table** (vue Par source) | Ce qui en dépend : visuels, filtres, tables et colonnes calculées, mesures par famille ; et le total de toute sa source |
-| **Visuel** | Sa page et son type, ses champs rôle par rôle (les variations d'un KPI sur une ligne), d'où viennent ses chiffres, et ce qui le filtre |
-| **Page** | Les KPI qu'elle affiche, ses segments et le tableau de ses visuels |
-| **Colonne** | Ce qui en dépend en une ligne, puis ses usages par genre ; les mesures par famille |
+| **Mesure** | Sa base, sa table et son dossier, où elle est affichée, les paramètres de champ qui la proposent, ce à quoi elle mène, ce qu'elle utilise, qui l'utilise, et son DAX |
+| **Table** (vue Par source) | Ce qui en dépend : visuels, filtres, tables et colonnes calculées, mesures par base ; et le total de toute sa source |
+| **Visuel** | Sa page et son type, ses champs rôle par rôle (les variations d'une base sur une ligne), d'où viennent ses chiffres, et ce qui le filtre |
+| **Page** | Les mesures qu'elle affiche, ses segments et le tableau de ses visuels |
+| **Colonne** | Ce qui en dépend en une ligne, puis ses usages par genre ; les mesures par base |
 | **Paramètre de champ** | Les visuels qui l'utilisent et les mesures qu'il propose |
 
 ## Chercher
@@ -339,14 +342,14 @@ lesquelles le rapport filtre.
 |---|---|
 | **Filtre** | Garde, dans les trois vues, les lignes qui contiennent le texte, avec leurs parents |
 | **Pastilles Afficher** | Allument ou éteignent une catégorie de lignes, dans les vues Par page et Par colonne |
-| **Déplier**, **Replier** | Ouvrent tout ce que la vue montre (sauf les familles, dans Par page), ou la replient sur ses pages, familles ou tables |
+| **Déplier**, **Replier** | Ouvrent tout ce que la vue montre (sauf les bases, dans Par page), ou la replient sur ses pages, bases ou tables |
 | **Vue d'ensemble** | Ramène la fiche au résumé du rapport |
 | **Clic sur un lien** de la fiche | Sélectionne la mesure ou le visuel dans sa vue |
 | **↻ Relire** | Relit le modèle et les pages du rapport |
 
 ## Limites
 
-- Les familles sont **déduites**. Une variation qui n'utilise pas sa base et ne commence
+- Les bases sont **déduites**. Une variation qui n'utilise pas sa base et ne commence
   pas par son nom reste seule.
 - Une colonne citée dans le DAX sans sa table, comme `[Date]`, n'est pas comptée dans les
   colonnes lues.

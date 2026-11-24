@@ -424,7 +424,7 @@ def read_kpi_tables(spec, model_dir, default_xlsx, default_key, log=print) -> di
     try:
         brut = read_attribute_map(xlsx, spec.get("keyColumn") or default_key, col)
     except SystemExit as e:
-        log(f"⚠ portée par KPI : {e}, colonne « {col} » ignorée.")
+        log(f"⚠ portée par ICP : {e}, colonne « {col} » ignorée.")
         return {}
     out = {}
     for kpi, val in brut.items():
@@ -1286,7 +1286,7 @@ def read_kpi_order(td, log=print) -> dict:
     try:
         return read_attribute_map(td["path"], td["keyColumn"], col)
     except SystemExit as e:
-        log(f"⚠ ordre des KPI : {e}, colonne « {col} » ignorée, "
+        log(f"⚠ ordre des ICP : {e}, colonne « {col} » ignorée, "
             "tri alphabétique.")
         return {}
 
@@ -1306,9 +1306,9 @@ def kpi_ranks(bases, ordres, log=print) -> dict:
                                             else ORDRE_ABSENT, sort_key_pbi(b)))
     sans = [b for b in bases if b not in ordres]
     if sans:
-        log(f"⚠ ordre des KPI : {len(sans)} sans valeur dans la colonne "
+        log(f"⚠ ordre des ICP : {len(sans)} sans valeur dans la colonne "
             f"({', '.join(sorted(sans, key=sort_key_pbi))}), rangé(s) à la fin.")
-    log("Ordre des KPI : " + " → ".join(ordonnes))
+    log("Ordre des ICP : " + " → ".join(ordonnes))
     return {b: i for i, b in enumerate(ordonnes)}
 
 
@@ -1682,7 +1682,7 @@ def _generate(model_dir, config, *, dry_run=None, remove_orphans=None, log=print
     if not lkp_ok and any(s_["kpiLabel"] and "kpi" in (s_["rows"], s_["baseRow"])
                           for s_ in fp_specs):
         log(f"⚠ table de correspondance « {lkp_table} » absente du modèle, "
-            f"les tables paramètre afficheront le nom brut du KPI. "
+            f"les tables paramètre afficheront le nom brut de l'ICP. "
             f"Corriger fieldParameter.kpiLabelLookup.table.")
     fp_kpi_col    = fp.get("kpiColumn") or "Indicateur"
     fp_calc_col   = fp.get("calcColumn") or "Calcul"
@@ -1718,7 +1718,7 @@ def _generate(model_dir, config, *, dry_run=None, remove_orphans=None, log=print
     kpi_tables = read_kpi_tables(
         config.get("kpiTables"), model_dir, td["path"], td["keyColumn"], log)
     if kpi_tables:
-        log(f"Portée par KPI : {len(kpi_tables)} KPI avec des tables déclarées.")
+        log(f"Portée par ICP : {len(kpi_tables)} ICP avec des tables déclarées.")
     kpi_tables_auto = bool((config.get("kpiTables") or {}).get("fromMeasureDax"))
 
 
@@ -2093,12 +2093,12 @@ def _generate(model_dir, config, *, dry_run=None, remove_orphans=None, log=print
             # à une variation/branche (le générateur les crée lui-même)
             if any(cname.endswith(" " + s) for s in var_branch_suffixes):
                 log(f"⚠ « {cname} » ressemble à une variation/branche, ignorée. "
-                    f"Ne mettre que la cible RACINE (« <KPI> cible ») dans le dossier ; "
+                    f"Ne mettre que la cible RACINE (« <ICP> cible ») dans le dossier ; "
                     f"le générateur décline le reste.")
                 continue
             kpi = match_kpi(cname, bases_by_len)
             if kpi is None:
-                log(f"⚠ cible « {cname} » : aucun KPI ne correspond au préfixe, ignorée.")
+                log(f"⚠ cible « {cname} » : aucun ICP ne correspond au préfixe, ignorée.")
                 continue
             e = mesures_source[cname]
             run_base(cname, e["format"], e["folder"], kpi, calcul, calcul + " ",
@@ -2106,13 +2106,13 @@ def _generate(model_dir, config, *, dry_run=None, remove_orphans=None, log=print
             found += 1
         if found:
             log(f"Cibles ({cfolder}) : {found} cible(s) racine déclinée(s) en variations "
-                f"(Indicateur = KPI, Calcul « {calcul}… »).")
+                f"(Indicateur = ICP, Calcul « {calcul}… »).")
         else:
             seen_folders = sorted({e["folder"] for e in mesures_source.values()
                                    if e["folder"] and not e["annotation"]})
             log(f"⚠ Cibles ({cfolder}) : AUCUNE cible racine trouvée dans « {source_table} ». "
                 f"À vérifier : (1) les cibles sont dans cette table ; (2) leur dossier "
-                f"correspond ; (3) leur nom commence par un KPI de base (ex. "
+                f"correspond ; (3) leur nom commence par un ICP de base (ex. "
                 f"« Weight cible »). Dossiers présents : {', '.join(seen_folders) or '(aucun)'}.")
 
     # -- 2e passe : branches (KPI ET cibles) --

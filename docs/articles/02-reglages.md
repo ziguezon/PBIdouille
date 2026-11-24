@@ -7,7 +7,7 @@ plusieurs onglets. Elle s'ouvre avec le bouton **⚙ Réglages** de la barre du 
 
 | Page | Ce qu'elle décide |
 |---|---|
-| [Génération](#génération) | Où trouver les KPI, où ranger les mesures, ce qui peut être modifié |
+| [Génération](#génération) | Où trouver les ICP, où ranger les mesures, ce qui peut être modifié |
 | [Excel des indicateurs](#excel-des-indicateurs) | Le fichier TD_Indicateurs, ses colonnes et les attributs `<<…>>` |
 | [Branches](#branches) | Les variations qui deviennent des branches, comme YTD |
 | [Mesures cibles](#mesures-cibles) | Les dossiers où se trouvent les cibles |
@@ -38,18 +38,18 @@ Un réglage enregistré agit sur le modèle à la prochaine **Générer les mesu
 
 | Réglage | Dans `settings` | Rôle |
 |---|---|---|
-| **sourceTable** | `sourceTable` | La table qui contient les KPI. Défaut : `_mesures` |
-| **sourceFolder** | `sourceFolder` | Le dossier d'affichage des KPI. Vide : toutes les mesures écrites à la main dans la table |
+| **sourceTable** | `sourceTable` | La table qui contient les ICP. Défaut : `_mesures` |
+| **sourceFolder** | `sourceFolder` | Le dossier d'affichage des ICP. Vide : toutes les mesures écrites à la main dans la table |
 | **dateColumn** | `dateColumn` | La colonne qui remplace le jeton `{date}`, comme `'dim_Date'[Date]` |
 | **targetTable** | `targetTable` | La table où créer les mesures. Vide : la même que `sourceTable` |
-| **Dossiers** | `folderLayout` | Le rangement des mesures : par variation ou par KPI |
+| **Dossiers** | `folderLayout` | Le rangement des mesures : par variation ou par ICP |
 | **displayFolderPattern** | `displayFolderPattern` | Le dossier des variations, comme `{baseFolder}\_{variation}` |
 | **branchFolderPattern** | `branchFolderPattern` | Le dossier d'une mesure de branche, comme `{baseFolder}\__{branch}` |
 | **overwriteExisting** | `overwriteExisting` | Coché : met à jour les mesures déjà générées. Décoché : crée seulement les nouvelles |
 | **removeOrphans** | `removeOrphans` | L'état de départ de **Supprimer les orphelines** |
 | **dryRun** | `dryRun` | Pour la ligne de commande seulement. Dans l'app, c'est **Aperçu (dry-run)** qui décide |
 
-Les KPI sont toujours lus dans `sourceTable`. Pour garder les KPI dans `Ventes` et
+Les ICP sont toujours lus dans `sourceTable`. Pour garder les ICP dans `Ventes` et
 ranger leurs variations dans `Indicateurs`, régler `sourceTable` sur `Ventes` et
 `targetTable` sur `Indicateurs`. Les deux tables doivent déjà exister.
 
@@ -68,9 +68,9 @@ le config ne demande plus.
 | Choix | `Weight 7d avg` | `Weight YTD 7d avg` |
 |---|---|---|
 | **par variation** | `_indicateurs\_7d avg` | `_indicateurs\__YTD\_7d avg` |
-| **par KPI** | `_indicateurs\Weight` | `_indicateurs\Weight\YTD` |
+| **par ICP** | `_indicateurs\Weight` | `_indicateurs\Weight\YTD` |
 
-Par KPI, les deux motifs de dossier ne servent pas et sont grisés. Changer de rangement
+Par ICP, les deux motifs de dossier ne servent pas et sont grisés. Changer de rangement
 déplace les mesures existantes à la prochaine génération : elles sont **modifiées**, pas
 recréées.
 
@@ -78,7 +78,7 @@ recréées.
 
 ![La page Excel des indicateurs](../ressources/images/reglages_excel.png)
 
-Ce classeur décrit les KPI, à raison d'une ligne par mesure de base. Il est défini ici une
+Ce classeur décrit les ICP, à raison d'une ligne par mesure de base. Il est défini ici une
 seule fois, pour tout l'outil.
 
 | Réglage | Dans `indicateursXlsx` | Rôle |
@@ -87,7 +87,7 @@ seule fois, pour tout l'outil.
 | **Colonnes (clé)** | `keyColumn` | La colonne qui contient le nom de la mesure |
 | **couleur de fond** | `fillColumn` | Le fond utilisé par [Colorer](04-rapport.md#colorer-les-matrices) |
 | **couleur de texte** | `textColumn` | Le texte utilisé par Colorer |
-| **Ordre des KPI** | `orderColumn` | L'ordre des KPI dans les tables paramètre. Vide : alphabétique |
+| **Ordre des ICP** | `orderColumn` | L'ordre des ICP dans les tables paramètre. Vide : alphabétique |
 
 **↻** relit les colonnes, par exemple après en avoir ajouté une dans Excel.
 
@@ -96,10 +96,10 @@ crée le classeur avec les colonnes choisies sur cette page : une ligne par mesu
 le libellé égal au nom, les couleurs vides, et l'ordre numéroté si une colonne d'ordre est
 choisie. Il ne remplace jamais un fichier existant.
 
-### L'ordre des KPI
+### L'ordre des ICP
 
 Mettre des nombres dans la colonne choisie, de préférence espacés : `10`, `20`, `30`. Ils
-sont triés comme des nombres. Un texte passe après les nombres, et un KPI sans valeur passe
+sont triés comme des nombres. Un texte passe après les nombres, et un ICP sans valeur passe
 à la fin, avec un message au journal.
 
 ### Les attributs
@@ -149,13 +149,13 @@ déduit du DAX de la branche. Il doit être rempli si ce DAX ne cite pas `{baseR
 
 Une **cible** est une mesure écrite à la main dans Power BI, comme `Weight cible`.
 
-1. Dans Power BI Desktop, créer une cible par KPI et les ranger dans un dossier dédié.
+1. Dans Power BI Desktop, créer une cible par ICP et les ranger dans un dossier dédié.
 2. Ici, cliquer **Ajouter** et indiquer ce dossier.
 3. Dans **Calcul (libellé)**, indiquer le nom affiché dans les paramètres de champ.
 4. Dans [Variations](03-1-variations.md#portée), cocher **générer pour les cibles** sur
    les variations voulues.
 
-Le nom de la cible doit commencer par celui de son KPI. Ne placer dans ce dossier que la
+Le nom de la cible doit commencer par celui de son ICP. Ne placer dans ce dossier que la
 cible de départ, car le générateur crée le reste. Ce dossier doit être différent de
 `sourceFolder`.
 

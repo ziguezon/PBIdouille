@@ -49,7 +49,7 @@ class CouleursDialog(QDialog):
     def __init__(self, xlsx, key_col: str, fill_col: str, text_col: str,
                  model_kpis=None, parent=None, project_root=None):
         super().__init__(parent)
-        self.setWindowTitle("Couleurs des KPI · " + Path(xlsx).name)
+        self.setWindowTitle("Couleurs des ICP · " + Path(xlsx).name)
         self.resize(720, 460)
         self.xlsx = Path(xlsx)
         self.project_root = Path(project_root) if project_root else self.xlsx.parent
@@ -67,7 +67,7 @@ class CouleursDialog(QDialog):
         lay.addWidget(self.lbl_info)
 
         self.table = QTableWidget(0, 4)
-        self.table.setHorizontalHeaderLabels(["KPI (mesure)", "Fond", "Texte", "Aperçu"])
+        self.table.setHorizontalHeaderLabels(["ICP (mesure)", "Fond", "Texte", "Aperçu"])
         self.table.verticalHeader().setVisible(False)
         self.table.setSelectionMode(QTableWidget.NoSelection)
         header = self.table.horizontalHeader()
@@ -154,7 +154,7 @@ class CouleursDialog(QDialog):
                 self.state[k] = {"fill": "", "text": "", "row": None}
 
         missing_cols = [c for c, name in ((fill_c, self.fill_col), (text_c, self.text_col)) if c is None]
-        info = f"{sum(1 for s in self.state.values() if s['row'])} KPI dans l'Excel."
+        info = f"{sum(1 for s in self.state.values() if s['row'])} ICP dans l'Excel."
         if missing_cols:
             info += (f"  Colonnes « {self.fill_col} »/« {self.text_col} » absentes : elles seront "
                      "CRÉÉES à la sauvegarde (la colonne « couleur » existante n'est pas touchée).")
@@ -320,11 +320,11 @@ class CouleursDialog(QDialog):
         finally:
             wb.close()
 
-        session.close(f"{n} KPI modifiés")
+        session.close(f"{n} ICP modifiés")
         for key in changements:
             self.initial[key] = self.state[key].copy()
         QMessageBox.information(
             self, "Enregistré",
-            f"{n} KPI écrits dans {self.xlsx.name} "
+            f"{n} ICP écrits dans {self.xlsx.name} "
             f"(colonnes « {self.fill_col} » / « {self.text_col} »).\n"
             "Lancer « Colorer » pour appliquer au rapport.")

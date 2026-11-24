@@ -168,7 +168,7 @@ check("la base porte le marqueur ◆", it_k is not None and it_k.text(1).startsw
 check("… et l'infobulle dit dans quelles tables", "P_tout" in it_k.toolTip(1))
 it_br = vue.element(br_k[0]["name"])
 check("la mesure de branche est enfant de son KPI", it_br is not None and it_br.parent() is it_k)
-check("le résumé compte les KPI", f"{len(bases)} KPI" in vue.lbl_resume.text())
+check("le résumé compte les ICP", f"{len(bases)} ICP" in vue.lbl_resume.text())
 
 vue.ed_filtre.setText(B)
 visibles = [vue.element(n["name"]) for n in sous_br]

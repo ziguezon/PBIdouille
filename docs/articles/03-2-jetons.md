@@ -3,7 +3,7 @@
 [Documentation](../README.md) › Mesures › **Jetons** · voir aussi [Variations](03-1-variations.md), [Arbre des mesures](03-3-arbre-des-mesures.md)
 
 Une variation s'écrit une seule fois. Les **jetons** sont les parties qui changent
-d'un KPI à l'autre : la génération les remplace pour chaque KPI, cible et branche.
+d'un ICP à l'autre : la génération les remplace pour chaque ICP, cible et branche.
 
 Il y en a deux familles, reconnaissables à leur couleur dans l'éditeur DAX :
 
@@ -20,11 +20,11 @@ Il y en a deux familles, reconnaissables à leur couleur dans l'éditeur DAX :
 Dans **Mesures › Variations**, cliquer **Jetons disponibles…** sous le DAX. La fenêtre
 reste ouverte à côté de l'éditeur.
 
-1. Choisir une **mesure** (un KPI, ou une cible sous son KPI) et une **branche**.
+1. Choisir une **mesure** (un ICP, ou une cible sous son ICP) et une **branche**.
 2. Lire la **valeur** de chaque jeton pour cette mesure, et **où elle se règle**.
 3. **Double-cliquer** sur un jeton pour l'insérer dans le DAX.
 
-Les cibles du rapport apparaissent sous leur KPI. Une cible est une mesure écrite à
+Les cibles du rapport apparaissent sous leur ICP. Une cible est une mesure écrite à
 la main dans Power BI, rangée dans le dossier indiqué dans **⚙ Réglages → Mesures
 cibles**. Pour qu'elle existe dans une branche, cocher **générer pour les cibles** sur
 la variation de cette branche.
@@ -40,9 +40,9 @@ Ces valeurs viennent de la génération elle-même : c'est ce qui sera écrit.
 
 | Jeton | Vient de | Où le changer |
 |---|---|---|
-| `{base}`, `{baseRef}` | la mesure traitée | KPI : **⚙ Réglages → Génération** (`sourceTable`, `sourceFolder`). Cible : **⚙ Réglages → Mesures cibles**. Branche : **⚙ Réglages → Branches** |
-| `{kpi}` | le KPI | **⚙ Réglages → Génération** (`sourceTable`, `sourceFolder`) |
-| `{kpiRef}` | le KPI, dans la branche | **⚙ Réglages → Génération**, et **⚙ Réglages → Branches** |
+| `{base}`, `{baseRef}` | la mesure traitée | ICP : **⚙ Réglages → Génération** (`sourceTable`, `sourceFolder`). Cible : **⚙ Réglages → Mesures cibles**. Branche : **⚙ Réglages → Branches** |
+| `{kpi}` | l'ICP | **⚙ Réglages → Génération** (`sourceTable`, `sourceFolder`) |
+| `{kpiRef}` | l'ICP, dans la branche | **⚙ Réglages → Génération**, et **⚙ Réglages → Branches** |
 | `{branch}` | la branche | **⚙ Réglages → Branches** |
 | `{variation}` | l'identifiant de la variation | La liste des variations (**Renommer**) |
 | `{date}` | la colonne de dates | **⚙ Réglages → Génération** (`dateColumn`) |
@@ -58,8 +58,8 @@ Le classeur lui-même se choisit en haut de la même page,
 |---|---|---|---|---|---|
 | `{base}` | la mesure traitée | `Weight` | `Weight YTD` | `Weight cible` | `Weight cible YTD` |
 | `{baseRef}` | la même, en référence DAX | `[Weight]` | `[Weight YTD]` | `[Weight cible]` | `[Weight cible YTD]` |
-| `{kpi}` | le KPI | `Weight` | `Weight` | `Weight` | `Weight` |
-| `{kpiRef}` | le KPI, dans la branche | `[Weight]` | `[Weight YTD]` | `[Weight]` | `[Weight YTD]` |
+| `{kpi}` | l'ICP | `Weight` | `Weight` | `Weight` | `Weight` |
+| `{kpiRef}` | l'ICP, dans la branche | `[Weight]` | `[Weight YTD]` | `[Weight]` | `[Weight YTD]` |
 | `{branch}` | la branche | *(rien)* | `YTD` | *(rien)* | `YTD` |
 
 Ceux-ci ne dépendent pas de la branche :
@@ -73,10 +73,10 @@ Ceux-ci ne dépendent pas de la branche :
 
 Ils fonctionnent dans le **nom**, la **description** et le **DAX**.
 
-### KPI et cibles
+### ICP et cibles
 
 Une cible est une mesure de base à part entière : `{base}` et `{baseRef}` la
-désignent, alors que `{kpi}` et `{kpiRef}` désignent son KPI. C'est ce qui permet
+désignent, alors que `{kpi}` et `{kpiRef}` désignent son ICP. C'est ce qui permet
 de les comparer :
 
 ```dax
@@ -87,7 +87,7 @@ de les comparer :
 Weight cible écart = [Weight] - [Weight cible]
 ```
 
-Cocher **générer pour les cibles** et décocher **générer pour les KPI** : sur un KPI,
+Cocher **générer pour les cibles** et décocher **générer pour les ICP** : sur un ICP,
 `{kpiRef}` et `{baseRef}` sont la même mesure et l'écart vaudrait 0.
 
 ### `{branch}` dans un nom de mesure
@@ -106,8 +106,8 @@ toujours recopiée, jamais enveloppée.
 ## Les jetons `<<…>>` : n'importe quelle colonne de TD_Indicateurs
 
 Chaque colonne de `TD_Indicateurs.xlsx` peut devenir un jeton. Sa valeur est celle
-de la ligne du KPI, **écrite telle quelle** à la place du jeton. Une même variation
-peut donc se comporter différemment pour chaque KPI.
+de la ligne de l'ICP, **écrite telle quelle** à la place du jeton. Une même variation
+peut donc se comporter différemment pour chaque ICP.
 
 ### Créer et modifier un attribut
 
@@ -118,7 +118,7 @@ Chaque jeton y est écrit comme dans le DAX, `<<unite>>`. À la saisie d'un nom,
 chevrons sont facultatifs.
 
 **Pour en ajouter un**, utiliser la ligne sous le tableau : le nom du jeton, la colonne
-et la valeur du KPI choisi, puis **Ajouter**. Si la colonne n'existe pas encore, elle
+et la valeur de l'ICP choisi, puis **Ajouter**. Si la colonne n'existe pas encore, elle
 est créée dans `TD_Indicateurs.xlsx`, et dans son tableau Excel s'il y en a un. Sans
 colonne indiquée, elle prend le nom du jeton.
 
@@ -128,7 +128,7 @@ colonne indiquée, elle prend le nom du jeton.
 |---|---|
 | **Jeton** | Le nom du jeton. Le DAX qui citait l'ancien nom est à corriger |
 | **Colonne de l'Excel** | La colonne lue. Un nom nouveau crée la colonne |
-| **Valeur pour…** | La cellule du KPI choisi, dans l'Excel. Pour une cible, celle de son KPI |
+| **Valeur pour…** | La cellule de l'ICP choisi, dans l'Excel. Pour une cible, celle de son ICP |
 
 **Insérer** met le jeton dans le DAX, et **✕** le retire sans toucher à la colonne.
 `direction` est toujours proposé : s'il n'est pas déclaré, il est grisé, et **＋** le
@@ -181,10 +181,10 @@ RETURN <<var_nom>> * 2
 Le jeton marche aussi dans le **nom** de la mesure (`{base} en <<unite>>` donne
 `Weight en kg`) et dans sa **description**.
 
-### Du DAX différent pour chaque KPI
+### Du DAX différent pour chaque ICP
 
 Une cellule peut contenir du code, **jetons compris**. La variation reste unique,
-et chaque KPI apporte sa logique :
+et chaque ICP apporte sa logique :
 
 ```dax
 VAR valeur = <<agregat>>
@@ -201,9 +201,9 @@ Total Steps tendance =
     RETURN valeur * 1
 ```
 
-### Des filtres propres à chaque KPI
+### Des filtres propres à chaque ICP
 
-Pour une part du total, chaque KPI doit retirer les filtres de **ses** tables. La
+Pour une part du total, chaque ICP doit retirer les filtres de **ses** tables. La
 colonne `filtres` les porte, avec la fonction voulue :
 
 ```dax
@@ -229,9 +229,9 @@ différentes, faire deux colonnes.
 
 ### Les règles
 
-- **Cellule vide : pas de mesure** pour ce KPI, que le jeton soit dans le nom, le DAX
+- **Cellule vide : pas de mesure** pour cet ICP, que le jeton soit dans le nom, le DAX
   ou la description. Le journal dit laquelle et pourquoi. Aucune mesure à moitié écrite.
-- **Une cible lit la ligne de son KPI.**
+- **Une cible lit la ligne de son ICP.**
 - **La valeur est figée à la génération.** Après un changement dans l'Excel,
   relancer **Générer les mesures**.
 - Les `<<attributs>>` ne sont **pas** remplacés dans `displayFolder`.

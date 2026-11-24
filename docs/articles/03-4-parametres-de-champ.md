@@ -4,9 +4,9 @@
 
 Un **paramètre de champ** est une table Power BI qui liste des mesures. Placé dans un
 segment, il permet de choisir quelle mesure un visuel affiche : `Réel`, `7d avg`,
-`PY`, ou un autre KPI.
+`PY`, ou un autre ICP.
 
-PBIdouille écrit ces tables à partir des KPI, des cibles et des variations. L'onglet
+PBIdouille écrit ces tables à partir des ICP, des cibles et des variations. L'onglet
 se lit de haut en bas : les **réglages** de chaque table, puis **ce qu'elle
 contiendra**.
 
@@ -23,11 +23,11 @@ Chaque rangée correspond à une mesure. Voici la rangée de `Weight YTD PY` :
 | *nom de la table* | `PY` | Le texte affiché dans le segment |
 | *nom de la table* `Fields` | `[Weight YTD PY]` | La mesure, colonne masquée |
 | *nom de la table* `Ordre` | `76` | Le tri, colonne masquée |
-| `Indicateur` | `Weight` | Le KPI |
+| `Indicateur` | `Weight` | L'ICP |
 | `Calcul` | `PY` | Le calcul |
 | `Branche` | `YTD` | La branche |
 
-Une table reçoit, pour chaque KPI :
+Une table reçoit, pour chaque ICP :
 
 - sa mesure de **base**, affichée `Réel` par défaut ;
 - ses **cibles** ;
@@ -38,7 +38,7 @@ Une table reçoit, pour chaque KPI :
 Dans le projet de démonstration, `Weight` a ainsi 17 rangées : 8 calculs en Réel, les
 mêmes 8 en YTD, et sa cible.
 
-Dans chaque KPI, la base vient en premier, puis ses cibles, puis les variations dans
+Dans chaque ICP, la base vient en premier, puis ses cibles, puis les variations dans
 l'ordre de [Variations](03-1-variations.md). Comme dans une table faite par Desktop,
 l'affichage **et** la colonne `Fields` sont triés par `Ordre`, qui est un nombre :
 
@@ -58,7 +58,7 @@ est corrigée à la génération suivante, et le journal le signale.
 5. Cliquer **Sauvegarder**, enregistrer dans Power BI Desktop s'il est ouvert, puis lancer
    **Générer les mesures**.
 6. Fermer Desktop **sans enregistrer** et rouvrir le `.pbip`. Pour une table nouvelle,
-   relier sa colonne `Indicateur` à la table des KPI, si un segment de KPI doit la filtrer. Cette relation se crée une
+   relier sa colonne `Indicateur` à la table des ICP, si un segment d'ICP doit la filtrer. Cette relation se crée une
    seule fois, dans Power BI Desktop.
 
 **Dupliquer** crée une copie de la table choisie. C'est utile pour avoir deux
@@ -67,7 +67,7 @@ sélections indépendantes sur une même page.
 ### Exemple : une table limitée à YTD
 
 Dans **Branches**, décocher `(hors branche)`. Dans **Garder**, décocher **les cibles**.
-La table passe à 8 rangées par KPI, toutes en YTD :
+La table passe à 8 rangées par ICP, toutes en YTD :
 
 ![La table P_YTD_seul, avec ses 40 rangées en YTD](../ressources/images/parametres_ytd.png)
 
@@ -81,9 +81,9 @@ Le config ne retient que ce qui s'écarte des valeurs par défaut :
 
 | Chaque rangée affiche | La rangée de base affiche | Dans le segment, on choisit | Le reste vient de |
 |---|---|---|---|
-| **le calcul** | **« Réel »** | `Réel`, `7d avg`, `PY`… | Un segment de KPI relié à `Indicateur` |
-| **le calcul** | **le KPI** | Le KPI et ses calculs, dans le même segment : `Poids`, `7d avg`, `PY`… | Rien de plus |
-| **le KPI** | sans objet | `Poids`, `Pas`… | Un segment sur la colonne `Calcul` |
+| **le calcul** | **« Réel »** | `Réel`, `7d avg`, `PY`… | Un segment d'ICP relié à `Indicateur` |
+| **le calcul** | **l'ICP** | L'ICP et ses calculs, dans le même segment : `Poids`, `7d avg`, `PY`… | Rien de plus |
+| **l'ICP** | sans objet | `Poids`, `Pas`… | Un segment sur la colonne `Calcul` |
 
 La phrase affichée sous les réglages rappelle l'usage de la table choisie.
 
@@ -93,16 +93,16 @@ La phrase affichée sous les réglages rappelle l'usage de la table choisie.
 |---|---|---|
 | **Nom** | `name` | Le nom de la table dans le modèle |
 | **Chaque rangée affiche** | `rows` | `calcul` (défaut) ou `kpi` |
-| **La rangée de base affiche** | `baseRow` | `calcul` (défaut) ou `kpi`. Sans effet quand chaque rangée affiche déjà le KPI |
-| **Afficher le KPI sous son libellé** | `kpiLabel` | Là où le KPI s'affiche, utilise son libellé (`Poids`) plutôt que le nom de sa mesure (`Weight`). Coché par défaut |
-| **Garder : la rangée de base** | `includeBase` | Décoché, le KPI hors branche disparaît. La base d'une branche, comme `Weight YTD`, reste |
+| **La rangée de base affiche** | `baseRow` | `calcul` (défaut) ou `kpi`. Sans effet quand chaque rangée affiche déjà l'ICP |
+| **Afficher l'ICP sous son libellé** | `kpiLabel` | Là où l'ICP s'affiche, utilise son libellé (`Poids`) plutôt que le nom de sa mesure (`Weight`). Coché par défaut |
+| **Garder : la rangée de base** | `includeBase` | Décoché, l'ICP hors branche disparaît. La base d'une branche, comme `Weight YTD`, reste |
 | **Garder : les cibles** | `includeTargets` | Décoché, les rangées des cibles disparaissent |
-| **KPI** | `excludeKpis` | Les KPI de la table |
+| **ICP** | `excludeKpis` | Les ICP de la table |
 | **Variations** | `excludeVariations` | Les variations de la table. En décocher une l'écarte aussi de ses branches |
 | **Branches** | `excludeBranches` | Les branches de la table. `(hors branche)` désigne le Réel et ses variations |
 
-**KPI**, **Variations** et **Branches** gardent ce qui est coché, mais le config retient
-ce qui est **décoché**. Un KPI ou une variation ajouté plus tard entre donc de lui-même
+**ICP**, **Variations** et **Branches** gardent ce qui est coché, mais le config retient
+ce qui est **décoché**. Un ICP ou une variation ajouté plus tard entre donc de lui-même
 dans chaque table.
 
 ## Les réglages communs
@@ -111,7 +111,7 @@ dans chaque table.
 
 | Réglage | Dans `fieldParameter` | Rôle |
 |---|---|---|
-| **Colonne KPI** | `kpiColumn` | La colonne du KPI, `Indicateur` par défaut |
+| **Colonne ICP** | `kpiColumn` | La colonne de l'ICP, `Indicateur` par défaut |
 | **Colonne Calcul** | `calcColumn` | La colonne du calcul, `Calcul` par défaut |
 | **Colonne Branche** | `branchColumn` | La colonne de la branche, `Branche` par défaut |
 | **Libellé de la base** | `baseLabel` | Le calcul de la mesure de base, comme `Réel`. Vide : `Base` |
@@ -120,7 +120,7 @@ dans chaque table.
 | **Libellés (colonne clé)** | `kpiLabelLookup.keyColumn` | La colonne qui contient le nom de la mesure |
 | **Libellés (colonne affichée)** | `kpiLabelLookup.labelColumn` | La colonne qui contient le libellé |
 
-Si la table des libellés n'existe pas dans le modèle, le KPI s'affiche sous le nom de sa
+Si la table des libellés n'existe pas dans le modèle, l'ICP s'affiche sous le nom de sa
 mesure, et un avertissement le signale.
 
 ## Lire l'aperçu
@@ -128,24 +128,24 @@ mesure, et un avertissement le signale.
 Le bas de l'onglet se recalcule à chaque réglage modifié. C'est la génération elle-même,
 lancée en aperçu : rien n'est écrit.
 
-### Quels KPI dans quelles tables
+### Quels ICP dans quelles tables
 
-Chaque case donne le nombre de rangées d'un KPI dans une table, et `0` veut dire qu'il
+Chaque case donne le nombre de rangées d'un ICP dans une table, et `0` veut dire qu'il
 en est absent. L'infobulle liste ses calculs. Cliquer sur une case ouvre cette table sur
-ce KPI, et cliquer sur un en-tête ouvre la table.
+cet ICP, et cliquer sur un en-tête ouvre la table.
 
 ### Contenu de la table
 
-Les rangées sont groupées par KPI :
+Les rangées sont groupées par ICP :
 
 | Colonne | Contenu |
 |---|---|
-| **Affichage** | Le texte visible dans le segment. En bleu italique, c'est le libellé du KPI |
+| **Affichage** | Le texte visible dans le segment. En bleu italique, c'est le libellé de l'ICP |
 | **Mesure** | La mesure derrière la rangée |
 | **Calcul**, **Branche** | Les valeurs de ces colonnes |
 | **Ordre** | Le rang de tri |
 
-Le filtre cherche dans toutes ces colonnes et dans le nom du KPI.
+Le filtre cherche dans toutes ces colonnes et dans le nom de l'ICP.
 
 Si l'affichage indique `libellé de « Weight »`, le libellé n'a pas été trouvé dans
 l'Excel. La valeur ne sera connue qu'au rafraîchissement du modèle.

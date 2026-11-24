@@ -53,16 +53,16 @@ R_CIBLES = "⚙ Réglages → Mesures cibles"
 ROLES = {
     "{base}": "le nom de la mesure traitée",
     "{baseRef}": "la même mesure, en référence DAX",
-    "{kpi}": "le nom du KPI, sans branche ni cible",
-    "{kpiRef}": "la mesure du KPI, dans cette branche",
+    "{kpi}": "le nom de l'ICP, sans branche ni cible",
+    "{kpiRef}": "la mesure de l'ICP, dans cette branche",
     "{branch}": "le nom de la branche (rien en Réel)",
     "{variation}": "l'identifiant de la variation ouverte",
     "{date}": "la colonne de dates",
     "{deltaScale}": "100 si la base est en %, sinon 1",
     "{baseFormatString}": "le format de la base, en texte DAX",
-    "<<tables>>": "les tables du KPI, en liste",
-    "<<allTables>>": "ALL() sur chaque table du KPI",
-    "<<removeFilters>>": "REMOVEFILTERS() sur chaque table du KPI",
+    "<<tables>>": "les tables de l'ICP, en liste",
+    "<<allTables>>": "ALL() sur chaque table de l'ICP",
+    "<<removeFilters>>": "REMOVEFILTERS() sur chaque table de l'ICP",
     "<<each ALLSELECTED({table})>>": "la fonction, répétée par table",
 }
 
@@ -111,7 +111,7 @@ class ExplorateurJetons(QWidget):
         haut = QHBoxLayout()
         haut.addWidget(QLabel("Mesure :"))
         self.cmb_base = QComboBox()
-        self.cmb_base.setToolTip("Les KPI, et sous chacun ses cibles.")
+        self.cmb_base.setToolTip("Les ICP, et sous chacun ses cibles.")
         haut.addWidget(self.cmb_base, 1)
         haut.addWidget(QLabel("Branche :"))
         self.cmb_branche = QComboBox()
@@ -332,10 +332,10 @@ class ExplorateurJetons(QWidget):
                 self._ligne(j, v if v is not None else "", role, ou_se_regle(j, b), BLUE)
         portee = self._donnees.get("portee") or []
         if portee:                  # un ancien config (kpiTables) les utilise encore
-            self._groupe("<<…>>  Tables du KPI (ancien réglage kpiTables du config)")
+            self._groupe("<<…>>  Tables de l'ICP (ancien réglage kpiTables du config)")
             for j in portee:
                 self._ligne(j, val.get(j), ROLES.get(j, ""), "JSON brut → kpiTables",
-                            ACCENT, vide="aucune table pour ce KPI")
+                            ACCENT, vide="aucune table pour cet ICP")
         self.arbre.resizeColumnToContents(COL_JETON)
 
     def _remplir_attributs(self) -> None:
@@ -378,7 +378,7 @@ class ExplorateurJetons(QWidget):
             v.setData(Qt.UserRole, brute)
             developpee = b["valeurs"].get(a["jeton"]) if b else None
             v.setToolTip(f"Dans le DAX : {developpee}" if developpee else
-                         "Case vide : pas de mesure pour ce KPI.")
+                         "Case vide : pas de mesure pour cet ICP.")
             if not actif or a.get("absente") or not kpi:
                 v.setFlags(Qt.ItemIsEnabled)
                 v.setForeground(QBrush(QColor(TEXT_MUTED)))
@@ -411,12 +411,12 @@ class ExplorateurJetons(QWidget):
     def _note(b) -> str:
         if b["cible"]:
             return (f"« {b['nom']} » est une cible : {{base}} et {{baseRef}} la désignent, "
-                    f"{{kpi}} et {{kpiRef}} désignent son KPI, {b['kpi']}. "
-                    "Ses attributs sont ceux de la ligne de ce KPI.")
+                    f"{{kpi}} et {{kpiRef}} désignent son ICP, {b['kpi']}. "
+                    "Ses attributs sont ceux de la ligne de cet ICP.")
         if b["branche"]:
             return (f"En {b['branche']} : {{base}} et {{kpiRef}} suivent la branche, "
-                    "{kpi} reste le KPI.")
-        return f"« {b['nom']} » est un KPI : {{base}} et {{kpi}} donnent le même nom."
+                    "{kpi} reste l'ICP.")
+        return f"« {b['nom']} » est un ICP : {{base}} et {{kpi}} donnent le même nom."
 
     # ---- gestes ------------------------------------------------------------
 

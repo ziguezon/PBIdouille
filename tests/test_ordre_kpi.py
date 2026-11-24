@@ -133,7 +133,7 @@ check("les rangs sont 0..n-1, sans trou",
 check("le journal nomme le KPI sans ordre",
       any("Average Sleep Duration" in l and "fin" in l for l in journal))
 check("le journal montre l'ordre obtenu",
-      any(l.startswith("Ordre des KPI :") for l in journal))
+      any(l.startswith("Ordre des ICP :") for l in journal))
 
 # ex aequo : l'alphabetique departage, et surtout de facon STABLE
 exaequo = gm.kpi_ranks(["Weight", "Total Steps"],
@@ -194,7 +194,7 @@ check("avec colonne : la table suit l'ordre voulu",
 check("la table « par KPI » suit le meme ordre",
       ordre_des_kpi(par_kpi) == ATTENDU)
 check("le journal de generation annonce l'ordre",
-      any(l.startswith("Ordre des KPI :") for l in logs))
+      any(l.startswith("Ordre des ICP :") for l in logs))
 check("… et signale le KPI laisse de cote",
       any("Average Sleep Duration" in l and "fin" in l for l in logs))
 

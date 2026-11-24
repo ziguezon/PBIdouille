@@ -851,7 +851,7 @@ check("le Reel de la base, lui, va a tout le monde",
       {ENT + "." + k for k in KPIS} <= porteurs(R, "bReel"))
 check("le journal nomme la colonne de la cible",
       any(l.strip() == f"{WEIGHT} → Cible, Cible écart, Cible écart % : "
-          "tous les KPI" for l in journal))
+          "tous les ICP" for l in journal))
 rmtree(c)
 
 # ===================================================================== 14

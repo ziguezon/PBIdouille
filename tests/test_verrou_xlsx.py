@@ -131,7 +131,7 @@ cmx.colorize(c / (PROJ + ".Report"), c / (PROJ + ".SemanticModel"), XLSX,
              text_col="couleur_text", dry_run=True, log=logs.append)
 check("colorize (ce que lance l'onglet Rapport) relache le fichier",
       enregistrable())
-check("… et a bien travaille", any("Couleurs par KPI" in l for l in logs))
+check("… et a bien travaille", any("Couleurs par ICP" in l for l in logs))
 
 # une fuite par appel se verrait sur une rafale
 for _ in range(25):

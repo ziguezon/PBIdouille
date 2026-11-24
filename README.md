@@ -1,9 +1,9 @@
 # PBIdouille 🔧
 
 Une app de bureau pour les rapports Power BI au format **PBIP**. Elle écrit
-automatiquement ce qui se répète dans un rapport : les mesures dérivées de chaque KPI
+automatiquement ce qui se répète dans un rapport : les mesures dérivées de chaque ICP
 (7d avg, PY, YTD…), les tables paramètre de champ, le formatage conditionnel
-recopié d'un KPI gabarit vers tous les autres, et le ménage de ce que plus
+recopié d'un ICP gabarit vers tous les autres, et le ménage de ce que plus
 rien n'utilise.
 
 Elle travaille directement sur les fichiers du projet (TMDL pour le modèle,
@@ -43,7 +43,7 @@ déclarée *branche* (YTD) devient à son tour une base.
 ### Les jetons du DAX
 
 Une variation s'écrit une fois, avec des jetons que la génération remplace pour
-chaque KPI : `{baseRef}`, `{kpiRef}`, `{date}`…, et `<<n'importe quelle colonne>>`
+chaque ICP : `{baseRef}`, `{kpiRef}`, `{date}`…, et `<<n'importe quelle colonne>>`
 de TD_Indicateurs. [Tout sur les jetons](docs/articles/03-2-jetons.md).
 
 ![Les jetons à connaître](bidouille/aide/jetons.png)
@@ -51,8 +51,8 @@ de TD_Indicateurs. [Tout sur les jetons](docs/articles/03-2-jetons.md).
 ### Le formatage se propage, visuel par visuel
 
 Dans un visuel, chaque réglage de formatage vise **une** mesure : celle du
-KPI que le segment montre. Propager prend les réglages du gabarit et les
-recopie, dans le même visuel, **pour chaque KPI cible** : seul le KPI change.
+ICP que le segment montre. Propager prend les réglages du gabarit et les
+recopie, dans le même visuel, **pour chaque ICP cible** : seul l'ICP change.
 
 ![Comment le formatage se propage](bidouille/aide/propagation.png)
 
@@ -60,7 +60,7 @@ recopie, dans le même visuel, **pour chaque KPI cible** : seul le KPI change.
 
 Avant, seule la tuile gabarit est formatée ; après, chaque tuile l'est, avec
 ses propres mesures : les étiquettes, le détail et l'image d'une tuile sont
-des mesures de son KPI.
+des mesures de son ICP.
 
 ![La carte se propage aussi](bidouille/aide/propagation_carte.png)
 
@@ -74,7 +74,7 @@ indépendant qui ne reçoit rien de la base.
 
 ### Qui l'emporte, variation par variation
 
-La grille des sources sur le même exemple : pour chaque KPI et chaque
+La grille des sources sur le même exemple : pour chaque ICP et chaque
 variation, de qui copier, et la règle qui décide.
 
 ![Qui l'emporte, variation par variation](bidouille/aide/regles.png)
@@ -150,14 +150,14 @@ Les onglets :
 | Onglet | Ce qu'il fait |
 |---|---|
 | **Mesures** | Éditeur des variations, arbre des mesures, tables paramètre de champ, et la génération (en tête du journal) |
-| **Rapport** | Propage le formatage d'un KPI gabarit vers les autres (grille des sources) ; colore les matrices |
-| **Radiographie 🩻** | La carte d'un rapport qu'on n'a pas fait : KPI et variations, ce que chaque visuel affiche et ce qui le filtre, où sert chaque colonne, et d'où vient chaque table (vue Par source) |
+| **Rapport** | Propage le formatage d'un ICP gabarit vers les autres (grille des sources) ; colore les matrices |
+| **Radiographie 🩻** | La carte d'un rapport qu'on n'a pas fait : ICP et variations, ce que chaque visuel affiche et ce qui le filtre, où sert chaque colonne, et d'où vient chaque table (vue Par source) |
 | **ChopChop 🪓** | Mesures, colonnes et tables que plus rien n'utilise ; export ; restauration des sauvegardes |
 | **Wireframe** | Plan des pages et des visuels (édition dev seulement) |
 
 Principe directeur : **une seule source de vérité par chose**. Les calculs
-vivent dans `measures_config.json`, les attributs des KPI dans l'Excel des
-indicateurs, le style de référence dans UN KPI gabarit. L'app matérialise le
+vivent dans `measures_config.json`, les attributs des ICP dans l'Excel des
+indicateurs, le style de référence dans UN ICP gabarit. L'app matérialise le
 reste et chaque écriture est **idempotente** : relancer met à jour, jamais de
 doublon. Tout ce qui est réécrit est d'abord sauvegardé.
 
@@ -169,12 +169,12 @@ doublon. Tout ce qui est réécrit est d'abord sauvegardé.
 |---|---|
 | `app.py` | la fenêtre principale : barre du projet, onglets, journal |
 | `bidouille\moteurs\generate_measures.py` | génère mesures, variations, branches, cibles et tables paramètre dans le TMDL |
-| `bidouille\moteurs\propagate_cf.py` | propage le formatage conditionnel d'un KPI gabarit, selon la grille des sources |
-| `bidouille\moteurs\color_matrix_by_kpi.py` | colore les colonnes d'une matrice par KPI (couleurs de l'Excel) |
+| `bidouille\moteurs\propagate_cf.py` | propage le formatage conditionnel d'un ICP gabarit, selon la grille des sources |
+| `bidouille\moteurs\color_matrix_by_kpi.py` | colore les colonnes d'une matrice par ICP (couleurs de l'Excel) |
 | `bidouille\moteurs\unused_measures.py` | analyse de ce qui ne sert plus (mesures, colonnes, tables) |
 | `bidouille\moteurs\unused_measures_ui.py` | le panneau ChopChop |
 | `bidouille\moteurs\lineage.py` | les sources de données du rapport ouvert |
-| `bidouille\moteurs\radiographie.py` | la radiographie d'un rapport : familles de KPI, visuels, filtres, colonnes, ce qui dépend de chaque table |
+| `bidouille\moteurs\radiographie.py` | la radiographie d'un rapport : bases et variations, visuels, filtres, colonnes, ce qui dépend de chaque table |
 | `bidouille\moteurs\lignage.py` | le graphe du rapport, de la source de données au visuel |
 | `bidouille\moteurs\demarrage.py` | le measures_config.json et le TD_Indicateurs.xlsx de départ d'un rapport qui n'en a pas |
 | `bidouille\moteurs\backup_restore.py` | sauvegardes horodatées et restauration (manifeste : d'où vient chaque copie) |
@@ -260,7 +260,7 @@ variation de la branche (⚙ Réglages → Branches).
 3. **Branches** (2e passe) : les variations déclarées comme branches (ex. YTD)
    deviennent des bases à leur tour.
 4. **Cibles** (bases supplémentaires d'un dossier dédié, déclinées comme les
-   KPI) : voir ci-dessous.
+   ICP) : voir ci-dessous.
 6. **Nettoyage** : si `removeOrphans`, supprime les mesures générées qui ne
    correspondent plus à la config.
 7. **Paramètres de champ** : régénère l'expression complète des tables
@@ -270,10 +270,10 @@ variation de la branche (⚙ Réglages → Branches).
 
 ### Mesures « cibles » (bases supplémentaires d'un dossier dédié)
 
-Les **cibles/objectifs** d'un KPI ont une DAX de **base** spécifique (value-at-
+Les **cibles/objectifs** d'un ICP ont une DAX de **base** spécifique (value-at-
 close avec `LASTDATE`, source une table de cibles verticale filtrée par le nom
-du KPI…) : impossible à générer par gabarit. On crée donc **à la main** la
-cible **RACINE** par KPI (ex. `Weight cible`), toutes dans un **dossier dédié**.
+de l'ICP…) : impossible à générer par gabarit. On crée donc **à la main** la
+cible **RACINE** par ICP (ex. `Weight cible`), toutes dans un **dossier dédié**.
 Le générateur la traite comme une **base supplémentaire** et la **décline** —
 chaque variation enveloppe `[Weight cible]`.
 
@@ -283,18 +283,18 @@ chaque variation enveloppe `[Weight cible]`.
 ]
 ```
 
-**Portée par variation** (contrôlée dans l'UI, cases **Aux KPI** / **Aux
+**Portée par variation** (contrôlée dans l'UI, cases **Aux ICP** / **Aux
 cibles** de l'éditeur de variations) : chaque variation décide si elle est
-déclinée pour les KPI, les cibles, ou les deux. Une cible ne reçoit **que** ce
+déclinée pour les ICP, les cibles, ou les deux. Une cible ne reçoit **que** ce
 qui est coché « aux cibles » — typiquement pas la 7d avg ni la sparkline, mais
-le YTD et surtout l'**écart réel−cible**. Défauts : Aux KPI **coché**, Aux
-cibles **décoché** (comportement KPI inchangé ; les cibles ne prennent que ce
+le YTD et surtout l'**écart réel−cible**. Défauts : Aux ICP **coché**, Aux
+cibles **décoché** (comportement ICP inchangé ; les cibles ne prennent que ce
 qui est choisi).
 
-**Écart réel−cible** via le jeton **`{kpiRef}`** = la mesure du KPI dans la
+**Écart réel−cible** via le jeton **`{kpiRef}`** = la mesure de l'ICP dans la
 même branche (`[Weight]` en Réel, `[Weight YTD]` en YTD) — à côté de `{baseRef}`
 = la cible (`[Weight cible]`). On écrit deux variations « aux cibles » seulement
-(Aux KPI décoché, sinon elles vaudraient 0) :
+(Aux ICP décoché, sinon elles vaudraient 0) :
 
 | Variation | DAX | Donne |
 |---|---|---|
@@ -304,16 +304,16 @@ même branche (`[Weight]` en Réel, `[Weight YTD]` en YTD) — à côté de `{ba
 En branche YTD, l'écart devient automatiquement `[Weight YTD] - [Weight cible
 YTD]` (le `{kpiRef}` suit la branche).
 
-⚠ **Ne pas écrire `[{kpi}] - {baseRef}`** : `{kpi}` est le KPI *racine*, sans
+⚠ **Ne pas écrire `[{kpi}] - {baseRef}`** : `{kpi}` est l'ICP *racine*, sans
 branche, donc en YTD on obtiendrait `[Weight] - [Weight cible YTD]`, soit le réel
 courant comparé à la cible de l'année à date. Les deux côtés doivent être dans
 la même branche : c'est `{kpiRef}` qu'il faut. (Voir le tableau des
 placeholders §4 ; l'aide-mémoire est aussi affiché sous la zone DAX de
 l'onglet Mesures.)
 
-Au **paramètre de champ**, pour éviter toute collision avec les calculs du KPI
+Au **paramètre de champ**, pour éviter toute collision avec les calculs de l'ICP
 (même Indicateur = paramètre ambigu que Power BI refuse) :
-- **Indicateur** = le KPI, retrouvé par le **préfixe du nom** (`Weight cible` →
+- **Indicateur** = l'ICP, retrouvé par le **préfixe du nom** (`Weight cible` →
   base `Weight`, préfixe le plus long), ce qui donne le bon filtre ;
 - **Calcul** = **« Cible »** pour la racine, **« Cible écart »**, **« Cible
   écart % »**… pour les variations (préfixé par le libellé configuré) ;
@@ -323,7 +323,7 @@ Au **paramètre de champ**, pour éviter toute collision avec les calculs du KPI
 Règles : ne mettre que la cible **racine** dans le dossier, car une mesure qui
 ressemble déjà à une variation/branche (`… YTD`, `… 7d avg`) est **ignorée**
 avec un avertissement (le générateur crée le reste). Une racine dont le préfixe
-ne correspond à **aucun** KPI est ignorée. Le dossier doit être **différent**
+ne correspond à **aucun** ICP est ignorée. Le dossier doit être **différent**
 de `sourceFolder` ; un dossier **imbriqué** (`_indicateurs\_cibles`) matche la
 config `_cibles` par son **nom de feuille**.
 
@@ -353,7 +353,7 @@ recommandé pour la première exécution sur un nouveau modèle.
 | `targetTable` | où créer les mesures (omis = table de la base) | `_mesures` |
 | `displayFolderPattern` | dossier des variations | `{baseFolder}\_{variation}` |
 | `branchFolderPattern` | dossier de la MESURE de branche (racine) | `{baseFolder}\__{branch}` |
-| `folderLayout` | `"kpi"` = un dossier par KPI (les deux motifs ci-dessus sont alors ignorés) ; omis = par variation — cf. [folderLayout](#folderlayout--ranger-par-variation-ou-par-kpi) | `"kpi"` |
+| `folderLayout` | `"kpi"` = un dossier par ICP (les deux motifs ci-dessus sont alors ignorés) ; omis = par variation — cf. [folderLayout](#folderlayout--ranger-par-variation-ou-par-icp) | `"kpi"` |
 | `overwriteExisting` | maj des mesures existantes | `true` |
 | `removeOrphans` | supprime les générées hors config | `true` |
 | `dryRun` | rapport seulement | `false` |
@@ -388,8 +388,8 @@ Exemple de lecture : cible `Weight cible`, branche `YTD`.
 |---|---|---|
 | `{base}` | nom de la base traitée → `Weight cible YTD` | oui |
 | `{baseRef}` | ↳ en référence DAX → `[Weight cible YTD]` | oui |
-| `{kpi}` | **KPI racine, SANS branche** → `Weight` (un libellé, pas une réf) | **non — voulu** |
-| `{kpiRef}` | ↳ la mesure du KPI **dans la branche** → `[Weight YTD]` (= `{baseRef}` pour un KPI ; ≠ pour une cible → écart réel−cible) | oui |
+| `{kpi}` | **ICP racine, SANS branche** → `Weight` (un libellé, pas une réf) | **non — voulu** |
+| `{kpiRef}` | ↳ la mesure de l'ICP **dans la branche** → `[Weight YTD]` (= `{baseRef}` pour un ICP ; ≠ pour une cible → écart réel−cible) | oui |
 | `{branch}` | branche courante → `YTD` ; en Réel, **rien — ni l'espace qui le précède** : `[{kpi} cible {branch}]` → `[Weight cible]`, puis `[Weight cible YTD]` en branche | — |
 | `{date}` | `settings.dateColumn` | — |
 | `{variation}` | id du template | — |
@@ -417,8 +417,8 @@ avertissement au journal. Dans le champ **format** de la variation, c'est
 `{baseFormat}` qui sert (la section positive) ; dans le **DAX**, c'est
 `{baseFormatString}` (le format entier, négatifs compris).
 
-**Viser une autre mesure de la même branche.** `{kpiRef}` donne le KPI dans
-la branche ; pour une AUTRE mesure — la cible du KPI, une de ses variations —,
+**Viser une autre mesure de la même branche.** `{kpiRef}` donne l'ICP dans
+la branche ; pour une AUTRE mesure — la cible de l'ICP, une de ses variations —,
 compose le nom avec `{branch}`, qui emporte son espace quand il n'y a pas de
 branche :
 
@@ -435,7 +435,7 @@ DAX il restait tel quel.) L'aperçu des noms suit la même règle.
 > le réel **courant** comparé à la cible **YTD**, deux périodes différentes.
 > Utiliser `{kpiRef} - {baseRef}` → `[Weight YTD] - [Weight cible YTD]`. Les
 > deux jetons existent exprès : `{kpi}` reste la racine (utile pour nommer ou
-> pour un `LOOKUPVALUE` sur le KPI), `{kpiRef}` suit la branche.
+> pour un `LOOKUPVALUE` sur l'ICP), `{kpiRef}` suit la branche.
 >
 > `{kpiRef}` prend le nom **réellement généré** pour la branche (via son
 > `namePattern`), pas un suffixe supposé : une branche `Cumul` nommée
@@ -585,13 +585,13 @@ Le chemin du fichier est retenu au niveau de **l'application**, pas du projet :
 le poser sur un lecteur partagé permet à toute l'équipe d'y puiser. Fichier absent ou
 illisible = bibliothèque vide, jamais une erreur ; « Publier » le crée.
 
-### folderLayout — ranger par variation ou par KPI
+### folderLayout — ranger par variation ou par ICP
 
 ```json
 "settings": { "folderLayout": "kpi" }
 ```
 
-Absent (ou `"variation"`, le défaut) : un dossier **par variation**, tous KPI
+Absent (ou `"variation"`, le défaut) : un dossier **par variation**, tous ICP
 confondus — les motifs `displayFolderPattern` et `branchFolderPattern`
 décident des noms.
 
@@ -602,7 +602,7 @@ _indicateurs\__YTD\Weight YTD
 _indicateurs\__YTD\_7d avg\Weight YTD 7d avg
 ```
 
-`"kpi"` : un dossier **par KPI**, la base restant **dehors** ; dedans, toutes
+`"kpi"` : un dossier **par ICP**, la base restant **dehors** ; dedans, toutes
 ses variations, et un dossier par branche qui porte la mesure de branche et
 ses variations. Les deux motifs des settings sont alors ignorés.
 
@@ -614,15 +614,15 @@ _indicateurs\Weight\YTD\Weight YTD 7d avg
 _cibles\Weight\Weight cible écart           (les cibles pareil, sous leur dossier)
 ```
 
-Les deux motifs ne pouvaient pas dire « par KPI » à eux seuls : une variation
+Les deux motifs ne pouvaient pas dire « par ICP » à eux seuls : une variation
 **en branche** prend le motif des variations avec le dossier de la branche
 pour `{baseFolder}`, et `{baseFolder}\{kpi}` la rangerait un cran trop bas
-(`…\Weight\YTD\Weight`). Le rangement par KPI a donc ses trois motifs à lui
+(`…\Weight\YTD\Weight`). Le rangement par ICP a donc ses trois motifs à lui
 (`generate_measures.DOSSIERS_PAR_KPI`). Une variation qui **impose** son
 dossier (`{baseFolder}\_SVG`, `{folder}\_CF`) le garde, mais `{baseFolder}`
-y désigne le dossier du KPI : la sparkline de Weight reste dans le dossier de
+y désigne le dossier de l'ICP : la sparkline de Weight reste dans le dossier de
 Weight, comme celle de Weight YTD reste dans celui de la branche.
-`folderVariation` est sans effet par KPI.
+`folderVariation` est sans effet par ICP.
 
 Le choix est dans **⚙ Réglages → Génération → Dossiers**. Il vit dans le
 config, donc il vaut pour **le rapport**, quel que soit le poste. Basculer
@@ -717,7 +717,7 @@ diffère : à la première génération, les variations de branche sont
 
 ### switch — retiré
 
-La mesure Switch (`SWITCH(SELECTEDVALUE(selector), …)` sur tous les KPI, plus
+La mesure Switch (`SWITCH(SELECTEDVALUE(selector), …)` sur tous les ICP, plus
 ses variations sous `_switch`) n'est **plus générée** : elle produisait
 beaucoup d'erreurs et ne servait pas. Un bloc `"switch"` resté dans un config
 est ignoré par la génération, et retiré au prochain enregistrement des
@@ -740,11 +740,11 @@ l'on ne voyait pas ce qu'elles contiendraient) :
   de colonnes, libellés) repliés dessous ;
 - **en bas, ce que les tables contiendront**, recalculé à chaque réglage
   (génération à blanc sur une copie du config, rien n'est écrit) :
-  - la **matrice KPI × tables** : quels KPI sont dans quelles tables, et
+  - la **matrice ICP × tables** : quels ICP sont dans quelles tables, et
     combien de rangées chacun y a (0 = absent). Un clic sur une colonne ou
-    une case ouvre la table, sur ce KPI ;
-  - le **contenu** de la table choisie dans l'éditeur, rangé par KPI : pour
-    chaque rangée, ce qu'elle **affiche** (le calcul, le KPI, ou son
+    une case ouvre la table, sur cet ICP ;
+  - le **contenu** de la table choisie dans l'éditeur, rangé par ICP : pour
+    chaque rangée, ce qu'elle **affiche** (le calcul, l'ICP, ou son
     **libellé** en bleu italique, lu dans l'Excel des indicateurs comme le
     fera le `LOOKUPVALUE`), la **mesure** derrière, et les valeurs des
     colonnes Calcul et Branche, plus l'ordre de tri. L'état dit si la table
@@ -779,19 +779,19 @@ est la table « par calcul » complète.
 
 | Réglage | Défaut | Effet |
 |---|---|---|
-| `rows` | `"calcul"` | ce qu'affiche chaque rangée : le **calcul** (Réel, 7d avg, PY…) ou le **KPI** (`"kpi"` — rangées alors triées par KPI) |
-| `baseRow` | `"calcul"` | (`rows` = calcul) la rangée de **base** affiche `baseLabel`, ou le KPI (`"kpi"`) : un segment unique où l'on choisit le KPI *et* ses calculs |
-| `kpiLabel` | `true` | là où le KPI s'affiche : son **libellé** (`LOOKUPVALUE` sur `kpiLabelLookup`) plutôt que le nom de sa mesure |
+| `rows` | `"calcul"` | ce qu'affiche chaque rangée : le **calcul** (Réel, 7d avg, PY…) ou le **ICP** (`"kpi"` — rangées alors triées par ICP) |
+| `baseRow` | `"calcul"` | (`rows` = calcul) la rangée de **base** affiche `baseLabel`, ou l'ICP (`"kpi"`) : un segment unique où l'on choisit l'ICP *et* ses calculs |
+| `kpiLabel` | `true` | là où l'ICP s'affiche : son **libellé** (`LOOKUPVALUE` sur `kpiLabelLookup`) plutôt que le nom de sa mesure |
 | `includeBase` | `true` | garder la rangée de la mesure de base (hors branche — la base d'une branche, « YTD », est un calcul de la branche et reste) |
 | `includeTargets` | `true` | garder les rangées des cibles |
-| `excludeKpis` | `[]` | KPI écartés (noms de mesure) |
+| `excludeKpis` | `[]` | ICP écartés (noms de mesure) |
 | `excludeVariations` | `[]` | variations écartées — partout, branches comprises |
 | `excludeBranches` | `[]` | branches écartées ; `""` = les rangées **hors branche** |
 
-Les filtres sont des **exclusions** : un KPI, une variation ou une branche
+Les filtres sont des **exclusions** : un ICP, une variation ou une branche
 ajoutés plus tard entrent d'eux-mêmes dans chaque table, comme avant. À
 l'écran ce sont des cases cochées = gardé. Une exclusion qui ne correspond plus
-à rien (KPI renommé) est **conservée**, jamais perdue en silence.
+à rien (ICP renommé) est **conservée**, jamais perdue en silence.
 
 Toutes les tables gardent les **six mêmes colonnes** (affichage, Fields, Ordre,
 `kpiColumn`, `calcColumn`, `branchColumn`) et le **même rang de tri** pour une
@@ -816,7 +816,7 @@ brut et l'écrit au journal, plutôt que d'émettre un DAX cassé.
 #### L'ancien format se relit tel quel
 
 Les trois familles d'avant — `tableNames` (par calcul), `tableNamesKpiBase`
-(base = libellé du KPI) et `tableNamesByKpi` (par KPI, `byKpiUsesLabel`), avec
+(base = libellé de l'ICP) et `tableNamesByKpi` (par ICP, `byKpiUsesLabel`), avec
 un `includeBase` commun — sont relues comme les trois cas particuliers de la
 liste qu'elles étaient, et génèrent **exactement** les mêmes tables
 (`tests/test_parametres_champ.py`). Le premier enregistrement depuis l'onglet
@@ -856,14 +856,14 @@ tenir à jour nulle part :
 ```
 
 Une base dont le nom contient l'un de ces fragments ne reçoit pas la variation.
-Le nom complet d'un KPI y a sa place aussi, pour l'écarter entièrement :
+Le nom complet d'un ICP y a sa place aussi, pour l'écarter entièrement :
 
 ```json
 "excludeNameContains": ["Weight"]
 ```
 
 - insensible à la **casse** et aux **accents** (`duree` attrape `Durée`) ;
-- le nom du **KPI** est testé en plus de celui de la base, donc exclure
+- le nom du **ICP** est testé en plus de celui de la base, donc exclure
   `Weight` écarte aussi `Weight cible` ;
 - les **branches** héritent de l'exclusion ;
 - l'**aperçu** suit le filtre.
@@ -880,7 +880,7 @@ cette mesure est en réalité une somme malgré son nom :
 ```
 
 Le rattrapage **prime sur tout** : sur l'exclusion par nom **et** sur le filtre
-de type. C'est une décision nommée, prise KPI par KPI, alors que les deux
+de type. C'est une décision nommée, prise ICP par ICP, alors que les deux
 autres filtres sont des règles larges — l'ordre est donc :
 
 | Priorité | Règle | Effet |
@@ -912,13 +912,13 @@ disparaissent de la liste, donc on voit avant de générer. Le journal résume :
 
 Le filtre s'applique aussi aux **branches**.
 
-### Filtres propres à chaque KPI
+### Filtres propres à chaque ICP
 
-Certaines variations doivent **retirer les filtres** des tables du KPI : part du
-total, moyenne toutes catégories, indice base 100… Chaque KPI vit sur ses propres
+Certaines variations doivent **retirer les filtres** des tables de l'ICP : part du
+total, moyenne toutes catégories, indice base 100… Chaque ICP vit sur ses propres
 tables, alors que le DAX d'une variation s'écrit une seule fois. La réponse est un
 **attribut** (`hardcodedAttributes`, plus bas) : une colonne de TD_Indicateurs qui
-porte directement les filtres de chaque KPI.
+porte directement les filtres de chaque ICP.
 
 | mesure | filtres |
 |---|---|
@@ -936,16 +936,16 @@ Total Steps part du total  = DIVIDE([Total Steps], CALCULATE([Total Steps],
                                    ALLSELECTED('steps'), ALLSELECTED('dim_Date')))
 ```
 
-Voir [Les jetons](docs/articles/03-2-jetons.md#des-filtres-propres-à-chaque-kpi).
+Voir [Les jetons](docs/articles/03-2-jetons.md#des-filtres-propres-à-chaque-icp).
 
-L'ancien réglage « Portée par KPI » a quitté l'interface, puisqu'un attribut fait
+L'ancien réglage « Portée par ICP » a quitté l'interface, puisqu'un attribut fait
 le même travail. Un config qui porte encore un bloc `kpiTables` et des jetons
 `<<each …>>`, `<<allTables>>`, `<<removeFilters>>` ou `<<tables>>` **continue de
 générer les mêmes mesures** ; le bloc se modifie dans le JSON brut.
 
 ### indicateursXlsx — l'Excel des indicateurs, défini UNE fois
 
-`TD_Indicateurs.xlsx` décrit les KPI (libellé, direction, couleurs, portée,
+`TD_Indicateurs.xlsx` décrit les ICP (libellé, direction, couleurs, portée,
 type…). Il était configuré à **deux endroits** — dans ce fichier pour les
 jetons `<<…>>`, et dans l'onglet Rapport pour les couleurs de matrice — deux
 réglages qui pouvaient diverger sans prévenir. Une seule définition désormais :
@@ -977,7 +977,7 @@ Trois règles, dans `moteurs/xlsx_lecture.py` et la couche UI :
 |---|---|
 | **lecture sur instantané** | le classeur est copié dans le temporaire, et c'est la copie qu'openpyxl analyse. On ne touche à l'original que le temps d'une copie d'octets, pas de toute l'analyse XML — et une lecture réussit même si Excel tient le fichier |
 | **en-têtes en mémoire** | lus une fois au démarrage pour peupler les menus de colonnes ; se promener dans l'outil ne rouvre plus rien. Le bouton **↻** force la relecture (après avoir ajouté une colonne), et changer de chemin la déclenche tout seul |
-| **exécutions toujours fraîches** | génération, couleurs, jetons `<<…>>`, ordre des KPI : chacune relit le disque. Ce qu'on vient d'enregistrer dans Excel est pris en compte sans rien rafraîchir |
+| **exécutions toujours fraîches** | génération, couleurs, jetons `<<…>>`, ordre des ICP : chacune relit le disque. Ce qu'on vient d'enregistrer dans Excel est pris en compte sans rien rafraîchir |
 
 > **Ce qui clochait.** openpyxl en mode `read_only` ne charge rien en mémoire :
 > il garde le `.xlsx` **ouvert** et y lit à la demande. Un `close()` oublié
@@ -988,7 +988,7 @@ Trois règles, dans `moteurs/xlsx_lecture.py` et la couche UI :
 > cycle, donc seul un passage du ramasse-miettes libérait le fichier, quand il
 > passait. Toute lecture passe désormais par un `finally`.
 
-Seule exception, assumée : **« Couleurs des KPI » écrit** dans le classeur.
+Seule exception, assumée : **« Couleurs des ICP » écrit** dans le classeur.
 Cette écriture-là doit forcément prendre le fichier ; si Excel l'a ouvert, le
 dialogue le dit (« le fermer et réessayer ») au lieu d'échouer en silence.
 
@@ -1002,11 +1002,11 @@ Qui s'en sert :
 |---|---|
 | jetons `<<label>>` figés dans le DAX | `keyColumn` + celles de `hardcodedAttributes.tokens` |
 | **couleurs des matrices** (onglet Rapport) | `keyColumn`, `fillColumn`, `textColumn` |
-| **ordre des KPI** dans les tables paramètre | `keyColumn`, `orderColumn` |
+| **ordre des ICP** dans les tables paramètre | `keyColumn`, `orderColumn` |
 
-#### orderColumn — choisir l'ordre des KPI
+#### orderColumn — choisir l'ordre des ICP
 
-Par défaut les KPI sortent dans l'ordre **alphabétique** (`sort_key_pbi`,
+Par défaut les ICP sortent dans l'ordre **alphabétique** (`sort_key_pbi`,
 section 6). `orderColumn` nomme une colonne de l'Excel qui prend la main : sa
 valeur devient la colonne **Ordre** des tables paramètre, et donc l'ordre du
 slicer (`sortByColumn`).
@@ -1015,13 +1015,13 @@ slicer (`sortByColumn`).
 |---|---|
 | valeurs numériques | comparées comme des **nombres** — `10` vient après `9`, pas entre `1` et `2`. Numérote par 10 pour pouvoir intercaler |
 | valeur texte | acceptée, rangée **après** les nombres, alphabétiquement |
-| KPI absent de la colonne, ou cellule vide | rangé **à la fin** (pas en tête : la place la plus visible ne doit pas revenir à la seule ligne dont personne n'a décidé) — et nommé dans le journal |
+| ICP absent de la colonne, ou cellule vide | rangé **à la fin** (pas en tête : la place la plus visible ne doit pas revenir à la seule ligne dont personne n'a décidé) — et nommé dans le journal |
 | deux ex æquo | départagés alphabétiquement, donc de façon **stable** : re-générer ne rebrasse pas la table |
 | colonne introuvable | avertissement, repli sur l'alphabétique — jamais une génération qui échoue |
 
 L'ordre vit dans l'Excel, **avec le rapport** : le config ne retient que le nom
 de la colonne, donc il reste transportable. UI : **⚙ Réglages
-→ Excel des indicateurs → « Ordre des KPI »** (vide = alphabétique).
+→ Excel des indicateurs → « Ordre des ICP »** (vide = alphabétique).
 
 L'onglet Rapport n'a plus de champs propres : il **affiche** ce que le config
 dit (et signale en clair si le fichier est introuvable), relu à chaque usage —
@@ -1032,7 +1032,7 @@ un réglage enregistré dans l'onglet Mesures est donc pris en compte aussitôt.
 > sauvegarde, la définition migre vers `indicateursXlsx` et ces clés-là sont
 > retirées.
 
-### hardcodedAttributes (figer un attribut du KPI dans le DAX)
+### hardcodedAttributes (figer un attribut de l'ICP dans le DAX)
 
 Au lieu d'un `LOOKUPVALUE(TD_Indicateurs[direction], …, "{kpi}")` coûteux à
 l'exécution, on **fige** la valeur au moment de la génération.
@@ -1044,9 +1044,9 @@ l'exécution, on **fige** la valeur au moment de la génération.
 ```
 
 Dans le DAX d'une variation, écrire **`<<label>>`** (ex. `<<direction>>`). À la
-génération, pour la mesure du KPI *X*, le jeton est remplacé par la valeur de la
+génération, pour la mesure de l'ICP *X*, le jeton est remplacé par la valeur de la
 colonne (ligne `mesure == X` dans l'Excel). Valeur **brute** : un entier donne
-`1`/`-1` (pour du texte, ajouter les guillemets : `"<<label>>"`). Un KPI absent de
+`1`/`-1` (pour du texte, ajouter les guillemets : `"<<label>>"`). Un ICP absent de
 l'Excel (ajouté au modèle, pas encore à l'Excel) → la mesure n'est **pas générée** (avertissement),
 pour ne jamais écrire du DAX cassé. Re-générer après avoir modifié l'Excel met
 les valeurs à jour. UI : **⚙ Réglages → Excel des indicateurs → « Attributs
@@ -1067,9 +1067,9 @@ clé vers TD_KPI), `Calcul`, `Branche`.
 
 | Table | Affichage | Pour |
 |---|---|---|
-| `P_Indicateurs_parCalcul` | nom du calcul (`7d avg`, `PY`...) | **1 KPI × plusieurs calculs** : le KPI vient de TD_KPI, l'axe montre les calculs |
+| `P_Indicateurs_parCalcul` | nom du calcul (`7d avg`, `PY`...) | **1 ICP × plusieurs calculs** : l'ICP vient de TD_KPI, l'axe montre les calculs |
 | `P_Indicateurs_parCalcul_2` | idem | copie indépendante — 2e sélection sur la même page |
-| `P_Indicateurs_parKPI` | nom du KPI | **1 calcul × plusieurs KPIs** : slicer `Calcul` (sélection simple) + l'axe montre les KPIs |
+| `P_Indicateurs_parKPI` | nom de l'ICP | **1 calcul × plusieurs KPIs** : slicer `Calcul` (sélection simple) + l'axe montre les KPIs |
 
 **À faire une fois après création**, dans Power BI Desktop : une relation
 `TD_KPI[mesure] → P_xxx[Indicateur]` **par table** (Modélisation → Gérer les
@@ -1077,7 +1077,7 @@ relations). Le journal de la génération le rappelle quand il crée une table.
 
 Règles de tri (pourquoi les index se répètent) : la colonne d'affichage est
 triée par la colonne d'ordre, et un même libellé doit pointer vers UN seul
-index. Donc index par calcul dans les tables parCalcul, par KPI dans parKPI,
+index. Donc index par calcul dans les tables parCalcul, par ICP dans parKPI,
 et les rangées de branche réutilisent l'index de leur calcul. Les trous dans
 la séquence sont normaux.
 
@@ -1090,9 +1090,9 @@ suivante renomme les colonnes `Value4`-`Value6`.
 
 ## 6. Les deux façons de construire un visuel
 
-1. **Paramètre parCalcul** — page « détail d'un KPI » : TD_KPI filtre le KPI,
+1. **Paramètre parCalcul** — page « détail d'un ICP » : TD_KPI filtre l'ICP,
    le visuel montre Base/7d avg/Δ.../PY..., slicer `Branche` pour basculer
-   Réel ↔ YTD. Le formatage conditionnel exige des entrées par KPI → c'est le
+   Réel ↔ YTD. Le formatage conditionnel exige des entrées par ICP → c'est le
    rôle de `propagate_cf.py`.
 2. **Paramètre parKPI** — page « comparaison » : slicer `Calcul` en sélection
    simple, l'axe/la légende montre les KPIs.
@@ -1105,15 +1105,15 @@ retiré ».)
 
 **Problème résolu** : avec un paramètre de champ, le formatage conditionnel
 est ancré à une mesure précise (`selector.metadata = "_mesures.Total Steps
-YoY %"`). Quand le slicer change de KPI, le CF disparaît.
+YoY %"`). Quand le slicer change d'ICP, le CF disparaît.
 
-**Solution** : on configure le CF UNE fois sur le KPI template dans Desktop ;
-le script clone l'entrée pour chaque KPI (selector + mesure CF adaptés).
-Plusieurs familles de KPI, des exceptions : c'est la **grille des sources**,
+**Solution** : on configure le CF UNE fois sur l'ICP template dans Desktop ;
+le script clone l'entrée pour chaque ICP (selector + mesure CF adaptés).
+Plusieurs groupes d'ICP, des exceptions : c'est la **grille des sources**,
 plus bas.
 
 Ça couvre aussi les **étiquettes de référence** (carte) : valeur, **titre custom**
-et détail. Subtilité : sur une carte à paramètre, chaque KPI est un *point de
+et détail. Subtilité : sur une carte à paramètre, chaque ICP est un *point de
 donnée* du paramètre, et le **titre** a deux propriétés aux portées **opposées** :
 
 - `titleContentType` (la bascule *source* : Custom vs Nom du champ) → doit rester
@@ -1121,13 +1121,13 @@ donnée* du paramètre, et le **titre** a deux propriétés aux portées **oppos
   portée point de donnée fait que Power BI l'**ignore** → le titre retombe sur
   « nom du champ ».
 - `titleText` (le texte) → doit être au **niveau point de donnée**
-  (`dataViewWildcard`, comme la valeur) pour suivre le paramètre sur chaque KPI.
+  (`dataViewWildcard`, comme la valeur) pour suivre le paramètre sur chaque ICP.
 
 Les deux ne peuvent donc pas cohabiter dans un même selector : le script
 **scinde** chaque titre en une entrée *source* (niveau champ) et une entrée
 *texte* (niveau point de donnée), pour le template comme pour les clones. Il
 répare aussi les entrées combinées héritées. Résultat : un titre custom posé sur
-le KPI template s'affiche, source ET texte, sur tous les KPI cibles.
+l'ICP template s'affiche, source ET texte, sur tous les ICP cibles.
 
 Généralisation (display units, détail, etc.) : une propriété est « point de
 donnée » si elle est **portée par une mesure** (`value`, `detailValue` du
@@ -1142,13 +1142,13 @@ sauvegarde suivante** (c'est comme ça que des réglages « disparaissent »).
 La **scission** s'applique à toutes les entrées mixtes des clés
 `referenceLabel*` — dont le **détail à mesure** ({show, value} : le `show`
 part au niveau champ, la mesure d'écart au niveau point de donnée, permutée
-par KPI×branche). Le script **répare** les entrées abîmées par une version
+par ICP×branche). Le script **répare** les entrées abîmées par une version
 antérieure (wildcard pur retiré).
 
 **Plusieurs étiquettes sur une même carte** : chaque étiquette de référence
 porte un `selector.id` propre (« field-<uuid> »), et son titre/détail s'y
 rattachent par cet id. La clé de déduplication inclut donc `id` **et** `order`
-— sans ça, deux étiquettes du même KPI (même metadata, même propriété `value`)
+— sans ça, deux étiquettes du même ICP (même metadata, même propriété `value`)
 collidaient et seule la dernière était propagée. Chaque étiquette est désormais
 clonée séparément, avec son détail (ou son absence de détail). ⚠ Un réglage purgé par Desktop doit être
 REPOSÉ dans Desktop avant de re-propager (le script ne peut pas ressusciter ce
@@ -1173,9 +1173,9 @@ noms est borné au début des noms de mesures (pas de collision entre
 
 ### Cibles : la branche via le paramètre de champ (pas via le nom)
 
-Une mesure de KPI a la branche juste après le KPI (`Weight YTD PY`), mais une
+Une mesure d'ICP a la branche juste après l'ICP (`Weight YTD PY`), mais une
 **cible** l'a après « cible » (`Weight cible YTD`). Insérer bêtement la branche
-après le KPI donnerait `Body Fat % YTD cible` — une mesure qui n'existe pas, et
+après l'ICP donnerait `Body Fat % YTD cible` — une mesure qui n'existe pas, et
 la cible « ne se propage pas » sur les branches. Donc au lieu de parser le nom,
 la propagation lit le **paramètre de champ** (`read_fp_maps`) : chaque mesure y
 porte sa `(Indicateur, Calcul, Branche)`. Pour propager, on relit la
@@ -1193,7 +1193,7 @@ mesures-là retombaient sur le remplacement par le nom et produisaient
 `Body Fat % YTD cible ecartCF`, **inexistant** — exactement le symptôme que la
 correction par paramètre était censée supprimer, mais qui survivait pour les
 couleurs CF, c'est-à-dire le cœur de métier de `propagate_cf`. Le préfixe ne
-traverse jamais les KPI (on n'apparie qu'à l'intérieur du KPI source).
+traverse jamais les ICP (on n'apparie qu'à l'intérieur de l'ICP source).
 `detect_branch` applique la même règle : une dérivée hérite de la branche de sa
 racine.
 
@@ -1212,14 +1212,14 @@ vers une mesure absente du modèle.** Elle lit les noms réellement présents
 | | on essaie | cas visé |
 |---|---|---|
 | 1 | la variante de la branche visée — `Weight YTD` | la mesure a bien ses branches |
-| 2 | le même KPI **sans** branche — `Weight titre` | un titre par KPI, commun à ses deux branches |
+| 2 | le même ICP **sans** branche — `Weight titre` | un titre par ICP, commun à ses deux branches |
 | 3 | la mesure d'origine, inchangée | un titre commun à tout le rapport |
 
 Les candidats viennent de **deux** sources, et les deux sont tentées : le
 paramètre de champ d'abord (fiable, aucun parsing), puis le nom. Ne s'arrêter
-qu'aux premiers était un piège : un paramètre sans ligne « Réel » pour le KPI
+qu'aux premiers était un piège : un paramètre sans ligne « Réel » pour l'ICP
 visé (il n'a que sa ligne YTD) coupait la cascade avant le repli par le nom, et
-le titre du KPI **template** restait sur les faces YTD de tous les autres.
+le titre de l'ICP **template** restait sur les faces YTD de tous les autres.
 
 Rien à déclarer dans le config : l'existence dans le modèle **est** la
 déclaration. Le journal liste en fin de course les mesures gardées telles
@@ -1231,24 +1231,24 @@ comportement) plutôt que de tout bloquer.
 
 ### La grille des sources : une base, des groupes, un gabarit par variation
 
-De quel KPI chaque KPI copie-t-il le formatage de chaque variation ? Une
-**grille** KPI × variation répond, case par case, et plusieurs **gabarits**
+De quel ICP chaque ICP copie-t-il le formatage de chaque variation ? Une
+**grille** ICP × variation répond, case par case, et plusieurs **gabarits**
 s'y partagent le travail :
 
 - le **gabarit de base** sert à **tout le monde** : on le formate en entier
   dans Desktop, et ce qu'aucune règle plus précise ne décide vient de lui ;
-- un **groupe** est une famille de KPI qui se propagent **entre eux** : son
+- un **groupe** est un ensemble d'ICP qui se propagent **entre eux** : son
   gabarit — un de ses membres — donne aux autres. Son gabarit se pose
   **par-dessus la base** : il en reçoit d'abord tout, puis ses propres
-  réglages l'emportent, propriété par propriété — et ses KPI copient le
-  résultat. Un KPI n'est que dans un groupe ; le gabarit de base, dans aucun ;
-- la ligne **« Tous les KPI »** donne un **gabarit par variation**, pour tout
+  réglages l'emportent, propriété par propriété — et ses ICP copient le
+  résultat. Un ICP n'est que dans un groupe ; le gabarit de base, dans aucun ;
+- la ligne **« Tous les ICP »** donne un **gabarit par variation**, pour tout
   le monde, **groupes compris** (sous leur gabarit) : le PY se formate une
-  fois, sur un KPI, et vaut partout — chaque gabarit de groupe n'a plus à
+  fois, sur un ICP, et vaut partout — chaque gabarit de groupe n'a plus à
   porter le PY lui aussi ;
 - une ligne de **groupe** peut aussi avoir un gabarit par variation (le YoY %
-  de la famille Sommeil vient de Weight) ;
-- une **case** peut avoir sa propre règle : copier un autre KPI, ou rester
+  du groupe Sommeil vient de Weight) ;
+- une **case** peut avoir sa propre règle : copier un autre ICP, ou rester
   **« à la main »** — rien ne lui est copié, elle garde ce qui est formaté
   sur elle.
 
@@ -1256,29 +1256,29 @@ s'y partagent le travail :
 
 | | règle | où la poser |
 |---|---|---|
-| 1 | la case elle-même (ce KPI, cette variation) | une case de KPI |
+| 1 | la case elle-même (cet ICP, cette variation) | une case d'ICP |
 | 2 | son groupe, pour cette variation | la ligne du groupe |
-| 3 | tous les KPI, pour cette variation | la ligne « Tous les KPI » |
-| 4 | ce KPI, toutes ses variations | le fichier seulement |
+| 3 | tous les ICP, pour cette variation | la ligne « Tous les ICP » |
+| 4 | cet ICP, toutes ses variations | le fichier seulement |
 | 5 | le gabarit de son groupe | menu Groupes |
 | 6 | le gabarit de base | en haut de la fenêtre |
 
 Une règle **pour une variation** passe donc avant une règle « toutes
-variations », et à niveau égal, le plus étroit gagne (KPI > groupe > tous).
-Une exception : pour les KPI d'un groupe, « Tous les KPI » (3) passe **par**
-le gabarit du groupe (5) — dessous lui, voir plus bas. « Tous les KPI » à la
+variations », et à niveau égal, le plus étroit gagne (ICP > groupe > tous).
+Une exception : pour les ICP d'un groupe, « Tous les ICP » (3) passe **par**
+le gabarit du groupe (5) — dessous lui, voir plus bas. « Tous les ICP » à la
 main reste à la main pour tous, groupes compris.
 
 Dans Desktop, on formate la base **en entier**, chaque gabarit de groupe pour
-**ce qui distingue** sa famille (le reste lui vient de la base), et un gabarit
+**ce qui distingue** son groupe (le reste lui vient de la base), et un gabarit
 par variation pour ce qui vaut partout.
-Contrepartie, voulue : ce qu'un KPI porte hors de ce que ses règles lui
+Contrepartie, voulue : ce qu'un ICP porte hors de ce que ses règles lui
 laissent est remplacé à la prochaine propagation — c'est ce qui fait tenir le
 tout. La sauvegarde de l'action défait tout.
 
 Les colonnes sont les **variations**, lues dans les **noms des mesures** qui
 existent — qu'elles soient dans le paramètre de champ ou non (sparkline,
-couleurs CF…) : le Réel, les variations du KPI dans l'ordre du config, puis
+couleurs CF…) : le Réel, les variations de l'ICP dans l'ordre du config, puis
 chaque **cible** et ses variations, puis le reste. Une variation vit sur
 **toutes ses branches** — la case « PY » couvre `Weight PY` et `Weight YTD PY`
 —, donc une branche (YTD) n'est pas une colonne à elle : la colonne « Réel »
@@ -1287,7 +1287,7 @@ couvre `Weight` et `Weight YTD`.
 **Sur une carte, une entrée appartient à la variation qu'elle MONTRE.**
 D'ordinaire, le selector d'une entrée dit sa variation : la série
 `Weight YTD PY` d'un graphique, la colonne `Weight PY` d'une matrice. Mais sur
-une carte, toutes les entrées visent la mesure du KPI (`_mesures.Weight`) — la
+une carte, toutes les entrées visent la mesure de l'ICP (`_mesures.Weight`) — la
 variation est dedans : une **étiquette de référence** montre `Weight PY` en
 valeur, son titre et son détail s'y rattachent par le même `selector.id`, et
 l'**image** de la carte est `Weight sparkline`. Elles vont donc dans les
@@ -1296,21 +1296,21 @@ restent au Réel. Avant, tout tombait au Réel : sur une page de cartes, un
 gabarit par variation n'avait rien à donner, et seul le gabarit de base
 propageait.
 
-Une **cible** est une base à part entière, déclinée comme un KPI : ses
+Une **cible** est une base à part entière, déclinée comme un ICP : ses
 variations ont leurs colonnes, au nom que le générateur leur donne au
 paramètre de champ — `Weight cible` est dans « Cible », `Weight cible écart`
 et `Weight cible YTD écart` dans « Cible écart ». Une cible se reconnaît à son
 dossier dédié (`kpiMeasureFolders`), ou au paramètre de champ seul (un Calcul
-qui n'est ni le Réel ni une variation). Un KPI qui a une cible a donc ses
-variations de cible, même absentes du paramètre ; un KPI sans cible y lit
-« pas de mesure ». Et quand une case copie un KPI qui n'a PAS la mesure — la
+qui n'est ni le Réel ni une variation). Un ICP qui a une cible a donc ses
+variations de cible, même absentes du paramètre ; un ICP sans cible y lit
+« pas de mesure ». Et quand une case copie un ICP qui n'a PAS la mesure — la
 base, souvent, qui n'a pas de cible —, la case est en retrait et le verdict
-le dit : rien ne lui serait copié, donne la colonne à un KPI qui a une cible
-(ligne « Tous les KPI »).
+le dit : rien ne lui serait copié, donne la colonne à un ICP qui a une cible
+(ligne « Tous les ICP »).
 Pour ranger une mesure dans sa colonne : le paramètre de champ d'abord (son
 Calcul), sinon le suffixe d'une variation du config (le plus long d'abord :
 `CF YoY %` n'est pas du `YoY %`), une cible (dossier dédié), et à défaut le
-Réel du KPI. Une règle vaut dans **tous les visuels** (plus tard : par
+Réel de l'ICP. Une règle vaut dans **tous les visuels** (plus tard : par
 visuel, pour les gros rapports — un champ de plus dans le fichier, sans rien
 changer au reste).
 
@@ -1336,33 +1336,33 @@ toutes (niveau 4). Le gabarit d'un groupe en est membre d'office.
 ci-dessous).
 
 **Une source est toujours sa propre source** pour ce qu'elle donne : Weight,
-qui donne son YoY % à la famille Sommeil, le garde — c'est implicite, inutile
+qui donne son YoY % au groupe Sommeil, le garde — c'est implicite, inutile
 de l'écrire. C'est la seule contrainte, et elle tient tout : une **copie de
 copie** (Body Fat % copie Weight, qui copie lui-même la base) ferait dépendre
 le résultat de l'ordre des passes. Elle est **refusée**, coupable nommé, et
 rien n'est écrit. Refusés aussi : une source inconnue, une case à deux
-sources, un KPI dans deux groupes, le gabarit de base dans un groupe. Un KPI
+sources, un ICP dans deux groupes, le gabarit de base dans un groupe. Un ICP
 absent du modèle est signalé et ignoré.
 
-**Les pertes sont annoncées avant d'écrire.** Une case qui copie un KPI qui
-n'a **rien** pour cette variation, dans un visuel que ce KPI pilote, perd son
+**Les pertes sont annoncées avant d'écrire.** Une case qui copie un ICP qui
+n'a **rien** pour cette variation, dans un visuel que cet ICP pilote, perd son
 formatage — le miroir : ce que la source ne porte plus est retiré. C'est voulu
 quand on retire un réglage d'un gabarit ; sur une case qu'on croyait couverte,
 c'est une perte. La grille la marque d'un **coin orange**, le journal la
 chiffre avant la première passe. Cas typique : une cible que la base n'a pas →
-la donner à tous les KPI depuis un KPI qui l'a.
+la donner à tous les ICP depuis un ICP qui l'a.
 
 #### Un gabarit de groupe se pose PAR-DESSUS la base
 
 La propagation applique d'abord le **maître** — la base, ou pour une variation
-le gabarit de « Tous les KPI » —, puis le **gabarit du groupe** par-dessus.
+le gabarit de « Tous les ICP » —, puis le **gabarit du groupe** par-dessus.
 Propriété par propriété : la base règle la taille et la couleur du titre
-d'une étiquette, le gabarit du groupe seulement la couleur → ses KPI ont la
+d'une étiquette, le gabarit du groupe seulement la couleur → ses ICP ont la
 couleur du gabarit et la taille de la base. Ce que le gabarit règle lui-même
 l'emporte, le reste vient du maître.
 
 C'est le **gabarit** qui reçoit le maître (une passe « d'abord, sous le
-gabarit de groupe » au journal) ; ses KPI le copient ensuite en entier. Il se
+gabarit de groupe » au journal) ; ses ICP le copient ensuite en entier. Il se
 lit donc dans Desktop tel que son groupe le verra. Retoucher dans Desktop un
 réglage qu'il a reçu le fait **sien** : il tient, même quand la base change.
 
@@ -1375,11 +1375,11 @@ l'action : restaurer la remet avec le rapport. Perdue, rien ne casse — ce que
 le gabarit porte passe pour le sien.
 
 Un gabarit **ne peut pas retirer** ce que la base donne, seulement le régler
-autrement (le masquer, par exemple). Pour une famille dont les attributs n'ont
+autrement (le masquer, par exemple). Pour un groupe dont les attributs n'ont
 rien à voir avec ceux de la base : une règle de groupe pour la variation
 (ligne du groupe — elle dit tout, rien ne passe dessous), ou le groupe entier
 **indépendant** (menu Groupes → décocher « Gabarit posé par-dessus la base ») :
-son gabarit est alors sa seule source, et « Tous les KPI » passe avant lui.
+son gabarit est alors sa seule source, et « Tous les ICP » passe avant lui.
 Les groupes de l'**ancien format** sont indépendants — ils l'étaient.
 
 #### Le détail d'une étiquette a sa colonne
@@ -1387,7 +1387,7 @@ Les groupes de l'**ancien format** sont indépendants — ils l'étaient.
 Sur une carte, le **détail** d'une étiquette de référence (sous la cible : un
 écart en % chez l'un, en valeur chez l'autre) n'est pas l'étiquette. Il a sa
 colonne, juste après elle : **« Cible — détail »** à côté de « Cible ». On
-propage donc l'étiquette sans le détail (« Tous les KPI » · Cible — détail →
+propage donc l'étiquette sans le détail (« Tous les ICP » · Cible — détail →
 à la main : chacun garde le sien), ou le détail sans l'étiquette. **Tant
 qu'aucune règle ne le nomme, le détail suit son étiquette** — comme avant ;
 l'infobulle le dit.
@@ -1395,41 +1395,41 @@ l'infobulle le dit.
 #### La fenêtre « Grille des sources… »
 
 Onglet **Rapport** → **Grille des sources…**. En haut, le gabarit de base ;
-puis une ligne **« Tous les KPI »**, chaque groupe (sa ligne, puis ses KPI),
-et les KPI **sans groupe**. Tout est dit **en mots** — pas de symbole à
+puis une ligne **« Tous les ICP »**, chaque groupe (sa ligne, puis ses ICP),
+et les ICP **sans groupe**. Tout est dit **en mots** — pas de symbole à
 décoder :
 
-| dans une case de KPI | |
+| dans une case d'ICP | |
 |---|---|
 | `Gabarit` | formaté à la main dans Desktop, et copié par d'autres (l'infobulle dit qui) |
-| `Gabarit sur la base` | un gabarit de groupe : il reçoit d'abord la base (ou, `Gabarit sur Weight`, le gabarit de « Tous les KPI »), puis ses propres réglages |
+| `Gabarit sur la base` | un gabarit de groupe : il reçoit d'abord la base (ou, `Gabarit sur Weight`, le gabarit de « Tous les ICP »), puis ses propres réglages |
 | `À la main` | formaté à la main, rien n'y est copié |
-| le nom d'un KPI | la case copie ce KPI — **en gras** si la règle est posée sur la case, en clair si elle hérite (d'un groupe, de « Tous les KPI », d'un gabarit) |
-| `pas de mesure` | ce KPI n'a pas cette variation : rien à y écrire |
+| le nom d'un ICP | la case copie cet ICP — **en gras** si la règle est posée sur la case, en clair si elle hérite (d'un groupe, de « Tous les ICP », d'un gabarit) |
+| `pas de mesure` | cet ICP n'a pas cette variation : rien à y écrire |
 | `non propagé` | aucune règle ne s'y applique (pas de gabarit de base) |
 | un coin orange | du formatage serait retiré (l'infobulle dit pourquoi) |
 
 La couleur d'une case est celle de sa source — franche quand la règle est
-posée là, pâlie quand elle hérite — et une légende nomme le KPI derrière
-chaque couleur. Les lignes « Tous les KPI » et de groupe ne montrent que les
+posée là, pâlie quand elle hérite — et une légende nomme l'ICP derrière
+chaque couleur. Les lignes « Tous les ICP » et de groupe ne montrent que les
 règles posées à leur niveau (vide = aucune). Les en-têtes nomment le gabarit
 de base et les gabarits de groupe. L'ordre de priorité est rappelé en haut.
 
 On sélectionne des cases (clic-glisser, ou un en-tête de ligne ou de colonne),
-puis **Copier depuis [KPI] → Appliquer**, **À la main** ou **Retirer la
+puis **Copier depuis [ICP] → Appliquer**, **À la main** ou **Retirer la
 règle** (la case suit de nouveau la règle plus large) — aussi au clic droit.
-Le bouton **Groupes** : nouveau groupe avec les KPI sélectionnés (son gabarit
-est le premier, à changer ensuite), ajouter ou retirer des KPI, choisir le
-gabarit d'un groupe (un membre, « à la main » pour chacun, ou aucun : ses KPI
+Le bouton **Groupes** : nouveau groupe avec les ICP sélectionnés (son gabarit
+est le premier, à changer ensuite), ajouter ou retirer des ICP, choisir le
+gabarit d'un groupe (un membre, « à la main » pour chacun, ou aucun : ses ICP
 suivent la base), le poser par-dessus la base ou le rendre indépendant
 (l'en-tête du groupe dit « indépendant »), renommer, supprimer.
 
 La fenêtre **ne sait pas fabriquer** une grille incohérente :
 
-- copier un KPI en fait le gabarit de cette variation ;
+- copier un ICP en fait le gabarit de cette variation ;
 - repeindre un gabarit emmène ceux qui le copiaient — ceux-là seulement : un
   groupe qui suivait son propre gabarit ne bouge pas ;
-- un KPI qui copie ailleurs **par une règle posée** et que d'autres copient : ceux-là
+- un ICP qui copie ailleurs **par une règle posée** et que d'autres copient : ceux-là
   copient directement la même source, la règle tient ;
 - le **dernier** copieur parti, un gabarit redevient une case ordinaire ;
 - **ce qui est posé reste posé**, même égal à ce qui serait hérité : un PY
@@ -1441,29 +1441,29 @@ Chaque action qui en entraîne d'autres le dit sous la grille. **Enregistrer**
 L'onglet résume la grille (« Gabarit de base : Average Steps · 1 groupe ·
 1 gabarit par variation »), dit quel fichier il lit, et **refuse de propager
 sans grille** : choisir le gabarit à la place de l'usager réécrirait un
-rapport entier depuis un KPI arbitraire. Un KPI tout neuf suit la base, sans
+rapport entier depuis un ICP arbitraire. Un ICP tout neuf suit la base, sans
 rien toucher.
 
 #### L'ancien format
 
 Un `propagation.json` d'avant (`{"groupes": [...]}` avec un gabarit par
-groupe) marche **tel quel** : le groupe sans liste de KPI devient la base,
+groupe) marche **tel quel** : le groupe sans liste d'ICP devient la base,
 chaque autre groupe reste un **groupe** avec son gabarit — **indépendant**,
 comme il l'était —, dans le même ordre de passes : le résultat est
 **identique au caractère** à celui de l'ancien moteur (vérifié sur quatre
 configurations, dont celle du rapport Fitbit), à une correction près — les
 faces de branche (ci-dessous). Un
-KPI dans aucun groupe, sans groupe par défaut, reste non propagé.
+ICP dans aucun groupe, sans groupe par défaut, reste non propagé.
 Enregistrer la grille réécrit le fichier au format actuel.
 
 **Un fichier par dossier**, à côté des `.pbip` : `propagation.json`. Toutes les
 versions d'un rapport — noms un peu différents, même dossier — lisent la
 **même** grille : les réglages de propagation ne changent pas d'une version
 à l'autre. Pas dans `measures_config.json`, qui voyage d'un rapport à
-l'autre : des noms de KPI n'y auraient pas leur place.
+l'autre : des noms d'ICP n'y auraient pas leur place.
 
 Contrepartie : deux rapports vraiment DIFFÉRENTS dans un même dossier
-partageraient aussi leur grille. Un KPI absent d'un modèle y est ignoré
+partageraient aussi leur grille. Un ICP absent d'un modèle y est ignoré
 (avertissement), une source absente arrête la propagation en la nommant —
 jamais une écriture fausse.
 
@@ -1486,8 +1486,8 @@ dans sa case. Trois ensembles, à ne pas confondre :
 - **ce que la source donne** : ses entrées dans SES cases. Weight, source du
   YoY % d'un groupe, ne donne pas son Réel : c'est la passe de la base qui
   s'en charge ;
-- **le découpage des noms** (`_managed` = *tous* les KPI du rapport) : sert
-  uniquement à savoir quel KPI une mesure vise. Restreint à une passe, un KPI
+- **le découpage des noms** (`_managed` = *tous* les ICP du rapport) : sert
+  uniquement à savoir quel ICP une mesure vise. Restreint à une passe, un ICP
   voisin dont le nom commence par celui de la source (`Total Steps Goal` face
   à `Total Steps`) serait pris pour une déclinaison de la source.
 
@@ -1506,39 +1506,39 @@ l'état d'**avant** l'opération, donc c'est la première copie qui vaut. Sans c
 garde-fou, un visuel touché par deux passes y déposait l'état *intermédiaire*,
 et « annuler » ne rendait que le milieu de l'opération.
 
-#### Un KPI qui n'a pas l'attribut ne reçoit rien
+#### Un ICP qui n'a pas l'attribut ne reçoit rien
 
-Tous les KPI n'ont pas tout. Quatre indicateurs, deux seulement avec une
+Tous les ICP n'ont pas tout. Quatre indicateurs, deux seulement avec une
 **cible** : les entrées de cible partaient quand même sur les deux autres, où
-elles pointaient la mesure du KPI **template**. Les valeurs restaient justes,
+elles pointaient la mesure de l'ICP **template**. Les valeurs restaient justes,
 mais Power BI affichait un avertissement sur le visuel.
 
 C'est le **paramètre de champ** qui tranche, et il faut deux règles distinctes :
 
-| le KPI visé… | conclusion |
+| l'ICP visé… | conclusion |
 |---|---|
 | a une ligne pour ce **Calcul** (`Cible`) | il a l'attribut → on propage |
 | est dans le paramètre mais **sans** ligne pour ce calcul | il ne l'a pas → **rien ne lui est écrit** |
 | n'est pas du tout dans le paramètre | le paramètre n'en dit rien → on propage (cible explicite hors paramètre) |
-| mesure sans racine connue (un titre commun) | ne dépend pas du KPI → on propage |
+| mesure sans racine connue (un titre commun) | ne dépend pas de l'ICP → on propage |
 
-La distinction qui compte : « ce KPI n'a pas de cible » ≠ « cette mesure ne
-dépend pas du KPI ». La première fait sauter l'entrée, la seconde la laisse
+La distinction qui compte : « cet ICP n'a pas de cible » ≠ « cette mesure ne
+dépend pas de l'ICP ». La première fait sauter l'entrée, la seconde la laisse
 passer inchangée (section précédente).
 
 ##### Le dossier des cibles, quand le paramètre ne suffit pas
 
 Le paramètre de champ ne connaît pas toujours les cibles — on ne les offre pas
 forcément au slicer. Sans ligne, `racine_fp` rattache `Weight cible` à la mesure
-de **base** : le Calcul devient « Réel », que tous les KPI possèdent, donc la
+de **base** : le Calcul devient « Réel », que tous les ICP possèdent, donc la
 règle ci-dessus ne l'écarte pas. La cascade retombe alors sur « garde la mesure
-d'origine » — et la cible du **gabarit** atterrissait sur les KPI qui n'en ont
+d'origine » — et la cible du **gabarit** atterrissait sur les ICP qui n'en ont
 pas.
 
 D'où une **seconde règle, indépendante** : le `displayFolder`. Les cibles vivent
 dans un dossier dédié, déjà déclaré dans `kpiMeasureFolders` (Mesures →
 ⚙ Réglages → « Mesures cibles »). Une mesure de ce dossier est **propre à
-son KPI**, donc si le KPI visé n'a pas la sienne, rien ne lui est écrit. Le
+son ICP**, donc si l'ICP visé n'a pas la sienne, rien ne lui est écrit. Le
 dossier est reconnu par sa **feuille** : `_indicateurs\cible` répond à `cible`.
 
 Les mesures dérivées suivent : `Weight cible ecartCF`, générée hors du dossier,
@@ -1551,14 +1551,14 @@ Le test porte sur **toute l'entrée**, pas seulement son `selector` : le cas
 courant est une règle posée sur la mesure de **base** dont la couleur vient de
 la cible (`Weight cible ecartCF`, enfouie dans les `properties`). Le selector
 se traduisait très bien — c'est la couleur qui ne pouvait pas. Le journal liste
-les KPI écartés et la mesure qui leur manque.
+les ICP écartés et la mesure qui leur manque.
 
 Là encore, un simple nouveau passage retire les entrées déjà écrites pour ces
-KPI : elles ne sont plus attendues, donc le miroir les emporte.
+ICP : elles ne sont plus attendues, donc le miroir les emporte.
 
 **Les reliques sont nettoyées.** Un rapport propagé avant cette règle porte des
-entrées mortes (`Total Steps YTD titre`). Le miroir les retirait déjà des KPI
-cibles, mais pas du KPI **template**, dont les entrées sont maîtresses et
+entrées mortes (`Total Steps YTD titre`). Le miroir les retirait déjà des ICP
+cibles, mais pas de l'ICP **template**, dont les entrées sont maîtresses et
 jamais réécrites. Une entrée qui vise une mesure inexistante ne décrit
 pourtant rien : elle est maintenant retirée là aussi, en le disant au journal.
 Garde-fou — on n'enlève que si le nom est préfixé par la **table des mesures**,
@@ -1566,14 +1566,14 @@ car un selector peut viser une **colonne**, et les colonnes ne sont pas dans
 `known`. Un simple nouveau passage suffit donc à assainir le rapport.
 
 Dernier repli (racine elle-même absente du paramètre) : l'ancien remplacement
-par le nom. Résultat identique à l'ancien code sur les mesures de KPI — vérifié
+par le nom. Résultat identique à l'ancien code sur les mesures d'ICP — vérifié
 octet pour octet sur le rapport réel, et le nombre d'entrées d'un `dry_run` est
 le même avec et sans les tables du paramètre.
 
-⚠ Limite connue : si le KPI **destination** n'a pas la cible correspondante
+⚠ Limite connue : si l'ICP **destination** n'a pas la cible correspondante
 (pas de `Body Fat % cible` dans le modèle), il n'existe aucun équivalent à
 propager ; le repli par nom s'applique et peut écrire un nom inexistant.
-Générer les cibles de **tous** les KPI visés avant de propager.
+Générer les cibles de **tous** les ICP visés avant de propager.
 
 **Les faces de branche suivent leur Réel.** Une entrée de branche à la place
 d'une entrée Réel du gabarit — même sélecteur, `Weight YTD PY` face à
@@ -1587,7 +1587,7 @@ branche **sans** Réel en face est une source de branche.
 ### Miroir : les suppressions se propagent aussi
 
 Le template est la source de vérité **dans les deux sens** : ce qu'il ne porte
-plus est **retiré** des KPI cibles. Retirer l'image d'une carte sur le KPI
+plus est **retiré** des ICP cibles. Retirer l'image d'une carte sur l'ICP
 template la retire donc partout. Sans ça la propagation n'était qu'additive —
 et pire, une relique de branche d'un run précédent finissait par **recréer** le
 réglage sur le template lui-même.
@@ -1597,29 +1597,29 @@ tout (cibles × branches). Une entrée présente UNIQUEMENT sur une branche — 
 style des marqueurs de la ligne YTD sur un graphique qui ne trace que des
 mesures YTD — ne descend que sur **cette** branche, et ne remonte jamais sur
 une face Réel. Conséquence pratique : pour faire disparaître un réglage
-partout, le retirer sur la face Réel **et** sur les faces de branche du KPI
+partout, le retirer sur la face Réel **et** sur les faces de branche de l'ICP
 template (le journal liste chaque retrait, ligne `- <clé> / <mesure> : retiré`).
 
 Trois garde-fous :
 
 | Garde-fou | Effet |
 |---|---|
-| Visuel sans aucune entrée du KPI template | jamais touché (un visuel qui n'affiche pas le template n'est pas concerné) |
-| Couleurs statiques de `columnFormatting` | hors périmètre (`color_matrix_by_kpi.py` en est propriétaire pour les colonnes des KPI ; les autres restent telles quelles) |
+| Visuel sans aucune entrée de l'ICP template | jamais touché (un visuel qui n'affiche pas le template n'est pas concerné) |
+| Couleurs statiques de `columnFormatting` | hors périmètre (`color_matrix_by_kpi.py` en est propriétaire pour les colonnes des ICP ; les autres restent telles quelles) |
 | Selector sans `metadata` (`id: default`, règles globales) | hors périmètre |
 
 ### Qui possède les couleurs statiques
 
 `color_matrix_by_kpi.py` n'écrit **que** dans `objects.columnFormatting` (les
 matrices « specific column ») — c'est là, et là seulement, qu'une couleur est
-choisie **par KPI** depuis l'Excel. Partout ailleurs — `dataPoint` (couleur
+choisie **par ICP** depuis l'Excel. Partout ailleurs — `dataPoint` (couleur
 d'une série : la ligne PY en noir), `markers`, `labels`… — une couleur statique
 est un attribut de style **uniforme** sans autre propriétaire : elle se propage
 depuis le template comme le style de trait ou la taille des marqueurs.
 
 ⚠ Corollaire : sur un graphique, une couleur de série posée à la main sur un
-KPI cible sera **remplacée** par celle du template (et retirée si le template
-n'en a pas). Pour des couleurs différentes par KPI dans un graphique, ne pas
+ICP cible sera **remplacée** par celle du template (et retirée si le template
+n'en a pas). Pour des couleurs différentes par ICP dans un graphique, ne pas
 compter sur la propagation — le template y est uniforme par construction.
 
 Sécurité : chaque visuel modifié est copié dans
@@ -1629,20 +1629,20 @@ l'onglet Rapport, coché par défaut, liste les retraits sans rien changer.
 
 ---
 
-## 7b. color_matrix_by_kpi.py (couleur par KPI dans une matrice)
+## 7b. color_matrix_by_kpi.py (couleur par ICP dans une matrice)
 
-Colore chaque colonne d'une matrice avec la couleur de **son KPI** (même
-couleur pour toutes les variations), pour distinguer les KPI d'un coup d'œil.
+Colore chaque colonne d'une matrice avec la couleur de **son ICP** (même
+couleur pour toutes les variations), pour distinguer les ICP d'un coup d'œil.
 
 - **Source des couleurs** : deux colonnes dans `TD_Indicateurs.xlsx` —
   `couleur_fill` (fond) et `couleur_text` (texte), code hex chacune, clé =
   colonne des noms de mesures de base. Source unique : on recolore dans Excel.
   Combiner fond × texte donne beaucoup plus de combinaisons distinctes.
-- **Approche template** (comme propagate_cf) : appliquer à la main sur UN KPI un
+- **Approche template** (comme propagate_cf) : appliquer à la main sur UN ICP un
   **fond ET un texte** (Specific column → une série → Background color + Text
   color), enregistrer. Le script lit ce gabarit, **détecte** ses propriétés de
   couleur (`backColor` = fond ; l'autre = texte, peu importe son nom) et le
-  réplique sur **toutes** les mesures avec le fond/texte de chaque KPI. Si le
+  réplique sur **toutes** les mesures avec le fond/texte de chaque ICP. Si le
   gabarit n'a qu'un fond, seul le fond est appliqué (avertissement). Seules les
   matrices ayant déjà un gabarit sont traitées (opt-in).
 - **Ne touche QUE `objects.columnFormatting`** (les couleurs « specific column »
@@ -1651,10 +1651,10 @@ couleur pour toutes les variations), pour distinguer les KPI d'un coup d'œil.
   **tous exclus automatiquement**. Le ciblage est naturel — aucune liste de GUID
   à gérer : on « cible » une matrice juste en y appliquant la couleur sur une
   colonne (le gabarit EST le marqueur). Pas de gabarit = matrice ignorée.
-- **Ne remplace que les couleurs des KPI** : une entrée statique n'est retirée
+- **Ne remplace que les couleurs des ICP** : une entrée statique n'est retirée
   et réécrite que si son selector est exactement `{"metadata": "Table.Mesure"}`
-  sur une mesure qui a un KPI dans l'Excel. Une couleur posée à la main sur une
-  autre colonne (une mesure sans KPI, un champ d'une autre table) reste ; ni ce
+  sur une mesure qui a un ICP dans l'Excel. Une couleur posée à la main sur une
+  autre colonne (une mesure sans ICP, un champ d'une autre table) reste ; ni ce
   script ni propagate_cf n'y touchent. Le selector porte la **table réelle** de
   chaque mesure, lue dans le modèle.
 - **Sauvegarde** : chaque matrice modifiée est copiée dans
@@ -1932,19 +1932,19 @@ ni annotation) : tout se déduit du DAX des mesures, de leurs noms et des
   (celles qui n'en référencent aucune), et les colonnes qu'elles lisent
   (`'Table'[Colonne]` ou `Table[Colonne]`, la casse ramenée à celle du
   modèle). Commentaires et chaînes du DAX sont ignorés.
-- **Familles** : une mesure qui référence une mesure dont le nom est contenu
+- **Bases** : une mesure qui référence une mesure dont le nom est contenu
   dans le sien en est une variation, la base retenue étant la plus longue ;
-  la racine est le KPI. Les mesures restées seules qui commencent par les
-  mêmes mots forment une famille « par le nom », marquée à part ; un premier
+  la racine est la base. Les mesures restées seules qui commencent par les
+  mêmes mots forment une base « par le nom », marquée à part ; un premier
   mot générique (`Total`, `Average`…) n'y suffit pas.
-- **Briques** : les mesures qu'au moins deux mesures d'autres familles
+- **Briques** : les mesures qu'au moins deux mesures d'autres bases
   utilisent.
 
 ---
 
 ## 10. Recettes
 
-**Ajouter un KPI** : créer la mesure de base dans `_mesures` (dossier
+**Ajouter un ICP** : créer la mesure de base dans `_mesures` (dossier
 `_indicateurs`) et sa ligne dans TD_Indicateurs.xlsx → actualiser TD_KPI →
 **Générer les mesures** (variations et paramètres suivent tout seuls) →
 **Propager** dans l'onglet Rapport, puis rouvrir le `.pbip` sans enregistrer.
@@ -1957,7 +1957,7 @@ Sauvegarder, puis Générer.
 Générer avec « Supprimer les orphelines » (le modèle ET les tables paramètre
 sont nettoyés, puisque leur expression est régénérée).
 
-**Renommer un libellé de KPI** : changer `libelle_indicateur` dans l'Excel,
+**Renommer un libellé d'ICP** : changer `libelle_indicateur` dans l'Excel,
 rien d'autre (le modèle est indexé sur les noms de mesures).
 
 **Grand ménage** : onglet ChopChop → lire la liste, exporter ; pour les mesures
@@ -1976,11 +1976,11 @@ générées, retirer la variation du config plutôt que la mesure.
    journal dit ce qui serait fait.
 3. **`py`, pas `python`** (sur certaines machines, `python` est le faux alias
    Microsoft Store qui ne fait rien).
-4. **Le gabarit est maître** : on corrige le KPI gabarit, jamais un clone ; il
+4. **Le gabarit est maître** : on corrige l'ICP gabarit, jamais un clone ; il
    serait remplacé au prochain passage.
 5. Les relations TD_KPI → tables paramètre se créent dans Desktop, une par
    table.
-6. Sélection **simple** sur `Calcul` pour une table « par KPI ».
+6. Sélection **simple** sur `Calcul` pour une table « par ICP ».
 
 ---
 
@@ -2050,10 +2050,10 @@ le dossier des projets.
 
 ### Mesures → Arbre des mesures
 
-Tout ce que « Générer » produira, rangé comme cela se dérive : chaque KPI
+Tout ce que « Générer » produira, rangé comme cela se dérive : chaque ICP
 (en gras, écrit à la main) porte ses variations et sa **mesure de branche**
 (en bleu, « Weight YTD »), qui porte à son tour ses variations en branche ; la
-**cible racine** (orange) est sous son KPI, avec ses propres variations.
+**cible racine** (orange) est sous son ICP, avec ses propres variations.
 
 - **◆** : la mesure est dans au moins une table paramètre de champ — le
   chiffre dit dans combien, l'infobulle lesquelles. Il suit les filtres de
@@ -2062,7 +2062,7 @@ Tout ce que « Générer » produira, rangé comme cela se dérive : chaque KPI
   ce que le générateur annoncerait.
 - Un filtre texte (nom, variation, branche), « ◆ seulement », tout
   déplier / replier ; les avertissements du générateur s'affichent en bas.
-- **Rangement** (liste à gauche du filtre, mémorisé) : **par KPI** — l'arbre
+- **Rangement** (liste à gauche du filtre, mémorisé) : **par ICP** — l'arbre
   ci-dessus — ou **par variation** : un groupe par variation (« 7d avg » :
   Weight 7d avg, Steps 7d avg…), un par branche qui tient ses mesures de
   branche puis un sous-groupe par variation en branche (« YTD › PY »), et en
@@ -2073,7 +2073,7 @@ Tout ce que « Générer » produira, rangé comme cela se dérive : chaque KPI
   enveloppe de branche comprise) et ses attributs, une table paramètre par
   ligne — format, dossier, description, catégorie, tables paramètre,
   et pour une variation en branche si elle *enveloppe la variation Réel* ou
-  *recopie son DAX*. Pour un KPI ou une cible racine, c'est le DAX du TMDL,
+  *recopie son DAX*. Pour un ICP ou une cible racine, c'est le DAX du TMDL,
   sur ses lignes. Elle reste sur la même mesure quand l'arbre se recalcule ou
   change de rangement.
 
@@ -2138,10 +2138,10 @@ son dossier de sauvegardes les garde restaurables.
 bouton **📄**, à côté du nom du rapport, montre le config utilisé et
 permet d'en choisir un autre d'un clic (mémorisé PAR
 projet, utile si le config ne vit pas avec le rapport). La table
-paramètre des KPI est résolue dans l'ordre : celles du config
+paramètre des ICP est résolue dans l'ordre : celles du config
 (`fieldParameter.tables`, dans l'ordre de la liste) → la première qui
 existe dans le modèle → sinon **scan du modèle** (première table contenant
-`NAMEOF` + `parameterMetadata` avec des KPI extractibles). Sans config, seul
+`NAMEOF` + `parameterMetadata` avec des ICP extractibles). Sans config, seul
 l'onglet « Mesures » est inactif (bandeau explicatif) — l'onglet
 Rapport fonctionne via le scan.
 
@@ -2154,7 +2154,7 @@ relit tout :
 
 | source | relue par |
 |---|---|
-| modèle : KPI, branches, paramètres de champ | onglet Rapport (`refresh_model`) |
+| modèle : ICP, branches, paramètres de champ | onglet Rapport (`refresh_model`) |
 | `measures_config.json` | onglet Mesures |
 | `TD_Indicateurs.xlsx`, **colonnes comprises** | onglet Mesures (le cache d'en-têtes est invalidé) |
 | grille des sources (`propagation.json`) | onglet Rapport |
@@ -2395,7 +2395,7 @@ appelées avec les constantes de tête). Aucune logique dupliquée.
   un lien **« Se règle dans ⚙ Réglages »** ouvre la fenêtre, directement sur
   sa page « Excel des indicateurs » : l'Excel
   n'est défini qu'une fois, dans le config → bouton **Colorer**. Le bouton **« Aperçu & édition des couleurs… »** ouvre
-  l'éditeur : chaque KPI avec ses pastilles fond/texte
+  l'éditeur : chaque ICP avec ses pastilles fond/texte
   et un aperçu rendu ; clic = sélecteur de couleurs ; **Enregistrer réécrit
   l'Excel** (et CRÉE les colonnes `couleur_fill`/`couleur_text` si l'Excel n'a
   que l'ancienne colonne `couleur` — laquelle n'est pas touchée).
@@ -2562,7 +2562,7 @@ bas).
 
 *Variations* est en **trois volets** : la liste à gauche ; au milieu la
 définition, en deux groupes — **Mesure générée** (nom, format, dossier…) et
-**Portée** (KPI / cibles, enveloppe de branche, types de base, filtres par
+**Portée** (ICP / cibles, enveloppe de branche, types de base, filtres par
 nom) ; à droite, sur toute la hauteur, le **DAX** au-dessus de l'**aperçu des
 noms générés**, une poignée entre les deux. C'est la place du journal, qui
 n'a rien à dire dans cette vue et la lui cède. Éditeur de
@@ -2604,21 +2604,21 @@ CF Δ 30d vit dans le dossier de Δ 30d), **dataCategory en dropdown**
   maintenant `<<attribut>>` non déclaré (la génération sauterait la mesure).
   `{table}` dans un `<<each …>>` n'y est plus signalé à tort ;
 - **fenêtre des jetons** (bouton « Jetons disponibles… » sous le DAX, non
-  modale) : on choisit un KPI ou une cible et une branche, et chaque jeton
+  modale) : on choisit un ICP ou une cible et une branche, et chaque jeton
   affiche sa valeur, tirée de la génération à blanc
   (`generate_measures.apercu_jetons`), et le réglage qui le décide. Double-clic :
   le jeton part dans le DAX. La section **Attributs de TD_Indicateurs** s'y
-  modifie sur place (jeton, colonne, valeur du KPI, ajout), synchronisée avec
+  modifie sur place (jeton, colonne, valeur de l'ICP, ajout), synchronisée avec
   ⚙ Réglages ; une colonne nouvelle est créée dans l'Excel, classeur sauvegardé ;
   Ailleurs, les explications longues vivent derrière un **ⓘ**
   (survol = infobulle, clic = fenêtre) plutôt qu'en paragraphes permanents ;
 - **aperçu des mesures générées** sans toucher au modèle — il suit la **portée
   cochée** : une variation « aux cibles » seulement montre les cibles réelles du
-  modèle (`Weight cible`, `Weight cible YTD`…) et non les KPI ; portée vide = un
+  modèle (`Weight cible`, `Weight cible YTD`…) et non les ICP ; portée vide = un
   message le dit au lieu d'une liste trompeuse. Les cibles sont lues par
   `generate_measures.scan_cibles()`, la **même** fonction que la génération —
   l'aperçu ne peut donc pas diverger de ce qui sera écrit. Chaque nom est
-  **en couleur** selon ce qui l'a produit : la racine (KPI ou cible) telle
+  **en couleur** selon ce qui l'a produit : la racine (ICP ou cible) telle
   quelle, ce que la **branche** ajoute en bleu (` YTD`), ce que la
   **variation** ajoute en vert (` Δ 7d`) — la légende est au-dessus. Les
   branches y sont appliquées avec la **règle de la génération** : jamais à
@@ -2643,7 +2643,7 @@ CF Δ 30d vit dans le dossier de Δ 30d), **dataCategory en dropdown**
   dit à quoi il sert, et chaque réglage a son **ⓘ** (survol = infobulle,
   clic = fenêtre) : ce qu'il fait, un exemple, sa valeur par défaut. Les
   paramètres de champ, par exemple, y expliquent les trois familles de tables
-  (par calcul, par KPI, mixtes), le rôle des colonnes Indicateur / Calcul /
+  (par calcul, par ICP, mixtes), le rôle des colonnes Indicateur / Calcul /
   Branche et de la table de correspondance des libellés — `settings`,
   `fieldParameter` et
   `branches` en cases/champs (les listes de tables paramètre en multi-lignes ;
@@ -2692,7 +2692,7 @@ filtre et son Relire (tests).
   une de leurs colonnes, un de leurs paramètres de champ ou une de ces
   mesures. Les colonnes calculées viennent de `lineage.colonnes_calculees`
   (`column X = …` dans les .tmdl). La fiche liste le tout, visuels d'abord,
-  mesures reprises regroupées par famille, et le total de toute la source
+  mesures reprises regroupées par base, et le total de toute la source
   (`radiographie.cumuler`, sans doublon).
 
 - Une **liste à plat**, une ligne par table et par source : **Type** (Excel,
@@ -2741,7 +2741,7 @@ seule, donc aussi en production.
 - **Par page** (défaut) : page → visuel → champs, rangés par **rôle** comme
   dans le volet Visualisations (Axe, Valeurs, Légende, Lignes… : la clé du
   `queryState`, traduite par `radiographie.libelle_role`). Les mesures d'une
-  même famille tiennent sur une ligne repliée (« Body Fat % · 16 mesures »).
+  même base tiennent sur une ligne repliée (« Body Fat % · 16 mesures »).
   **Mène à** donne les mesures de base, pour chaque mesure et pour le visuel
   entier ; chaque visuel a sa ligne **Filtré par** (filtres avec leur valeur,
   filtres de page et de rapport, segments de la page avec leur sélection),
@@ -2752,13 +2752,13 @@ seule, donc aussi en production.
   dans la police des titres ; un visuel est en gras, son type en gris. Le
   délégué `_NomEnDeuxTons` grise le début et la fin d'un nom (données
   `PREFIXE` et `SUFFIXE`) : le rôle d'un champ seul (« Axe : »), le compte
-  d'une famille (« · 16 mesures »). Sous une famille, Mène à et Table ne
-  répètent pas la ligne de la famille. **Déplier** ouvre tout sauf les
-  familles et les paramètres de champ (`REPLIES`) : tout déplié, un visuel
+  d'une base (« · 16 mesures »). Sous une base, Mène à et Table ne
+  répètent pas la ligne de la base. **Déplier** ouvre tout sauf les
+  bases et les paramètres de champ (`REPLIES`) : tout déplié, un visuel
   reste une ligne par rôle.
 - **Lignage** (`moteurs\lignage.py`, `tabs\vue_lignage.py`) : un graphe de
   la source au visuel, en bandes (sources, Power Query, tables calculées,
-  mesures par famille, paramètres de champ, filtres et segments, visuels par
+  mesures par base, paramètres de champ, filtres et segments, visuels par
   page). `lignage.construire(res, lignes)` donne les nœuds et les liens
   (A → B : B a besoin de A) ; la colonne de chaque nœud est le plus long
   chemin dans sa bande, une bande commençant après la précédente. Un nœud est
@@ -2780,24 +2780,24 @@ seule, donc aussi en production.
     la droite du lien. Les points sont en (axe principal, axe transversal) : le
     même code sert de gauche à droite et de haut en bas.
   - **Export** : `lignage.lignes_export(graphe, choix, sens)` (Sens, Distance,
-    Bande, Élément, Détail, Page, Famille, Mène à un visuel), une ligne par
-    mesure pour une famille, `lignage.ecrire_csv`.
+    Bande, Élément, Détail, Page, Base, Mène à un visuel), une ligne par
+    mesure pour une base, `lignage.ecrire_csv`.
   - **Fiche** : `btn_fiche` la cache ou la montre, réglage
     `radiographie_fiche`.
   - **Une mesure seule** : `lignage.construire(res, lignes, deplies)` donne,
-    pour chaque famille de `deplies`, une boîte `("mesure", nom)` par mesure
+    pour chaque base de `deplies`, une boîte `("mesure", nom)` par mesure
     (qui porte sa `famille`) au lieu de la boîte `("mesures", kpi)` ; les liens
     entre ses mesures en font une chaîne, posée par le plus long chemin de la
     bande. La vue garde `deplies` et reconstruit le graphe par le
     `constructeur` que lui passe la Radiographie (double-clic, liens de la
-    fiche) ; `choisir_mesure(nom)` déplie la famille au besoin. La propriété
+    fiche) ; `choisir_mesure(nom)` déplie la base au besoin. La propriété
     `RadiographieTab.graphe` lit le graphe de la vue, toujours à jour.
-- **Ordre des vues** : Lignage, Par source, Par page, Par colonne, Par KPI,
+- **Ordre des vues** : Lignage, Par source, Par page, Par colonne, Par base,
   du plus large au plus fin. **Par colonne** compte, par colonne, les mesures (celles
   qui la lisent et celles qui les reprennent), les filtres et segments, les
   visuels (directs ou par une mesure) : `radiographie.dependants_colonnes`.
   Plus de `PLIER_APRES` mesures directes tiennent sur une ligne repliée
-  « Lue par N mesures », par famille ; les reprises et les visuels indirects
+  « Lue par N mesures », par base ; les reprises et les visuels indirects
   ont chacun la leur.
 - **Fiche pliable** : toute fiche passe par `_afficher(fabrique, *args)`, qui
   retient la fabrique pour la rendre à nouveau. `_liste` ne montre que
@@ -2806,19 +2806,19 @@ seule, donc aussi en production.
   la liste dans la fiche) ; le DAX d'une mesure se replie au-delà de
   `DAX_LIGNES`. Le clic rend la même fiche, à la même position ; changer de
   fiche vide `_ouverts`.
-- **Par KPI** dit en une ligne (`lbl_kpi`) comment elle range : familles par
+- **Par base** dit en une ligne (`lbl_kpi`) comment elle range : bases par
   le DAX et les noms, rien du config ni de TD_Indicateurs.
 - **Vue d'ensemble** : sans choix, ou par son bouton, la fiche résume le
-  rapport : ses KPI affichés, ses filtres, puis page par page les segments
-  et leur sélection, et un tableau Visuel / Affiche / Par (familles
+  rapport : ses mesures affichées, ses filtres, puis page par page les segments
+  et leur sélection, et un tableau Visuel / Affiche / Par (bases
   regroupées, filtres propres au visuel, segment dont il se passe).
 - Sous les vues Par page et Par colonne, les pastilles **Afficher** éteignent
   une catégorie de lignes (mesures, colonnes, filtres, segments, visuels
   masqués ; ou, par colonne, les usages par genre). Chaque ligne porte sa
   catégorie (`CATEGORIE`) ; un nœud qui n'a de sens qu'avec un enfant (un
   rôle, une colonne) se cache quand tout son contenu est éteint.
-- **Par KPI** : les familles, de la plus affichée à la moins affichée ; les
-  familles « par le nom » en italique, leur variation en jaune ; puis les
+- **Par base** : les bases, de la plus affichée à la moins affichée ; les
+  bases « par le nom » en italique, leur variation en jaune ; puis les
   groupes **Briques**, **Jamais affichées** et **Variations repérées**.
 - **Par colonne** : chaque colonne utilisée, table par table, et ses usages
   (segment, filtres de rapport, de page, de visuel, visuel, mesure qui la

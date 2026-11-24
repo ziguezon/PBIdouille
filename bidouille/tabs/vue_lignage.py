@@ -106,7 +106,7 @@ class _Boite(QGraphicsItem):
             if self.repere == "+":
                 tip += "\n\nDouble-clic : une boîte par mesure."
             elif self.repere == "−":
-                tip += f"\nFamille {noeud.get('famille', '')}\n\nDouble-clic : replier la famille."
+                tip += f"\nBase {noeud.get('famille', '')}\n\nDouble-clic : replier la base."
         self.setToolTip(tip)
 
     def boundingRect(self):
@@ -387,7 +387,7 @@ class VueLignage(QWidget):
         self.btn_export = QPushButton("Exporter…")
         self.btn_export.setToolTip("Écrit en CSV la chaîne de la boîte choisie, dans le sens "
                                    "choisi : une ligne par élément (par mesure pour une "
-                                   "famille), une colonne disant l'amont ou l'aval.")
+                                   "base), une colonne disant l'amont ou l'aval.")
         self.btn_export.clicked.connect(self._exporter)
         self.btn_export.setEnabled(False)
 

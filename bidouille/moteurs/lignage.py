@@ -133,7 +133,7 @@ def construire(res, lignes, deplies=()) -> dict:
         if kpi in deplies:
             for m in membres:
                 nid = noeud(("mesure", m), "mesure", m,
-                            "KPI" if m == kpi else (patrons.get(m) or f"famille {kpi}"),
+                            "base" if m == kpi else (patrons.get(m) or f"base {kpi}"),
                             ("mesure", m))
                 noeuds[nid]["famille"] = kpi
             continue
@@ -309,7 +309,7 @@ def chaine(liens, depart) -> set:
 
 # ---- l'export d'une chaîne --------------------------------------------------
 
-COLONNES_EXPORT = ["Sens", "Distance", "Bande", "Élément", "Détail", "Page", "Famille",
+COLONNES_EXPORT = ["Sens", "Distance", "Bande", "Élément", "Détail", "Page", "Base",
                    "Mène à un visuel"]
 
 
@@ -350,15 +350,15 @@ def lignes_export(graphe, depart, sens: str = "deux") -> list:
         for n in ids:
             x = noeuds[n]
             base = {"Sens": nom_sens, "Distance": dist[n], "Bande": TITRES[x["bande"]],
-                    "Détail": x["detail"], "Page": x["page"], "Famille": "",
+                    "Détail": x["detail"], "Page": x["page"], "Base": "",
                     "Mène à un visuel": "oui" if x["utilise"] else "non"}
             if x["genre"] == "mesure":
                 out.append(dict(base, **{"Élément": x["libelle"], "Détail": "mesure",
-                                         "Famille": x.get("famille", "")}))
+                                         "Base": x.get("famille", "")}))
             elif x["genre"] == "mesures" and x.get("membres"):
                 for m in x["membres"]:
                     out.append(dict(base, **{"Élément": m, "Détail": "mesure",
-                                             "Famille": x["libelle"]}))
+                                             "Base": x["libelle"]}))
             else:
                 out.append(dict(base, **{"Élément": x["libelle"]}))
     return out

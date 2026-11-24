@@ -56,7 +56,7 @@ en-tête de compte trie du plus grand au plus petit.
 
 Un clic sur une ligne ouvre sa **fiche**, à droite : les visuels et les filtres d'abord,
 puis les tables et colonnes calculées, puis les mesures. Les mesures qui lisent la table
-sont nommées une à une ; celles qui les reprennent sont regroupées par famille, comme
+sont nommées une à une ; celles qui les reprennent sont regroupées par base, comme
 `Body Fat % · 21 mesures`. Chaque nom mène à sa fiche. Quand plusieurs tables lisent la
 même source, la fiche donne aussi le total de **toute la source**, sans compter deux fois
 ce que ces tables partagent.

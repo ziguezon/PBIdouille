@@ -2,8 +2,8 @@
 
 [Documentation](../README.md) › **Rapport** · voir aussi [Paramètres de champ](03-4-parametres-de-champ.md), [ChopChop](08-chopchop.md)
 
-L'onglet **Rapport** recopie le formatage d'un KPI vers les autres, et colore les
-matrices par KPI. Il agit sur les visuels du rapport, pas sur le modèle.
+L'onglet **Rapport** recopie le formatage d'un ICP vers les autres, et colore les
+matrices par ICP. Il agit sur les visuels du rapport, pas sur le modèle.
 
 ![L'onglet Rapport](../ressources/images/rapport_onglet.png)
 
@@ -11,17 +11,17 @@ matrices par KPI. Il agit sur les visuels du rapport, pas sur le modèle.
 
 Dans un visuel piloté par un paramètre de champ, un formatage conditionnel, un titre ou
 une étiquette est rattaché à **une mesure précise**. Quand le segment passe à un autre
-KPI, ce réglage ne s'applique plus.
+ICP, ce réglage ne s'applique plus.
 
-La propagation règle ce problème : le formatage se fait une fois sur un KPI **gabarit**
+La propagation règle ce problème : le formatage se fait une fois sur un ICP **gabarit**
 dans Power BI Desktop, puis PBIdouille le recopie sur les mesures équivalentes des
-autres KPI.
+autres ICP.
 
 ![Diapo du guide : Comment le formatage se propage](../ressources/guide/propagation.png)
 
 ## Propager le formatage
 
-1. Dans Power BI Desktop, formater le KPI gabarit et **enregistrer**. Desktop peut rester
+1. Dans Power BI Desktop, formater l'ICP gabarit et **enregistrer**. Desktop peut rester
    ouvert.
 2. Dans **Rapport**, cliquer **Grille des sources…** et choisir le **gabarit de base**.
 3. Cliquer **Enregistrer** dans la grille, puis fermer la fenêtre.
@@ -45,8 +45,8 @@ l'utilisateur.
 - Elle n'écrit jamais une référence vers une mesure absente du modèle.
 - Elle laisse aux **couleurs des matrices** leurs propres réglages.
 
-Une couleur de série posée à la main sur un autre KPI est donc remplacée par celle de sa
-source. Pour garder un réglage propre à un KPI, mettre sa case **À la main**.
+Une couleur de série posée à la main sur un autre ICP est donc remplacée par celle de sa
+source. Pour garder un réglage propre à un ICP, mettre sa case **À la main**.
 
 Chaque visuel modifié est sauvegardé avant l'écriture. La restauration se fait depuis
 [🕘 Restaurer une sauvegarde…](01-barre-du-haut.md#restaurer-une-sauvegarde).
@@ -55,8 +55,8 @@ Chaque visuel modifié est sauvegardé avant l'écriture. La restauration se fai
 
 ## La grille des sources
 
-La grille répond à une question : **de quel KPI chaque KPI copie-t-il le formatage de
-chaque variation ?** Les lignes sont les KPI, les colonnes sont les variations.
+La grille répond à une question : **de quel ICP chaque ICP copie-t-il le formatage de
+chaque variation ?** Les lignes sont les ICP, les colonnes sont les variations.
 
 ![La grille des sources](../ressources/images/rapport_grille.png)
 
@@ -70,10 +70,10 @@ après elle. Tant qu'aucune règle ne la vise, il suit son étiquette.
 
 | Niveau | Où le régler | Effet |
 |---|---|---|
-| **Case** | La case d'un KPI | Ce KPI, pour cette variation |
-| **Groupe, par variation** | La ligne du groupe | Tous les KPI du groupe, pour cette variation |
-| **Gabarit du groupe** | Menu **Groupes** | Ce que les KPI du groupe copient par défaut |
-| **Tous les KPI** | La ligne **Tous les KPI** | Un gabarit pour cette variation, pour tout le monde |
+| **Case** | La case d'un ICP | Cet ICP, pour cette variation |
+| **Groupe, par variation** | La ligne du groupe | Tous les ICP du groupe, pour cette variation |
+| **Gabarit du groupe** | Menu **Groupes** | Ce que les ICP du groupe copient par défaut |
+| **Tous les ICP** | La ligne **Tous les ICP** | Un gabarit pour cette variation, pour tout le monde |
 | **Gabarit de base** | En haut de la fenêtre | Tout ce qu'aucune autre règle ne décide |
 
 La première règle de cette liste qui répond l'emporte.
@@ -88,11 +88,11 @@ formater ce qui distingue le groupe. Un groupe **indépendant** ne reçoit rien 
 
 | Texte | Signification |
 |---|---|
-| **Gabarit** | Formaté à la main dans Desktop, et copié par d'autres KPI |
+| **Gabarit** | Formaté à la main dans Desktop, et copié par d'autres ICP |
 | **Gabarit sur la base** | Gabarit de groupe, qui reçoit d'abord la base |
-| **À la main** | Rien n'y est copié : le KPI garde son formatage |
-| Un nom de KPI | La case copie ce KPI. En gras, la règle est posée sur cette ligne |
-| **pas de mesure** | Ce KPI n'a pas cette variation |
+| **À la main** | Rien n'y est copié : l'ICP garde son formatage |
+| Un nom d'ICP | La case copie cet ICP. En gras, la règle est posée sur cette ligne |
+| **pas de mesure** | Cet ICP n'a pas cette variation |
 | **non propagé** | Aucune règle ne s'applique |
 | Coin orange | Du formatage serait retiré, et l'infobulle dit pourquoi |
 
@@ -102,41 +102,41 @@ Sélectionner des cases par glissement, ou avec un en-tête de ligne ou de colon
 
 | Action | Effet |
 |---|---|
-| **Copier depuis** + **Appliquer** | Les cases copient le KPI choisi |
+| **Copier depuis** + **Appliquer** | Les cases copient l'ICP choisi |
 | **À la main** | Les cases ne copient plus rien |
 | **Retirer la règle** | Les cases suivent de nouveau la règle plus large |
 
-Ces actions sont aussi au clic droit. **Groupes** permet de créer un groupe avec les KPI
-sélectionnés, d'y ajouter ou d'en retirer des KPI, de choisir son gabarit, de le rendre
+Ces actions sont aussi au clic droit. **Groupes** permet de créer un groupe avec les ICP
+sélectionnés, d'y ajouter ou d'en retirer des ICP, de choisir son gabarit, de le rendre
 indépendant, de le renommer ou de le supprimer.
 
 **Enregistrer** écrit `propagation.json` à côté du `.pbip`. Ce fichier est partagé par
 tous les rapports du dossier.
 
-Certaines combinaisons sont refusées, avec le KPI en cause : une copie de copie, une
-source inconnue, un KPI dans deux groupes, ou le gabarit de base placé dans un groupe.
+Certaines combinaisons sont refusées, avec l'ICP en cause : une copie de copie, une
+source inconnue, un ICP dans deux groupes, ou le gabarit de base placé dans un groupe.
 
 ## Colorer les matrices
 
-**Colorer** donne à chaque colonne d'une matrice la couleur de son KPI, lue dans
+**Colorer** donne à chaque colonne d'une matrice la couleur de son ICP, lue dans
 TD_Indicateurs.
 
 1. Dans **Aperçu & édition des couleurs…**, donner une couleur de fond et de texte à
-   chaque KPI, puis cliquer **Enregistrer dans l'Excel**.
-2. Dans Desktop, sur la matrice voulue, appliquer à la main sur **un** KPI un fond **et**
+   chaque ICP, puis cliquer **Enregistrer dans l'Excel**.
+2. Dans Desktop, sur la matrice voulue, appliquer à la main sur **un** ICP un fond **et**
    un texte, avec l'option `Specific column`. Ce gabarit désigne la matrice à traiter.
 3. Enregistrer dans Desktop, qui peut rester ouvert.
 4. Laisser **Aperçu (dry-run)** coché, cliquer **Colorer** et lire le journal.
 5. Décocher **Aperçu (dry-run)**, cliquer **Colorer** et confirmer.
 6. Fermer Desktop **sans enregistrer**, puis rouvrir le `.pbip`.
 
-![L'éditeur des couleurs par KPI](../ressources/images/rapport_couleurs.png)
+![L'éditeur des couleurs par ICP](../ressources/images/rapport_couleurs.png)
 
 - Les colonnes `couleur_fill` et `couleur_text` sont créées dans l'Excel si elles
   manquent. Une ancienne colonne `couleur` n'est pas touchée.
 - Une matrice sans gabarit de couleur est ignorée.
 - Un gabarit qui n'a qu'un fond ne colore que le fond, et le journal le signale.
-- Seules les colonnes des KPI changent de couleur. Une couleur posée à la main sur une
+- Seules les colonnes des ICP changent de couleur. Une couleur posée à la main sur une
   autre colonne de la matrice reste.
 
 Chaque matrice modifiée est sauvegardée avant l'écriture. La restauration se fait depuis
@@ -150,10 +150,10 @@ L'Excel et ses colonnes se règlent dans
 **Aperçu & édition des couleurs…** écrit dans l'Excel, pas dans le rapport.
 
 - **Effacer** puis **Enregistrer dans l'Excel** vide la cellule, de fond ou de texte.
-- Seules les couleurs modifiées sont écrites, et chaque KPI est retrouvé par sa clé au
+- Seules les couleurs modifiées sont écrites, et chaque ICP est retrouvé par sa clé au
   moment d'enregistrer. Un tri du classeur, ou une autre colonne modifiée entre-temps,
   est donc respecté.
-- Un KPI qui n'a plus exactement une ligne dans l'Excel arrête l'enregistrement, sans
+- Un ICP qui n'a plus exactement une ligne dans l'Excel arrête l'enregistrement, sans
   rien écrire.
 - Le classeur est sauvegardé avant l'écriture, et se restaure comme le reste.
 

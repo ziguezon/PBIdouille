@@ -55,7 +55,7 @@ except ImportError:                                  # copie isolée
                                           "#D4AE28")
 
 AUCUN = "(aucun)"
-TOUS = "Tous les KPI"
+TOUS = "Tous les ICP"
 SANS_GROUPE = "Sans groupe"
 # ce qu'on lit dans une case — des mots, pas des symboles
 GABARIT = "Gabarit"
@@ -85,8 +85,8 @@ ROLE_PERTE = Qt.UserRole + 5
 ORIGINE = {
     "case": "règle posée sur cette case",
     "groupe": "règle du groupe « {} » pour cette variation",
-    "tous": "ligne « Tous les KPI »",
-    "ligne": "règle posée sur ce KPI, toutes variations",
+    "tous": "ligne « Tous les ICP »",
+    "ligne": "règle posée sur cet ICP, toutes variations",
     "gabarit_groupe": "gabarit du groupe « {} »",
     "base": "gabarit de base",
 }
@@ -160,12 +160,12 @@ class SourcesDialog(QDialog):
         lay = QVBoxLayout(self)
 
         intro = QLabel(
-            "Chaque case dit de quel KPI ce KPI copie le formatage de cette "
+            "Chaque case dit de quel ICP cet ICP copie le formatage de cette "
             "variation. Par défaut, tout vient du <b>gabarit de base</b>. Un "
             "<b>groupe</b> a son propre gabarit, posé <b>par-dessus</b> la "
             "base : il en reçoit d'abord tout, puis ses propres réglages "
-            "l'emportent, et ses KPI copient le résultat. La ligne <b>Tous "
-            "les KPI</b> donne un gabarit par variation, pour tout le monde "
+            "l'emportent, et ses ICP copient le résultat. La ligne <b>Tous "
+            "les ICP</b> donne un gabarit par variation, pour tout le monde "
             "(aux groupes, par leur gabarit). Sélectionner des cases "
             "(clic-glisser, ou un en-tête de ligne ou de colonne), puis "
             "choisir ce qu'elles copient.")
@@ -179,13 +179,13 @@ class SourcesDialog(QDialog):
         self.cmb_base.addItems([AUCUN] + self.grille.kpis)
         self.cmb_base.setCurrentText(self.grille.base or AUCUN)
         self.cmb_base.setToolTip(
-            "Le KPI formaté en entier dans Desktop, et que tous les\n"
+            "L'ICP formaté en entier dans Desktop, et que tous les\n"
             "autres copient, sauf ce qu'une règle plus précise décide.")
         self.cmb_base.currentTextChanged.connect(self._changer_base)
         haut.addWidget(self.cmb_base)
         ordre = QLabel("Priorité : règle de la case › groupe (variation) › "
-                       "gabarit du groupe › Tous les KPI › gabarit de base\n"
-                       "Un gabarit de groupe se pose par-dessus Tous les KPI "
+                       "gabarit du groupe › Tous les ICP › gabarit de base\n"
+                       "Un gabarit de groupe se pose par-dessus Tous les ICP "
                        "et la base : ce qu'il règle l'emporte.")
         ordre.setStyleSheet(f"color:{TEXT_MUTED};")
         haut.addSpacing(16)
@@ -219,18 +219,18 @@ class SourcesDialog(QDialog):
         barre.addWidget(self.cmb_source)
         self.btn_appliquer = QPushButton("Appliquer")
         self.btn_appliquer.setToolTip(
-            "Les cases sélectionnées copient ce KPI.")
+            "Les cases sélectionnées copient cet ICP.")
         self.btn_appliquer.clicked.connect(
             lambda: self._appliquer(self.cmb_source.currentText()))
         self.btn_main = QPushButton(A_LA_MAIN)
         self.btn_main.setToolTip(
-            "Les cases sélectionnées ne copient rien : chaque KPI garde ce\n"
+            "Les cases sélectionnées ne copient rien : chaque ICP garde ce\n"
             "qui a été formaté sur lui dans Desktop.")
         self.btn_main.clicked.connect(lambda: self._appliquer(pc.MANUEL))
         self.btn_retirer = QPushButton("Retirer la règle")
         self.btn_retirer.setToolTip(
             "Les cases sélectionnées suivent de nouveau la règle plus large :\n"
-            "leur groupe, la ligne « Tous les KPI », le gabarit du groupe,\n"
+            "leur groupe, la ligne « Tous les ICP », le gabarit du groupe,\n"
             "puis le gabarit de base.")
         self.btn_retirer.clicked.connect(lambda: self._appliquer(None))
         for b in (self.btn_appliquer, self.btn_main, self.btn_retirer):
@@ -242,7 +242,7 @@ class SourcesDialog(QDialog):
             lambda: self._remplir_menu_groupes(self.menu_groupes))
         self.btn_groupes.setMenu(self.menu_groupes)
         self.btn_groupes.setToolTip(
-            "Un groupe : une famille de KPI qui copient leur propre gabarit.")
+            "Un groupe : un ensemble d'ICP qui copient leur propre gabarit.")
         barre.addWidget(self.btn_groupes)
         barre.addStretch()
         lay.addLayout(barre)
@@ -250,10 +250,10 @@ class SourcesDialog(QDialog):
         legende = QLabel(
             f"<b>{GABARIT}</b> : formaté à la main, copié par d'autres"
             f"&nbsp;&nbsp;·&nbsp;&nbsp;<b>{SUR_LA_BASE}</b> : un gabarit de "
-            "groupe, qui reçoit d'abord la base (ou « Tous les KPI ») puis "
+            "groupe, qui reçoit d'abord la base (ou « Tous les ICP ») puis "
             "ses propres réglages"
             f"&nbsp;&nbsp;·&nbsp;&nbsp;<b>{A_LA_MAIN}</b> : rien n'y est copié"
-            "&nbsp;&nbsp;·&nbsp;&nbsp;<b>un nom</b> : la case copie ce KPI "
+            "&nbsp;&nbsp;·&nbsp;&nbsp;<b>un nom</b> : la case copie cet ICP "
             "(en gras : règle posée sur cette ligne)"
             "&nbsp;&nbsp;·&nbsp;&nbsp;<b>coin orange</b> : du formatage "
             "serait retiré")
@@ -355,10 +355,10 @@ class SourcesDialog(QDialog):
             return ("", FOND_TITRE, TEXT_MUTED, False, False, False,
                     f"{ou} · {v}\nAucune règle ici : "
                     + (f"le détail suit son étiquette, « {etiquette} »."
-                       if etiquette else "les KPI suivent la règle plus large."))
+                       if etiquette else "les ICP suivent la règle plus large."))
         if valeur == pc.MANUEL:
             return (A_LA_MAIN, TEINTE_MAIN, TEXT, True, False, False,
-                    f"{ou} · {v}\nÀ la main : chaque KPI garde ce qui est "
+                    f"{ou} · {v}\nÀ la main : chaque ICP garde ce qui est "
                     "formaté sur lui.")
         return (valeur, self._teinte(valeur), TEXT, True, False, False,
                 f"{ou} · {v}\nCopient « {valeur} ».")
@@ -391,7 +391,7 @@ class SourcesDialog(QDialog):
             if u:
                 texte = SUR_LA_BASE if u == g.base else f"{GABARIT} sur {u}"
                 info = (tete + f"Gabarit du groupe, posé par-dessus « {u} » ("
-                        + ("la base" if u == g.base else "Tous les KPI")
+                        + ("la base" if u == g.base else "Tous les ICP")
                         + f") : il reçoit d'abord le formatage de « {u} », "
                         "puis le sien par-dessus, ce qu'il règle lui-même "
                         f"l'emporte, le reste vient de « {u} ». Retoucher "
@@ -429,8 +429,8 @@ class SourcesDialog(QDialog):
                 # pas) : rien ne sera copié — la case le montre, en retrait
                 encre, ital = TEXT_MUTED, True
                 info += (f"\nMais « {s} » n'a pas de mesure « {v} » : rien ne "
-                         "sera copié. Choisir un KPI qui l'a (ligne « Tous "
-                         "les KPI », par exemple).")
+                         "sera copié. Choisir un ICP qui l'a (ligne « Tous "
+                         "les ICP », par exemple).")
         n = sum((reglages.get((k, v)) or {}).values())
         if s not in (None, k):
             n_src = sum((reglages.get((s, v)) or {}).values())
@@ -533,14 +533,14 @@ class SourcesDialog(QDialog):
         sans = self._sources_sans_mesure()
         for (v, s), ks in sans.items():
             lignes.append(
-                f"Attention : « {v} », {len(ks)} KPI copient « {s} », qui n'a "
-                "pas cette mesure : rien ne leur sera copié. Leur donner un KPI "
-                "qui l'a (ligne « Tous les KPI », par exemple).")
+                f"Attention : « {v} », {len(ks)} ICP copient « {s} », qui n'a "
+                "pas cette mesure : rien ne leur sera copié. Leur donner un ICP "
+                "qui l'a (ligne « Tous les ICP », par exemple).")
         if retraits:
             lignes.append(
                 f"Attention : {sum(retraits.values())} réglage(s) seraient "
                 "retirés à la prochaine propagation, les cases au coin orange "
-                "copient un KPI qui n'a rien pour cette variation.")
+                "copient un ICP qui n'a rien pour cette variation.")
         self.lbl_verdict.setText("\n".join(lignes))
         alerte = bool(erreurs or avert or retraits or sans)
         self.lbl_verdict.setStyleSheet(
@@ -614,7 +614,7 @@ class SourcesDialog(QDialog):
     def nouveau_groupe(self, nom=None):
         kpis = self.kpis_selectionnes()
         if not kpis:
-            self._apres(["Sélectionner d'abord des lignes de KPI : ce seront "
+            self._apres(["Sélectionner d'abord des lignes d'ICP : ce seront "
                          "les membres du groupe."])
             return
         if nom is None:
@@ -653,14 +653,14 @@ class SourcesDialog(QDialog):
         menu.clear()
         g = self.grille
         choisis = bool(self.kpis_selectionnes())
-        a = menu.addAction("Nouveau groupe avec les KPI sélectionnés…",
+        a = menu.addAction("Nouveau groupe avec les ICP sélectionnés…",
                            self.nouveau_groupe)
         a.setEnabled(choisis)
-        ajouter = menu.addMenu("Ajouter les KPI sélectionnés au groupe")
+        ajouter = menu.addMenu("Ajouter les ICP sélectionnés au groupe")
         ajouter.setEnabled(choisis and bool(g.groupes))
         for nom in g.groupes:
             ajouter.addAction(nom, lambda nom=nom: self.ajouter_au_groupe(nom))
-        a = menu.addAction("Retirer les KPI sélectionnés de leur groupe",
+        a = menu.addAction("Retirer les ICP sélectionnés de leur groupe",
                            self.retirer_du_groupe)
         a.setEnabled(choisis)
         if g.groupes:
@@ -675,12 +675,12 @@ class SourcesDialog(QDialog):
                 act.setChecked(gr["base"] == k)
             gab.addSeparator()
             act = gab.addAction(
-                "À la main (chaque KPI garde le sien)",
+                "À la main (chaque ICP garde le sien)",
                 lambda nom=nom: self.changer_gabarit_groupe(nom, pc.MANUEL))
             act.setCheckable(True)
             act.setChecked(gr["base"] == pc.MANUEL)
             act = gab.addAction(
-                "Aucun (ses KPI suivent le gabarit de base)",
+                "Aucun (ses ICP suivent le gabarit de base)",
                 lambda nom=nom: self.changer_gabarit_groupe(nom, None))
             act.setCheckable(True)
             act.setChecked(gr["base"] is None)

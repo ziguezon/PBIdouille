@@ -64,13 +64,13 @@ class ApercuParametres(QWidget):
         split = QSplitter(Qt.Horizontal)
         split.setChildrenCollapsible(False)
 
-        gb_m = QGroupBox("Quels KPI dans quelles tables")
+        gb_m = QGroupBox("Quels ICP dans quelles tables")
         mv = QVBoxLayout(gb_m)
         self.matrice = QTableWidget()
         self.matrice.setEditTriggers(QTableWidget.NoEditTriggers)
         self.matrice.setSelectionMode(QTableWidget.SingleSelection)
         self.matrice.verticalHeader().setDefaultSectionSize(22)
-        self.matrice.setToolTip("Le nombre de rangées de chaque KPI dans chaque table.\n"
+        self.matrice.setToolTip("Le nombre de rangées de chaque ICP dans chaque table.\n"
                                 "Cliquer sur une colonne ou une case : la table s'ouvre à droite.")
         self.matrice.cellClicked.connect(self._on_case)
         self.matrice.horizontalHeader().sectionClicked.connect(
@@ -84,7 +84,7 @@ class ApercuParametres(QWidget):
         self.lbl_table = QLabel("")
         self.lbl_table.setTextFormat(Qt.RichText)
         self.ed_filtre = QLineEdit()
-        self.ed_filtre.setPlaceholderText("Filtrer (KPI, calcul, mesure…)")
+        self.ed_filtre.setPlaceholderText("Filtrer (ICP, calcul, mesure…)")
         self.ed_filtre.setClearButtonEnabled(True)
         self.ed_filtre.textChanged.connect(self._filtrer)
         haut.addWidget(self.lbl_table, 1)
@@ -132,8 +132,8 @@ class ApercuParametres(QWidget):
         else:
             n_kpi = len({r["indicateur"] for t in self._tables for r in t["rangees"]})
             self.lbl_resume.setText(
-                f"{len(self._tables)} table(s), {n_kpi} KPI. Colonnes : "
-                f"{self._colonnes['kpi']} (le KPI), {self._colonnes['calcul']}, "
+                f"{len(self._tables)} table(s), {n_kpi} ICP. Colonnes : "
+                f"{self._colonnes['kpi']} (l'ICP), {self._colonnes['calcul']}, "
                 f"{self._colonnes['branche']}. Aperçu des réglages en cours, "
                 "rien n'est écrit.")
         self._remplir_matrice()
@@ -179,7 +179,7 @@ class ApercuParametres(QWidget):
             return
         etat = t.get("etat") or ""
         couleur = COULEUR_ETAT.get(etat, TEXT_DIM)
-        quoi = "un KPI par rangée" if t.get("rows") == "kpi" else "un calcul par rangée"
+        quoi = "un ICP par rangée" if t.get("rows") == "kpi" else "un calcul par rangée"
         self.lbl_table.setText(
             f"<b>{_html(t['name'])}</b>  <span style='color:{TEXT_DIM}'>"
             f"{len(t['rangees'])} rangées, {quoi}</span>"
@@ -230,7 +230,7 @@ class ApercuParametres(QWidget):
             f.setItalic(True)
             it.setFont(0, f)
             it.setForeground(0, QBrush(QColor(BLUE)))
-            it.setToolTip(0, "Le LIBELLÉ du KPI, lu par LOOKUPVALUE dans la table de "
+            it.setToolTip(0, "Le LIBELLÉ de l'ICP, lu par LOOKUPVALUE dans la table de "
                              "correspondance"
                           + ("." if r.get("libelle_trouve") else
                              " (introuvable dans l'Excel : la valeur n'existera "

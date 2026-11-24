@@ -3,9 +3,9 @@
 [Documentation](../README.md) › Mesures › **Variations** · voir aussi [Les jetons](03-2-jetons.md), [Arbre des mesures](03-3-arbre-des-mesures.md), [Paramètres de champ](03-4-parametres-de-champ.md)
 
 Une **variation** est une recette de mesure. On l'écrit une seule fois, et
-PBIdouille en génère une mesure pour chaque KPI, dans chaque branche, et pour
-les cibles lorsque nécessaire. Avec 5 KPI et une branche YTD, une variation
-donne 10 mesures dans Power BI, si aucun filtre ne l'écarte d'un KPI ou de la branche.
+PBIdouille en génère une mesure pour chaque ICP, dans chaque branche, et pour
+les cibles lorsque nécessaire. Avec 5 ICP et une branche YTD, une variation
+donne 10 mesures dans Power BI, si aucun filtre ne l'écarte d'un ICP ou de la branche.
 
 ![L'onglet Variations](../ressources/images/variations_formulaire.png)
 
@@ -16,7 +16,7 @@ l'aperçu de ce qui sera généré.
 
 ## Créer une nouvelle mesure
 
-Exemple : la variation d'un KPI par rapport au mois précédent.
+Exemple : la variation d'un ICP par rapport au mois précédent.
 
 ### 1. Ajouter la variation
 
@@ -50,7 +50,7 @@ mesure écrite à la main avec un retour à la ligne après le `=`.
 
 Les [jetons](03-2-jetons.md) se colorent à la frappe : bleu pour `{…}`, vert pour
 `<<…>>`, **rouge souligné** pour un jeton inconnu. Sous l'éditeur, le bouton
-**Jetons disponibles…** montre ce que vaut chaque jeton pour le KPI choisi,
+**Jetons disponibles…** montre ce que vaut chaque jeton pour l'ICP choisi,
 et où il se règle.
 
 ### 4. Choisir le format
@@ -61,7 +61,7 @@ détaillés plus bas.
 ### 5. Décider où elle s'applique
 
 Cocher **dans les paramètres de champ** si elle doit être sélectionnable dans les
-segments. Dans **Portée**, laisser « générer pour les KPI ».
+segments. Dans **Portée**, laisser « générer pour les ICP ».
 
 ### 6. Vérifier dans l'aperçu
 
@@ -126,7 +126,7 @@ ses mesures. Une mesure écrite à la main n'en a pas : elle n'est jamais modifi
 
 Pour une cible, la valeur **Calcul** commence par `Cible` (le **Calcul (libellé)** des
 [Mesures cibles](02-reglages.md#mesures-cibles)) : `Cible écart %`, pour la distinguer de
-l'`écart %` du KPI. Si le libellé contient déjà ce mot, comme `écart vs cible`, il reste
+l'`écart %` de l'ICP. Si le libellé contient déjà ce mot, comme `écart vs cible`, il reste
 tel quel au lieu de devenir `Cible écart vs cible`.
 
 ### formatString
@@ -137,7 +137,7 @@ tel quel au lieu de devenir `Cible écart vs cible`.
 | `delta` | `+0.0;-0.0;0.0` | Un écart, avec son signe. Une base en % donne des points : `+0.0 pts` |
 | `text` | aucun format | Une mesure qui rend du texte |
 | `{baseFormat} kg` | `0.0 kg` | Le format de la base, complété |
-| `#,0.00` | `#,0.00` | Un format fixe, le même pour tous les KPI |
+| `#,0.00` | `#,0.00` | Un format fixe, le même pour tous les ICP |
 
 Une base sans format reste sans format avec `inherit`. Avec `delta`, elle reçoit
 `+#,##0.##;-#,##0.##;#,##0.##`.
@@ -146,7 +146,7 @@ Une base sans format reste sans format avec `inherit`. Avec `delta`, elle reçoi
 
 Sans `displayFolder`, le dossier vient de **⚙ Réglages → Génération** :
 
-| Mesure | Rangement par variation | Rangement par KPI |
+| Mesure | Rangement par variation | Rangement par ICP |
 |---|---|---|
 | `Weight` | `_indicateurs` | `_indicateurs` |
 | `Weight MoM %` | `_indicateurs\_MoM %` | `_indicateurs\Weight` |
@@ -164,7 +164,7 @@ la mesure n'est pas créée.
 
 | Réglage | Dans le config | Effet |
 |---|---|---|
-| **générer pour les KPI** | `appliesToKpi` | Crée la mesure pour chaque KPI (coché par défaut) |
+| **générer pour les ICP** | `appliesToKpi` | Crée la mesure pour chaque ICP (coché par défaut) |
 | **générer pour les cibles** | `appliesToCibles` | Crée la mesure pour chaque cible, comme `Weight cible écart` |
 | **envelopper en branche** | `wrapInBranch` | En branche, entoure la mesure Réel au lieu de recopier son DAX |
 | **types de base** | `appliesToFormats` | Limite aux bases d'un type : nombre, pourcentage, devise, ou un type de TD_Indicateurs |

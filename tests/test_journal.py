@@ -138,7 +138,7 @@ CAS = [
     ("  ∅ Sleep Efficiency : PY, YoY %",                          TEXT_MUTED, False),
     ("  (si l'une d'elles DEVRAIT avoir une variante…)",           TEXT_DIM, False),
     ("Aucun changement.",                                         TEXT_DIM, False),
-    ("KPI template : Total Steps",                                TEXT_DIM, False),
+    ("ICP template : Total Steps",                                TEXT_DIM, False),
     ("  page 1 / visuel abc123 : 3 entrée(s)",                    TEXT_DIM, False),
 ]
 for ligne, couleur, gras in CAS:
@@ -182,7 +182,7 @@ check("la banniere est en tete, reperable (▶ + accent gras)",
       and ban["gras"])
 check("elle porte la MEME heure que l'entete",
       bool(heure) and heure.group(0) in ban["texte"])
-j.ligne("KPI template : Total Steps")
+j.ligne("ICP template : Total Steps")
 j.fin()
 ban = blocs(j)[0]
 check("le verdict s'inscrit SUR la banniere (lisible sans descendre)",
@@ -979,11 +979,11 @@ cv = jm.cle_valeur
 check("une ligne « cle : valeur » se reconnait",
       cv("Modèle : 131 mesure(s) connues") == ("Modèle", ["131 mesure(s) connues"]))
 check("une enumeration donne une valeur par element",
-      cv("KPI cibles   : Body Fat %, Total Steps, Weight")
-      == ("KPI cibles", ["Body Fat %", "Total Steps", "Weight"]))
+      cv("ICP cibles   : Body Fat %, Total Steps, Weight")
+      == ("ICP cibles", ["Body Fat %", "Total Steps", "Weight"]))
 check("… coupee aux virgules de PREMIER niveau seulement",
-      cv("Ordre des KPI : colonne « ordre » (3 KPI sans valeur, placés à la fin)")[1]
-      == ["colonne « ordre » (3 KPI sans valeur, placés à la fin)"])
+      cv("Ordre des KPI : colonne « ordre » (3 ICP sans valeur, placés à la fin)")[1]
+      == ["colonne « ordre » (3 ICP sans valeur, placés à la fin)"])
 check("la PREMIERE « : » separe la cle",
       cv("Paramètre : P_x : 80 rangées") == ("Paramètre", ["P_x : 80 rangées"]))
 check("une longue liste reste d'un bloc (pas 42 rangees)",
@@ -999,8 +999,8 @@ j = jm.Journal()
 j.resize(440, 400)
 j.show()
 j.lancement("Propagation")
-j.ligne("KPI template : Average Steps")
-j.ligne("KPI cibles   : Body Fat %, Total Steps, Weight")
+j.ligne("ICP template : Average Steps")
+j.ligne("ICP cibles   : Body Fat %, Total Steps, Weight")
 j.ligne("Modèle : 131 mesure(s) connues (référence vérifiée avant écriture, "
         "sur le modèle entier et toutes ses tables).")
 j.ligne("⚠ branche 'YTD' : variation inconnue.")
@@ -1008,12 +1008,12 @@ j.ligne("Terminé : 1 entrée(s) écrites.")
 app.processEvents()
 r = blocs(j)[1:]
 check("la cle et sa valeur sur une rangee (tabulation entre les deux)",
-      r[0]["texte"] == "KPI template\tAverage Steps")
+      r[0]["texte"] == "ICP template\tAverage Steps")
 check("… la cle grisee, la valeur en texte courant",
       r[0]["couleur_debut"] == TEXT_MUTED.upper()
       and r[0]["couleur"] == TEXT_DIM.upper())
 check("une enumeration : trois rangees",
-      [b["texte"] for b in r[1:4]] == ["KPI cibles\tBody Fat %", "Total Steps",
+      [b["texte"] for b in r[1:4]] == ["ICP cibles\tBody Fat %", "Total Steps",
                                        "Weight"])
 
 
@@ -1102,7 +1102,7 @@ check("« source → variation : copieurs » — un copieur par rangee",
 check("« variation à la main : KPI » — ceux qui gardent le leur, en mots",
       plan("Réel à la main") == ("Réel à la main", ["Average Sleep Duration"]))
 check("un gabarit par variation pour tous",
-      plan("Average Steps → PY") == ("Average Steps → PY", ["tous les KPI"]))
+      plan("Average Steps → PY") == ("Average Steps → PY", ["tous les ICP"]))
 check("un groupe, son gabarit, ses KPI — un par rangee",
       plan("Groupe Poids") == ("Groupe Poids ← Weight, par-dessus la base",
                                ["Weight", "Body Fat %"]))

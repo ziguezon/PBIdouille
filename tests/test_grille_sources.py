@@ -219,8 +219,8 @@ check("… une variation hors parametre se regle comme les autres",
 check("les lignes : Tous les KPI, le groupe et ses KPI, puis les autres",
       [q for q, _ in dlg._rangs] == ["tous", "groupe", "kpi", "sans_groupe",
                                      "kpi", "kpi", "kpi", "kpi"])
-check("… en-tetes en clair : « Tous les KPI », le groupe, « Sans groupe »",
-      entete("tous") == "Tous les KPI"
+check("… en-tetes en clair : « Tous les ICP », le groupe, « Sans groupe »",
+      entete("tous") == "Tous les ICP"
       and entete("groupe", "groupe 2") == "groupe 2, indépendant"
       and entete("sans_groupe") == "Sans groupe")
 check("… le gabarit du groupe et le gabarit de base sont nommes comme tels",
@@ -322,7 +322,7 @@ check("… en couleur pale : ils heritent",
 menu = ds.QMenu()
 dlg._remplir_menu_groupes(menu)
 libelles = [a.text() for a in menu.actions()]
-check("le menu Groupes, en mots", "Nouveau groupe avec les KPI sélectionnés…"
+check("le menu Groupes, en mots", "Nouveau groupe avec les ICP sélectionnés…"
       in libelles and "Groupe Famille" in libelles
       and not any(SYMBOLES.search(x) for x in libelles))
 dlg.renommer_groupe("Famille", "Activité")
@@ -477,7 +477,7 @@ check("… en retrait, car la base n'a pas de cible — rien ne serait copie",
       and "n'a pas de mesure « Cible écart »"
       in item("kpi", WEIGHT, "Cible écart").toolTip())
 check("… et le verdict le dit, colonne par colonne",
-      "« Cible écart », 2 KPI copient « " + BASE + " », qui n'a pas cette "
+      "« Cible écart », 2 ICP copient « " + BASE + " », qui n'a pas cette "
       "mesure" in dlg.lbl_verdict.text())
 choisir(("tous", None, "Cible écart"))
 dlg.cmb_source.setCurrentText(WEIGHT)
