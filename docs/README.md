@@ -33,9 +33,9 @@ Les diapos du [guide de démarrage](PBIdouille%20-%20Guide%20de%20demarrage%20ra
 L'app les montre aussi : bouton **Guide** de la barre du haut, et liens **▣ Schéma** là où
 chaque notion sert.
 
-### Un rapport, cinq onglets
+### Un rapport, quatre onglets
 
-![Diapo du guide : Un rapport, cinq onglets](ressources/guide/coup-d-oeil.png)
+![Diapo du guide : Un rapport, quatre onglets](ressources/guide/coup-d-oeil.png)
 
 Tout se passe dans quatre onglets, qui travaillent sur le même rapport. **Mesures** crée
 les variations de chaque ICP et les tables paramètre de champ. **Rapport** recopie le

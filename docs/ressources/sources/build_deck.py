@@ -231,7 +231,7 @@ def step_list(slide, x, y, w, items, gap=0.78, size=15, color=GREEN):
 # ============================================================ 1. Titre
 s = new_slide("Présenter l'outil en une phrase : PBIdouille écrit automatiquement ce qui se répète "
               "dans un rapport Power BI : les mesures dérivées, les paramètres de champ et le "
-              "formatage conditionnel KPI par KPI.")
+              "formatage conditionnel ICP par ICP.")
 box(s, 0.6, 1.9, 0.9, 0.9, fill=GREEN, shape=MSO_SHAPE.OVAL)
 text(s, 0.6, 1.9, 0.9, 0.9, "🔧", size=30, align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
 text(s, 0.6, 3.0, 6.5, 1.1, "PBIdouille", size=60, font=HEAD, color=TEXT)
@@ -243,15 +243,16 @@ text(s, 0.6, 4.95, 6.3, 1.4,
      "d'un rapport Power BI (PBIP), sans les écrire à la main.", size=18, color=MUTED)
 
 # ============================================================ 2. En un coup d'œil
-s = new_slide("Les cinq onglets travaillent tous sur le même rapport, choisi dans la barre du "
-              "haut. Le journal à droite raconte tout ce que l'outil fait. Un sixième, "
-              "Wireframe, n'existe que dans l'édition de développement.")
-title(s, "Un rapport, cinq onglets", "En un coup d'œil")
+s = new_slide("Les quatre onglets travaillent tous sur le même rapport, choisi dans la barre du "
+              "haut. Le journal à droite raconte tout ce que l'outil fait. Un cinquième, "
+              "Wireframe, n'existe que dans l'édition de développement. Les sources de données "
+              "sont une vue de la Radiographie, Par source.")
+title(s, "Un rapport, quatre onglets", "En un coup d'œil")
 cards = [
-    ("Mesures", "Décline chaque KPI en variations (7d avg, PY, YTD…) et écrit les paramètres de champ.", GREEN, "Σ"),
-    ("Rapport", "Copie le formatage d'un KPI gabarit vers les autres. Colore les matrices.", BLUE, "◧"),
-    ("Sources de données", "Dit d'où vient chaque table, et ce qui manque sur ce poste.", ORANGE, "⇣"),
-    ("Radiographie", "Fait la carte d'un rapport qu'on n'a pas fait : KPI, visuels, filtres.", LILAS, "◎"),
+    ("Mesures", "Décline chaque ICP en variations (7d avg, PY, YTD…) et écrit les paramètres de champ.", GREEN, "Σ"),
+    ("Rapport", "Copie le formatage d'un ICP gabarit vers les autres. Colore les matrices.", BLUE, "◧"),
+    ("Radiographie", "Fait la carte d'un rapport, de la source au visuel : d'où vient chaque "
+     "table, ce qui en dépend, ce qui filtre chaque visuel.", LILAS, "◎"),
     ("ChopChop", "Repère ce que plus rien n'utilise, et exporte la liste.", RED, "×"),
 ]
 cw, gap = (12.1 - 0.2 * (len(cards) - 1)) / len(cards), 0.2
@@ -278,7 +279,7 @@ title(s, "Avant de commencer", "Prérequis")
 pre = [("Un rapport au format PBIP", "Fichier .pbip avec ses dossiers .Report et .SemanticModel (TMDL / PBIR)."),
        ("Python 3.8 ou plus récent", "Lancer avec  py  (pas « python », parfois un faux alias Windows)."),
        ("qtpy + PyQt5 ou PySide6", "Pour l'interface. Rien d'autre à installer."),
-       ("TD_Indicateurs.xlsx", "Une ligne par KPI : libellé, couleurs, ordre, attributs.")]
+       ("TD_Indicateurs.xlsx", "Une ligne par ICP : libellé, couleurs, ordre, attributs.")]
 for i, (h, d) in enumerate(pre):
     y = 1.85 + i * 1.0
     box(s, 0.6, y, 6.6, 0.85, fill=CARD)
@@ -336,11 +337,11 @@ def section(num, t, sub, col, notes):
     return s
 
 
-section("01", "Les mesures", "Une mesure de base, toute une famille de variations : générées, pas écrites.",
-        GREEN, "Onglet Mesures : on décrit une variation une seule fois, l'outil l'écrit pour chaque KPI.")
+section("01", "Les mesures", "Une mesure de base, toutes ses variations : générées, pas écrites.",
+        GREEN, "Onglet Mesures : on décrit une variation une seule fois, l'outil l'écrit pour chaque ICP.")
 
 # ============================================================ 6. Diagramme ramification
-s = new_slide("Pour chaque mesure du dossier source (_indicateurs), l'outil crée toute la famille de "
+s = new_slide("Pour chaque mesure du dossier source (_indicateurs), l'outil crée toutes les "
               "variations et range chacune dans son dossier d'affichage, sous le dossier de la base. "
               "Une variation déclarée « branche » (YTD) devient à son tour une base : elle reçoit les "
               "autres variations, rangées sous son propre dossier (__YTD). Les cibles écrites à la main "
@@ -349,7 +350,7 @@ title(s, "Comment les variations se ramifient", "Mesures")
 W_ = TEXT        # bordure : écrit à la main
 # en-têtes des trois zones
 for x, t in ((0.45, "1 · pour chaque mesure"),
-             (3.35, "2 · l'outil génère la famille"),
+             (3.35, "2 · l'outil génère les variations"),
              (8.95, "3 · et la range dans les dossiers")):
     text(s, x, 1.5, 4.5, 0.3, t.upper(), size=11, color=GREEN, font=HEAD)
 
@@ -362,7 +363,7 @@ label_box(s, 0.55, 2.32, 2.3, 0.72, "Weight", fill=CARD, line=W_, size=18, bold=
 autres = ["Total Steps", "Average Steps", "Body Fat %", "Average Sleep…"]
 for i, t in enumerate(autres):
     text(s, 0.75, 3.14 + i * 0.25, 2.1, 0.25, t, size=11, color=MUTED)
-text(s, 0.75, 4.16, 2.1, 0.3, "… chacune reçoit la même famille", size=10, color=MUTED)
+text(s, 0.75, 4.16, 2.1, 0.3, "… chacune reçoit les mêmes variations", size=10, color=MUTED)
 text(s, 0.55, 4.62, 2.4, 0.3, [[("▾ ", {"color": MUTED}), ("_cibles", {"font": MONO})]],
      size=13, color=MUTED)
 label_box(s, 0.55, 4.97, 2.3, 0.72, "Weight cible", fill=CARD, line=W_, size=17, bold=True,
@@ -431,7 +432,7 @@ text(s, 8.95, y0 - 0.06, 3.95, 0.5,
 s = new_slide("Chaque mesure générée devient une rangée des paramètres de champ, étiquetée par "
               "Indicateur, Calcul et Branche. C'est ce qui permet à un segment de choisir ce qu'un visuel affiche. "
               "On a autant de tables qu'il en faut, chacune avec ses réglages, dans ⚙ Réglages → Paramètres de "
-              "champ : ce qu'affichent ses rangées (le calcul ou le KPI), et ce qu'elle garde (KPI, variations, "
+              "champ : ce qu'affichent ses rangées (le calcul ou l'ICP), et ce qu'elle garde (ICP, variations, "
               "branches, base, cibles). Une table filtrée garde le même ordre de tri que la complète.")
 title(s, "Ce que reçoivent les paramètres de champ", "Mesures")
 rows = [("Weight", "Weight", "Réel", "Réel"), ("Weight 7d avg", "Weight", "7d avg", "Réel"),
@@ -466,8 +467,8 @@ tblxml = tbl._tbl
 tblPr = tblxml.tblPr
 for a in ("firstRow", "bandRow"):
     tblPr.set(a, "0")
-fams = [("par Calcul", "P_Indicateurs_parCalcul", "1 KPI, plusieurs calculs (page détail)"),
-        ("par KPI", "P_Indicateurs_parKPI", "1 calcul, plusieurs KPI (comparaison)"),
+fams = [("par Calcul", "P_Indicateurs_parCalcul", "1 ICP, plusieurs calculs (page détail)"),
+        ("par ICP", "P_Indicateurs_parKPI", "1 calcul, plusieurs ICP (comparaison)"),
         ("filtrée", "P_YTD_seul", "Seulement YTD, sans cibles")]
 for i, (h, nm, d) in enumerate(fams):
     y = 1.8 + i * 1.5
@@ -481,11 +482,11 @@ text(s, 0.6, 6.45, 12, 0.6,
      size=13, color=MUTED)
 
 # ============================================================ 8. Jetons
-s = new_slide("Les jetons sont remplacés à la génération, pour chaque KPI, cible et branche. Les {jetons} "
+s = new_slide("Les jetons sont remplacés à la génération, pour chaque ICP, cible et branche. Les {jetons} "
               "viennent du modèle et de la variation, en bleu comme dans l'éditeur. Les <<jetons>>, en "
               "vert, viennent de TD_Indicateurs : n'importe quelle colonne, donc une valeur, un nom de "
-              "variable ou même du DAX différent par KPI. Dans l'app, « Jetons disponibles » montre ce "
-              "que vaut chaque jeton pour le KPI ou la cible qu'on choisit.")
+              "variable ou même du DAX différent par ICP. Dans l'app, « Jetons disponibles » montre ce "
+              "que vaut chaque jeton pour l'ICP ou la cible qu'on choisit.")
 title(s, "Les jetons à connaître", "Mesures")
 
 # -- {…} : KPI et cible côte à côte --
@@ -497,8 +498,8 @@ for x, t in zip(X[2:], ("Weight YTD", "Weight cible YTD")):
     text(s, x + 0.08, 1.88, 1.7, 0.28, t, size=11, bold=True, color=TEXT)
 tok = [("{base}", "la mesure traitée", "Weight YTD", "Weight cible YTD"),
        ("{baseRef}", "la même, en référence", "[Weight YTD]", "[Weight cible YTD]"),
-       ("{kpi}", "le KPI racine", "Weight", "Weight"),
-       ("{kpiRef}", "le KPI, dans la branche", "[Weight YTD]", "[Weight YTD]"),
+       ("{kpi}", "l'ICP racine", "Weight", "Weight"),
+       ("{kpiRef}", "l'ICP, dans la branche", "[Weight YTD]", "[Weight YTD]"),
        ("{branch}", "la branche", "YTD", "YTD"),
        ("{date}", "la colonne de dates", "'dim_Date'[Date]", "'dim_Date'[Date]")]
 for i, (t, d, a, b) in enumerate(tok):
@@ -521,7 +522,7 @@ text(s, 8.05, 1.62, 4.45, 0.62,
 usages = [("une valeur", "* <<direction>>", "* 1   ou   * -1"),
           ("un texte", "& \" <<unite>>\"", "& \" kg\"   ou   & \" pas\""),
           ("un nom de variable", "VAR <<var_nom>> = …", "VAR _poids = …"),
-          ("du DAX propre au KPI", "<<agregat>>", "AVERAGEX(…)   ou   SUMX(…)")]
+          ("du DAX propre à l'ICP", "<<agregat>>", "AVERAGEX(…)   ou   SUMX(…)")]
 for i, (u, ecrit, donne) in enumerate(usages):
     y = 2.5 + i * 0.63
     text(s, 8.05, y, 4.5, 0.6,
@@ -533,8 +534,8 @@ for i, (u, ecrit, donne) in enumerate(usages):
 # -- des filtres propres à chaque KPI : un attribut comme un autre --
 box(s, 0.6, 5.2, 12.1, 1.05, fill=CARD, radius=0.06)
 text(s, 0.85, 5.36, 4.0, 0.9,
-     [[("Des filtres par KPI", {"bold": True, "size": 14})],
-      [("la colonne filtres porte ceux de chaque KPI", {"size": 11, "color": MUTED})]], size=13)
+     [[("Des filtres par ICP", {"bold": True, "size": 14})],
+      [("la colonne filtres porte ceux de chaque ICP", {"size": 11, "color": MUTED})]], size=13)
 text(s, 4.85, 5.3, 7.7, 0.9,
      [[("CALCULATE({baseRef}, ", {"color": BLUE, "bold": True, "size": 12}),
        ("<<filtres>>", {"color": GREEN, "bold": True, "size": 12}),
@@ -546,13 +547,13 @@ text(s, 4.85, 5.3, 7.7, 0.9,
 box(s, 0.6, 6.4, 12.1, 0.55, fill=CARD2)
 text(s, 0.85, 6.4, 11.6, 0.55,
      [[("Dans l'app : ", {"bold": True, "color": GREEN}),
-       ("Variations → Jetons disponibles… Choisir un KPI ou une cible : chaque jeton "
+       ("Variations → Jetons disponibles… Choisir un ICP ou une cible : chaque jeton "
         "affiche sa valeur et où il se règle.", {})]],
      size=13, anchor=MSO_ANCHOR.MIDDLE)
 
 # ============================================================ 9. Éditer une variation
 s = new_slide("Une variation = un gabarit de mesure. On l'écrit une fois ; l'aperçu à droite "
-              "montre exactement les noms qui seront générés, en couleur : KPI, + branche, + variation.")
+              "montre exactement les noms qui seront générés, en couleur : ICP, + branche, + variation.")
 title(s, "Éditer une variation", "Mesures › Variations")
 p, (iw, ih) = crop("onglet_mesures", (0, 82, 1240, 857), "mesures")
 pw = 8.6
@@ -563,7 +564,7 @@ for n, (px, py) in enumerate(marks, start=1):
     badge(s, 0.6 + px * sx - 0.05, 1.65 + py * sx - 0.12, n, color=REPERE, d=0.36, size=12)
 items = [("Les variations", "Ajouter, dupliquer, réordonner. Bibliothèque… pour en importer."),
          ("Mesure générée", "Nom ({base} 7d avg), format, dossier."),
-         ("Portée", "Pour les KPI, les cibles ; types de base ; exclusions par nom."),
+         ("Portée", "Pour les ICP, les cibles ; types de base ; exclusions par nom."),
          ("DAX", "Écrit en clair, jetons colorés ; rouge = jeton inconnu."),
          ("Aperçu des noms", "Ce qui sera généré, avant de générer.")]
 step_list(s, 9.5, 1.7, 3.3, items, gap=0.98, size=14, color=REPERE)
@@ -586,9 +587,9 @@ gen = [("Sauvegarder le config", "Le générateur lit le fichier, pas l'éditeur
 step_list(s, 0.6, 1.8, 7.0, gen, gap=0.92, size=16)
 
 # ============================================================ 11. Section Rapport
-section("02", "Le rapport", "Formater un KPI à la main dans Desktop : l'outil recopie sur tous les autres.",
+section("02", "Le rapport", "Formater un ICP à la main dans Desktop : l'outil recopie sur tous les autres.",
         BLUE, "Onglet Rapport : le formatage conditionnel d'un paramètre de champ est attaché à une mesure "
-              "précise ; sans propagation, il disparaît quand on change de KPI.")
+              "précise ; sans propagation, il disparaît quand on change d'ICP.")
 
 # ------------------------------------------------------------ visuels dessinés
 # Un graphique en courbes, une carte et une grille, dessinés en formes
@@ -727,16 +728,16 @@ def tuile(slide, x, y, w, h, kpi, valeur, ref1=None, ref2=None, detail="", monte
 s = new_slide("Le gabarit, Total Steps, est formaté à la main dans Desktop : ① les marqueurs, sur la "
               "série « Total Steps YTD », ② le pointillé coloré, sur « Total Steps YTD PY ». Chaque "
               "réglage vise UNE mesure. Propager prend ces réglages et les recopie, dans le même "
-              "visuel, pour CHAQUE KPI cible : Weight, Body Fat %, Average Steps… En dessous, ce qui "
+              "visuel, pour CHAQUE ICP cible : Weight, Body Fat %, Average Steps… En dessous, ce qui "
               "arrive sans propagation : le segment passe à Weight, les réglages visent toujours "
               "les mesures de Total Steps, et Weight s'affiche avec les défauts de Power BI.")
 title(s, "Comment le formatage se propage", "Rapport")
 text(s, 0.6, 1.42, 12.1, 0.4,
      [[("Propager prend les réglages du gabarit et les recopie ", {}),
-       ("sur chaque KPI cible", {"bold": True}), (", dans le même visuel.", {})]],
+       ("sur chaque ICP cible", {"bold": True}), (", dans le même visuel.", {})]],
      size=15, color=MUTED)
 text(s, 0.6, 1.95, 4, 0.3, "1 · LE GABARIT, FORMATÉ À LA MAIN", size=11, color=GREEN, font=HEAD)
-text(s, 6.2, 1.95, 6.5, 0.3, "2 · LES MÊMES RÉGLAGES, SUR CHAQUE KPI CIBLE", size=11,
+text(s, 6.2, 1.95, 6.5, 0.3, "2 · LES MÊMES RÉGLAGES, SUR CHAQUE ICP CIBLE", size=11,
      color=GREEN, font=HEAD)
 
 # 1. le gabarit
@@ -757,7 +758,7 @@ fl.adjustments[1] = 0.32
 text(s, 4.68, 2.3, 1.0, 3.25,
      [[("Propager", {"bold": True, "size": 14, "font": HEAD})],
       [("", {"size": 6})],
-      [("pour", {"size": 11})], [("chaque", {"size": 11})], [("KPI cible", {"size": 11})],
+      [("pour", {"size": 11})], [("chaque", {"size": 11})], [("ICP cible", {"size": 11})],
       [("", {"size": 6})],
       [("① ② copiés", {"size": 10})]],
      size=11, color=DARK, align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE)
@@ -776,7 +777,7 @@ lbl = label_box(s, 6.2 + 0.85, 2.38, 1.05, 0.24, "← le segment", fill=GREEN,
 # la boucle, en clair
 box(s, 0.6, 5.72, 12.1, 0.5, fill=CARD2)
 text(s, 0.85, 5.72, 11.6, 0.5,
-     [[("pour chaque KPI cible K :   ", {"font": BODY, "bold": True, "color": GREEN, "size": 13}),
+     [[("pour chaque ICP cible K :   ", {"font": BODY, "bold": True, "color": GREEN, "size": 13}),
        ("① [Total Steps YTD] → [K YTD]", {}), ("      ", {}),
        ("② [Total Steps YTD PY] → [K YTD PY]", {})]],
      size=12, font=MONO, color=TEXT, anchor=MSO_ANCHOR.MIDDLE)
@@ -793,15 +794,15 @@ text(s, 2.25, 6.35, 10.3, 0.72,
      size=12, color=TEXT, anchor=MSO_ANCHOR.MIDDLE)
 
 # ============================================================ 12b. La carte
-s = new_slide("Une carte montre plusieurs KPI, une tuile chacun. Avant : seule la tuile Weight, le "
+s = new_slide("Une carte montre plusieurs ICP, une tuile chacun. Avant : seule la tuile Weight, le "
               "gabarit, est formatée ; Total Steps et Body Fat % n'ont que leur valeur. Les réglages "
               "d'une tuile visent SA mesure, et ce qu'ils affichent (la valeur d'une étiquette, son "
-              "détail, l'image) sont eux aussi des mesures du KPI. Propager réécrit les deux, pour "
+              "détail, l'image) sont eux aussi des mesures de l'ICP. Propager réécrit les deux, pour "
               "chaque tuile. Après : la même carte, chaque tuile formatée avec ses propres mesures.")
 title(s, "La carte se propage aussi", "Rapport")
 text(s, 0.6, 1.42, 12.1, 0.4,
-     [[("Chaque tuile est un KPI. Ses étiquettes, son détail et son image sont ", {}),
-       ("des mesures de ce KPI", {"bold": True}), (" : elles changent avec lui.", {})]],
+     [[("Chaque tuile est un ICP. Ses étiquettes, son détail et son image sont ", {}),
+       ("des mesures de cet ICP", {"bold": True}), (" : elles changent avec lui.", {})]],
      size=15, color=MUTED)
 
 CW = 2.42                                   # largeur d'une tuile
@@ -874,14 +875,14 @@ text(s, 0.85, 6.6, 11.6, 0.5,
      size=12, anchor=MSO_ANCHOR.MIDDLE)
 
 # ============================================================ 12c. Gabarits et groupes
-s = new_slide("Exemple à dix KPI, trois familles. Le gabarit de base, Average Steps, est formaté en "
-              "entier ; les KPI sans groupe le copient. Le groupe Sommeil a son gabarit, Average "
+s = new_slide("Exemple à dix ICP, en trois ensembles. Le gabarit de base, Average Steps, est formaté en "
+              "entier ; les ICP sans groupe le copient. Le groupe Sommeil a son gabarit, Average "
               "Sleep Duration : il reçoit d'abord la base, puis ses propres réglages l'emportent, "
-              "réglage par réglage (ici ②, la couleur) ; ses KPI copient le résultat. Le groupe Poids "
+              "réglage par réglage (ici ②, la couleur) ; ses ICP copient le résultat. Le groupe Poids "
               "est indépendant : son gabarit, Weight, ne reçoit rien de la base.")
 title(s, "Qui copie qui : gabarits et groupes", "Rapport")
 text(s, 0.6, 1.42, 12.1, 0.4,
-     [[("Chaque KPI copie ses réglages d'un gabarit. Un groupe a le sien, ", {}),
+     [[("Chaque ICP copie ses réglages d'un gabarit. Un groupe a le sien, ", {}),
        ("posé par-dessus la base", {"bold": True}), (" : réglage par réglage, le sien l'emporte.", {})]],
      size=15, color=MUTED)
 
@@ -945,15 +946,15 @@ text(s, 0.85, 6.6, 11.7, 0.55,
      size=12, anchor=MSO_ANCHOR.MIDDLE)
 
 # ============================================================ 12d. Qui l'emporte, variation par variation
-s = new_slide("La grille des sources décide case par case : pour ce KPI et cette variation, de qui "
+s = new_slide("La grille des sources décide case par case : pour cet ICP et cette variation, de qui "
               "copier. Une colonne, ce sont les réglages qui visent les mesures de cette variation : "
-              "le PY, c'est la série pointillée. Les mêmes dix KPI : « Tous les KPI » donne le PY de "
+              "le PY, c'est la série pointillée. Les mêmes dix ICP : « Tous les ICP » donne le PY de "
               "Total Steps à tout le monde, les groupes le recevant par leur gabarit (sauf Poids, "
               "indépendant) ; le groupe Sommeil prend son YoY % de Weight ; Calories garde son "
               "YoY % à la main. Ces cases sont celles que calcule l'outil.")
 title(s, "Qui l'emporte, variation par variation", "Rapport")
 text(s, 0.6, 1.42, 12.1, 0.4,
-     [[("Une case = un KPI × une variation : ", {}), ("de qui copier", {"bold": True}),
+     [[("Une case = un ICP × une variation : ", {}), ("de qui copier", {"bold": True}),
        (". Une colonne = les réglages qui visent cette variation.", {})]],
      size=15, color=MUTED)
 
@@ -963,7 +964,7 @@ COLS = [("Réel", "la série, ses marqueurs"), ("PY", "la série pointillée"),
 # (libellé, est-ce une ligne de règle, [cases]) ; une case = (texte, couleur, gras)
 G, A = "Gabarit", "À la main"
 LIGNES = [
-    ("Tous les KPI", True, [None, ("Total Steps", YELLOW, True), None]),
+    ("Tous les ICP", True, [None, ("Total Steps", YELLOW, True), None]),
     ("Average Steps · base", False, [(G, GREEN, True), ("Total Steps", YELLOW, False),
                                      (G, GREEN, True)]),
     ("Total Steps", False, [("Average Steps", GREEN, False), (G, YELLOW, True),
@@ -1021,7 +1022,7 @@ text(s, lx, 1.95, lw_, 0.3, "QUI L'EMPORTE, DU PLUS FORT AU PLUS FAIBLE", size=1
 echelle = [
     ("La case", "Calories · YoY % : à la main."),
     ("Le groupe, pour une variation", "Sommeil · YoY % : copie Weight."),
-    ("Tous les KPI, pour une variation", "PY : copie Total Steps. Un groupe le reçoit par son "
+    ("Tous les ICP, pour une variation", "PY : copie Total Steps. Un groupe le reçoit par son "
                                          "gabarit, sauf s'il est indépendant (Poids)."),
     ("Le gabarit du groupe", "Sleep Score : copie Average Sleep Duration."),
     ("Le gabarit de base", "Tout le reste : copie Average Steps."),
@@ -1036,21 +1037,21 @@ text(s, lx, 6.85, lw_, 0.3, "Une case en gras : une règle posée là, ou un gab
      color=MUTED)
 
 # ============================================================ 13. Grille des sources
-s = new_slide("La grille dit, case par case, de quel KPI chaque KPI copie chaque variation. "
+s = new_slide("La grille dit, case par case, de quel ICP chaque ICP copie chaque variation. "
               "Sélectionner des cases (clic-glisser, ou un en-tête), choisir « Copier depuis », Appliquer, Enregistrer.")
 title(s, "La grille des sources", "Rapport › Grille des sources…")
 p, (iw, ih) = crop("grille_sources", (0, 85, 1500, 820), "grille")
 pw = 8.4
 picture(s, p, 0.6, 1.7, w=pw)
-leg = [("Lignes = KPI, colonnes = variations", "Les groupes et « Tous les KPI » en tête."),
+leg = [("Lignes = ICP, colonnes = variations", "Les groupes et « Tous les ICP » en tête."),
        ("Gabarit", "Formaté à la main dans Desktop, copié par les autres."),
-       ("Un nom", "La case copie ce KPI (en gras : règle posée sur cette ligne)."),
+       ("Un nom", "La case copie cet ICP (en gras : règle posée sur cette ligne)."),
        ("À la main", "Rien n'est copié dans cette case."),
        ("Enregistrer", "propagation.json, partagé par les rapports du dossier.")]
 step_list(s, 9.3, 1.75, 3.5, leg, gap=0.95, size=14, color=BLUE)
 
 # ============================================================ 14. Propager & colorer
-s = new_slide("Propager clone le formatage ; Colorer applique les couleurs par KPI de TD_Indicateurs "
+s = new_slide("Propager clone le formatage ; Colorer applique les couleurs par ICP de TD_Indicateurs "
               "aux matrices qui l'ont demandé. « Propager puis colorer » enchaîne les deux.")
 title(s, "Propager et colorer", "Rapport")
 p, (iw, ih) = crop("onglet_rapport", (0, 82, 1240, 499), "rapport")
@@ -1059,7 +1060,7 @@ prop = [("Formater le gabarit dans Desktop", "Puis enregistrer. Desktop peut res
         ("Vérifier la grille des sources", "Qui copie quoi, groupes compris."),
         ("Aperçu → Propager", "Le journal liste chaque clone ; « Verbeux » pour le détail."),
         ("Décocher Aperçu → Propager", "Puis fermer Desktop sans enregistrer, et rouvrir."),
-        ("Colorer (optionnel)", "Couleurs fond/texte par KPI, lues dans TD_Indicateurs.")]
+        ("Colorer (optionnel)", "Couleurs fond/texte par ICP, lues dans TD_Indicateurs.")]
 step_list(s, 8.45, 1.8, 4.3, prop, gap=0.92, size=14, color=BLUE)
 text(s, 0.6, 1.75 + 7.4 * ih / iw + 0.2, 7.4, 0.8,
      [[("Le gabarit est maître : ", {"bold": True, "color": GREEN}),
@@ -1106,7 +1107,7 @@ text(s, 0.9, 6.25, 11.6, 0.6,
 # ============================================================ 17. En cas de pépin
 s = new_slide("Les quatre questions qui reviennent. La documentation détaillée est dans le dossier docs.")
 title(s, "En cas de pépin", "Aide-mémoire")
-faq = [("Le formatage disparaît quand je change de KPI", "Le KPI n'a pas été propagé : vérifier la grille, puis Propager."),
+faq = [("Le formatage disparaît quand je change d'ICP", "L'ICP n'a pas été propagé : vérifier la grille, puis Propager."),
        ("Une mesure n'est pas générée", "Lire le journal : base exclue par la portée, attribut <<…>> absent de l'Excel, ou nom en collision."),
        ("Ce que l'outil a écrit a disparu", "Desktop a été enregistré après l'écriture. Relancer l'écriture, puis fermer Desktop sans enregistrer et rouvrir."),
        ("L'outil ne voit pas ma nouvelle colonne Excel", "↻ Tout recharger (ou le bouton ↻ des Réglages).")]

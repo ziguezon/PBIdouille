@@ -1,6 +1,6 @@
 """Captures d'écran de PBIdouille pour le guide — sur une COPIE du projet
 Fitbit, avec un magasin de réglages jetable (rien de réel n'est touché)."""
-import os, sys, shutil, tempfile
+import os, sys, shutil, stat, tempfile
 from pathlib import Path
 
 OUTIL = Path(__file__).resolve().parents[3]          # PBIdouille/
@@ -8,7 +8,7 @@ SRC = OUTIL.parent / "PowerBI"                        # les projets
 OUT = Path(__file__).resolve().parent / "png"
 OUT.mkdir(exist_ok=True)
 BASE = Path(r"C:\Users\Public\PBIdouille_demo")
-shutil.rmtree(BASE, ignore_errors=True)
+shutil.rmtree(BASE, onerror=lambda f, x, e: (os.chmod(x, stat.S_IWRITE), f(x))) if BASE.exists() else None
 TMP = BASE / "Fitbit"
 TMP.mkdir(parents=True)
 NOM = "Fitbit"
@@ -91,6 +91,17 @@ win._set_project(TMP / (NOM + ".pbip"))
 pump(3000)
 
 tabs = win.tabs
+# la barre du haut et les onglets, à la largeur que la diapo « Lancer l'app »
+# numérote (build_deck.py) ; la même image sert à l'article 1 de la doc
+from qtpy.QtCore import QRect                      # noqa: E402
+win.resize(1245, 960)
+pump(1500)
+barre = win.grab(QRect(0, 0, 1245, 84))
+barre.save(str(OUT / "barre_ruban.png"))
+barre.save(str(OUTIL / "docs" / "ressources" / "images" / "barre_du_haut.png"))
+print("capture barre_ruban et barre_du_haut")
+win.resize(1700, 960)
+pump(1500)
 # Rapport : propagation en APERÇU (dry-run coché par défaut, rien d'écrit)
 tabs.setCurrentIndex(1)
 pump(1500)
@@ -126,5 +137,5 @@ win.tab_report._open_colors_dialog()
 prj.reglages().clear()
 win.close()
 pump(500)
-shutil.rmtree(BASE, ignore_errors=True)
+shutil.rmtree(BASE, onerror=lambda f, x, e: (os.chmod(x, stat.S_IWRITE), f(x))) if BASE.exists() else None
 print("copie supprimee :", not BASE.exists())

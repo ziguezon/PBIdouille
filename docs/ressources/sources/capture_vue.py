@@ -86,8 +86,8 @@ reperes = [
     ("3.4", coin(sous, sous.tabRect(sous_onglet["Paramètres de champ"]))),
     ("3.5", coin(sous, sous.tabRect(sous_onglet["JSON brut"]))),
     ("4", coin(barre, barre.tabRect(onglet["Rapport"]))),
-    ("5", coin(barre, barre.tabRect(onglet["Sources"]))),
-    ("6", coin(barre, barre.tabRect(onglet["Radiographie"]))),
+    # les sources sont la vue Par source de la Radiographie : un seul onglet
+    ("5 · 6", coin(barre, barre.tabRect(onglet["Radiographie"]))),
     ("7", coin(barre, barre.tabRect(onglet["Wireframe"]))),
     ("8", coin(barre, barre.tabRect(onglet["ChopChop"]))),
 ]

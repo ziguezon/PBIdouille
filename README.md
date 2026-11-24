@@ -2098,8 +2098,11 @@ sources… » (Rapport) et dans Mesures → Paramètres de champ.
 Les images (`bidouille\guide\*.png`) **sont** les diapos du guide, exportées
 par `docs\ressources\sources\exporter_aide.ps1` (PowerPoint requis) — une seule source,
 le guide et l'app montrent le même dessin. Les diapos y sont retrouvées par
-leur titre. Le guide lui-même se reconstruit avec `docs\sources\build_deck.py`
-(captures : `docs\ressources\sources\capture.py`).
+leur titre. Le guide lui-même se reconstruit avec `docs\ressources\sources\build_deck.py`
+(captures : `docs\ressources\sources\capture.py`). Les images des articles se refont avec
+les `capture_*.py` du même dossier : `capture_articles.py` (Réglages, Variations, jetons,
+arbre, paramètres de champ, Rapport), `capture_sources.py`, `capture_radiographie.py` et
+`capture_vue.py`, chacun sur une copie du projet de démonstration.
 
 ### Disposition : l'outil d'un côté, les projets de l'autre
 

@@ -28,7 +28,7 @@ $exports = @(
         } },
     @{  # les diapos que citent les articles de docs\articles\
         dossier = Join-Path $outil "docs\ressources\guide"; largeur = 1280; pages = [ordered]@{
-            "coup-d-oeil.png"          = "Un rapport, cinq onglets"
+            "coup-d-oeil.png"          = "Un rapport, quatre onglets"
             "avant-de-commencer.png"   = "Avant de commencer"
             "lancer.png"               = "Lancer l'app et ouvrir un rapport"
             "variations.png"           = "Comment les variations se ramifient"
