@@ -38,22 +38,46 @@ premières lignes. **▴ replier** la referme. Choisir un autre élément replie
 ![Le lignage, une source choisie](../ressources/images/radiographie_lignage.png)
 
 La vue **Lignage** dessine tout le rapport en un graphe, de gauche à droite ou de haut en
-bas (pastilles **Disposition**) :
+bas (menu **Affichage**) :
 
 | Bande | Contenu |
 |---|---|
 | **Sources** | Les fichiers, bases et serveurs que lit le modèle |
-| **Power Query** | Les tables qui lisent une source, et les requêtes partagées |
+| **Power Query** | Les tables qui lisent une source, et les requêtes partagées, y compris celles qui ne font qu'en reprendre une autre et les requêtes-fonctions |
 | **Tables calculées** | Les tables écrites en DAX qui en lisent d'autres |
 | **Mesures** | Une boîte par famille de mesures : un KPI et ses variations |
 | **Paramètres de champ** | Les tables qui proposent des mesures à un segment |
 | **Filtres et segments** | Les filtres du volet qui ont une valeur, et les segments |
 | **Visuels** | Les visuels, rangés par page |
+| **Pages** | Les pages du rapport : chaque visuel mène à la sienne |
 
 Un trait relie ce qui est lu à ce qui le lit : une table aux mesures dont le DAX la cite,
 une famille aux visuels qui l'affichent, un filtre aux visuels qu'il filtre. Le liseré de
 couleur d'une boîte dit sa bande. Un trait qui saute une colonne passe entre ses boîtes,
-jamais à travers.
+jamais à travers. Les traits qui vont vers une même boîte lointaine se rejoignent dès la
+sortie de leur colonne, puis font le trajet ensemble, en un seul trait. Plus un trait
+porte de liens, plus il est clair : un tronc de cinq liens se voit de loin. Son
+infobulle les nomme.
+
+Une requête Power Query qui en lit une autre se place une colonne plus loin, avec un trait
+entre les deux. Une requête qui appelle une requête-fonction, comme `fnCharger("x")`, la
+lit aussi. La chaîne va ainsi de la source à la requête finale, même à travers une requête
+qui n'a pas de connecteur à elle.
+
+Les pages sont au bout de la chaîne : chaque visuel mène à sa page, et une page est ce que
+ses visuels montrent. Un clic sur une page allume tout ce qu'elle montre, de la source au
+visuel ; avec seulement **Sources** et **Pages**, on voit quelle source sert à quelle page.
+
+### Masquer des colonnes, garder des pages
+
+Le menu **Colonnes** masque des bandes entières. Leurs boîtes disparaissent, et les traits
+passent à travers elles : avec **Sources**, **Mesures** et **Visuels** seuls, chaque source
+mène droit aux familles qui la lisent, puis aux visuels. Le bouton dit combien de colonnes
+restent, et **Toutes les colonnes** les remet.
+
+Le menu **Pages** ne garde que ce qui mène aux pages cochées : leurs visuels, leurs filtres
+et segments, et tout ce qui les alimente, jusqu'aux sources. Le menu reste ouvert pour en cocher plusieurs ;
+**Toutes les pages** revient au rapport entier.
 
 Un clic sur une boîte allume sa **chaîne** et éteint le reste :
 
@@ -64,8 +88,14 @@ Un clic sur une boîte allume sa **chaîne** et éteint le reste :
 
 Une source montre ainsi son chemin jusqu'aux visuels ; un visuel, d'où viennent ses
 chiffres et ce qui le filtre. Les pastilles **Sens** ne gardent que l'amont ou que l'aval.
-La fiche, à droite, résume la chaîne bande par bande, puis décrit la boîte choisie. Un
-clic dans le vide efface le choix.
+Un clic dans le vide efface le choix.
+
+Sous le graphe, une ligne donne les dépendances de la boîte choisie : combien elle en a
+de **directes**, c'est-à-dire reliées à elle par un seul trait, et combien **en tout**,
+dans chaque sens. La fiche, à droite, les reprend en tableau avec le nombre de
+**niveaux**, c'est-à-dire de pas jusqu'à la plus lointaine. Elle détaille ensuite la
+chaîne bande par bande, puis décrit la boîte choisie. Une famille repliée compte pour
+une boîte.
 
 ### Suivre une seule mesure
 
@@ -89,21 +119,23 @@ gros rapport, une bande de plus de 40 éléments s'ouvre repliée.
 | Geste | Effet |
 |---|---|
 | **Sens** : Amont et aval, Amont, Aval | Choisit la partie de la chaîne qui s'allume, qui se dessine seule et qui s'exporte |
-| **Seulement la chaîne choisie** | Redessine le graphe avec la chaîne de la boîte choisie, rien d'autre |
-| **Exporter la chaîne…** | Écrit la chaîne en CSV : une ligne par élément, une par mesure pour une famille |
-| **Disposition** | De gauche à droite, ou de haut en bas |
+| **Chaîne seule** | Redessine le graphe avec la chaîne de la boîte choisie, rien d'autre |
+| **Exporter…** | Écrit la chaîne en CSV : une ligne par élément, une par mesure pour une famille |
+| **Affichage** : Gauche → droite, Haut → bas | La disposition du graphe |
 | **Clic sur le titre d'une bande** | La replie ou la déplie |
-| **Montrer aussi ce qui ne mène à aucun visuel** | Ajoute, en pointillés, ce que rien de visible n'utilise : une table chargée pour rien, une mesure jamais affichée |
+| **Colonnes** | Masque des bandes ; leurs traits passent à travers |
+| **Pages** | Ne garde que ce qui mène aux pages cochées |
+| **Affichage** : Montrer aussi ce qui ne mène à aucun visuel | Ajoute, en pointillés, ce que rien de visible n'utilise : une table chargée pour rien, une mesure jamais affichée |
 | **Ajuster** | Montre tout le graphe dans la vue |
 | **Ctrl + molette**, **glisser** | Zoome, déplace |
 | **Filtre** de la Radiographie | Éteint les boîtes qui ne contiennent pas le texte |
 
 Par défaut, le graphe ne montre que ce qui mène à un visuel ou à un segment : ce que le
-rapport utilise vraiment. La case dit combien d'éléments restent cachés.
+rapport utilise vraiment. Dans le menu **Affichage**, la case **Montrer aussi ce qui ne mène à aucun visuel** dit combien d'éléments restent cachés.
 
 ### Exporter une chaîne
 
-**Exporter la chaîne…** écrit un CSV (séparateur `;`) de la chaîne de la boîte choisie,
+**Exporter…** écrit un CSV (séparateur `;`) de la chaîne de la boîte choisie,
 dans le sens choisi. Une source exporte tout ce qui en dépend ; une mesure, ce dont elle
 vient et les visuels qui l'affichent.
 

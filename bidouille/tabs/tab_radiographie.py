@@ -206,11 +206,11 @@ class RadiographieTab(QWidget):
         haut.addWidget(b_relire)
         v.addLayout(haut)
 
+        # le résumé du rapport, court, à droite des onglets des vues : sur une
+        # ligne à lui, c'était un étage de plus avant le graphe. L'infobulle a
+        # le détail.
         self.lbl_resume = QLabel("")
-        self.lbl_resume.setWordWrap(True)
-        self.lbl_resume.setStyleSheet(f"color:{TEXT_DIM};")
-        self.lbl_resume.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        v.addWidget(self.lbl_resume)
+        self.lbl_resume.setStyleSheet(f"color:{TEXT_DIM}; padding: 0 6px 2px 0;")
 
         split = QSplitter(Qt.Horizontal)
         gauche = QWidget()
@@ -239,6 +239,7 @@ class RadiographieTab(QWidget):
         self.vues.addTab(self.arbre_pages, "Par page")
         self.vues.addTab(self.arbre_cols, "Par colonne")
         self.vues.addTab(self.arbre_kpi, "Par KPI")
+        self.vues.setCornerWidget(self.lbl_resume, Qt.TopRightCorner)
         self.lineage: dict = {}
         self.impacts: dict | None = None
         self.vues.currentChanged.connect(lambda *_: self._montrer_puces())
@@ -372,7 +373,8 @@ class RadiographieTab(QWidget):
             self.arbre_kpi.clear()
             self.arbre_pages.clear()
             self.arbre_cols.clear()
-            self.lbl_resume.setText(f"Lecture impossible : {e}")
+            self.lbl_resume.setText("Lecture impossible")
+            self.lbl_resume.setToolTip(str(e))
             self.journal.erreur(f"Radiographie : lecture impossible ({e})")
             self.vue_sources.afficher(self.lineage, None)
             self.vue_lignage.afficher(None)
@@ -433,10 +435,12 @@ class RadiographieTab(QWidget):
         r = self.res
         nv = len(r["visuels"])
         n_fam = sum(1 for f in r["kpis"] if f["membres"])
-        self.lbl_resume.setText(
-            f"{len(r['mesures'])} mesures · {len(r['kpis'])} KPI, dont {n_fam} avec des "
-            f"variations · {nv} visuels sur {len(r['pages'])} page(s) · "
-            f"{len(r['parametres'])} paramètre(s) de champ · {len(r['briques'])} brique(s) · "
+        self.lbl_resume.setText(f"{len(r['mesures'])} mesures · {len(r['kpis'])} KPI · "
+                                f"{nv} visuels · {len(r['pages'])} page(s)")
+        self.lbl_resume.setToolTip(
+            f"{len(r['mesures'])} mesures\n{len(r['kpis'])} KPI, dont {n_fam} avec des "
+            f"variations\n{nv} visuels sur {len(r['pages'])} page(s)\n"
+            f"{len(r['parametres'])} paramètre(s) de champ\n{len(r['briques'])} brique(s)\n"
             f"{len(r['colonnes_utilisees'])} colonne(s) utilisée(s)")
         self._construire_kpi()
         self._construire_pages()
@@ -1492,10 +1496,23 @@ class RadiographieTab(QWidget):
         amont = lgn.chaine_sens(self.graphe["liens"], nid, amont=True) - {nid}
         aval = lgn.chaine_sens(self.graphe["liens"], nid, amont=False) - {nid}
         out = [f"<p style='color:{TEXT_MUTED}'>Lignage · {_e(lgn.TITRES[n['bande']])}</p>"]
+        c = lgn.comptes(self.graphe["liens"], nid)
+        cellule = "<td align='right' style='padding: 1px 10px'>{}</td>"
+        entete = "<td align='right' style='padding: 1px 10px; color:%s'>{}</td>" % TEXT_MUTED
+        out.append("<table cellspacing='0'><tr><td></td>"
+                   + "".join(entete.format(t) for t in ("directs", "en tout", "niveaux"))
+                   + "</tr>"
+                   + "".join(f"<tr><td><b>{titre}</b></td>"
+                             + "".join(cellule.format(c[s][k] if c[s]["total"] else "·")
+                                       for k in ("directs", "total", "niveaux"))
+                             + "</tr>"
+                             for titre, s in (("Vient de", "amont"), ("Mène à", "aval")))
+                   + "</table>")
         for titre, ens in (("Vient de", amont), ("Mène à", aval)):
             par_bande = self._par_bande(ens)
             if par_bande:
-                out.append(f"<h4>{titre}</h4><table cellspacing='0' cellpadding='2'>"
+                out.append(f"<h4>{titre} ({len(ens)})</h4>"
+                           "<table cellspacing='0' cellpadding='2'>"
                            + "".join(par_bande) + "</table>")
         if not n["utilise"]:
             out.append(f"<p style='color:{YELLOW}'>Ne mène à aucun visuel : rien de ce qu'on "
@@ -1523,6 +1540,8 @@ class RadiographieTab(QWidget):
             corps = self._fiche_parametre(cle)
         elif genre == "visuel":
             corps = self._fiche_visuel(cle)
+        elif genre == "page" and any(p["id"] == cle for p in self.res["pages"]):
+            corps = self._fiche_page(cle)
         elif genre == "filtre":
             visuels = [self.graphe["noeuds"][b] for a, b in self.graphe["liens"] if a == nid]
             corps = (f"<h3>{_e(n['libelle'])}</h3><p style='color:{TEXT_DIM}'>"

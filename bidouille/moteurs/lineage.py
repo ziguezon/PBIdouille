@@ -98,6 +98,10 @@ M_JETONS_RE = re.compile(r'#"((?:[^"]|"")*)"|"(?:[^"]|"")*"|//[^\n]*|/\*.*?\*/'
                          r"|\[(?:[^\]]|\]\])*\]", re.S)
 # un nom nu qui n'appelle pas une fonction : SELECTCOLUMNS ( dim_Date, …)
 MOT_NU_RE = re.compile(r"(?<![\w.#])([A-Za-z_]\w*)(?![\w.])(?!\s*\()")
+# en M, un nom nu qui APPELLE est une requête-fonction du modèle : fnCharger("x")
+# lit fnCharger, et ce qu'elle lit. Les fonctions de M ont un point
+# (Table.SelectRows) : elles ne passent pas, et seuls les noms connus comptent.
+MOT_NU_M_RE = re.compile(r"(?<![\w.#])([A-Za-z_]\w*)(?![\w.])")
 VAR_RE = re.compile(r"\bVAR\s+([A-Za-z_]\w*)", re.I)
 SOURCE_DAX_RE = re.compile(r"^\t\tsource\s*=\s*(.*)$", re.M)
 
@@ -281,7 +285,7 @@ def tables_citees(texte: str, noms, langage: str = "dax", soi: str = "") -> list
 
     nu = (DAX_JETONS_RE if langage == "dax" else M_JETONS_RE).sub(effacer, texte)
     variables = {v.lower() for v in VAR_RE.findall(nu)} if langage == "dax" else set()
-    for m in MOT_NU_RE.finditer(nu):
+    for m in (MOT_NU_RE if langage == "dax" else MOT_NU_M_RE).finditer(nu):
         if m.group(1).lower() not in variables:
             garder(m.start(), m.group(1))
     return list(dict.fromkeys(n for _p, n in sorted(vus)))
@@ -457,7 +461,12 @@ def scan_model(model_dir: Path) -> tuple:
         fin = blocs[i + 1].start() if i + 1 < len(blocs) else len(texte_expr)
         bloc = texte_expr[m.start():fin]
         lit = tables_citees(bloc.split("=", 1)[-1], noms_m, "m", nom)
-        lignes.extend(_lignes_source(EXPRESSIONS, nom, "", bloc, params, lit))
+        # une requête partagée sans connecteur (une étape qui en reprend une
+        # autre, une fusion) reste une ligne : sans elle, la chaîne Brut ->
+        # Propre -> Ventes se coupait à Propre
+        lignes.extend(_lignes_source(EXPRESSIONS, nom, "", bloc, params, lit)
+                      or [_ligne(EXPRESSIONS, nom, "", "(aucun connecteur)", "", "", AUCUN,
+                                 lit=lit)])
     return lignes, params
 
 

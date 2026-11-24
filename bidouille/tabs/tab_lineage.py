@@ -488,9 +488,10 @@ class LineageTab(QWidget):
         else:
             n_src = len(lg.sources(lignes))
             tables = {l["table"] for l in lignes if l["table"] and l["table"] != lg.EXPRESSIONS}
-            calc = {l["table"] for l in lignes if l["genre"] in (lg.CALCULEE, lg.AUCUN)}
+            calc = {l["table"] for l in lignes if l["genre"] in (lg.CALCULEE, lg.AUCUN)
+                    and l["table"] != lg.EXPRESSIONS}
             liees = {l["table"] for l in lignes if l["genre"] in (lg.CALCULEE, lg.AUCUN)
-                     and l.get("lit")}
+                     and l["table"] != lg.EXPRESSIONS and l.get("lit")}
             morceaux = [f"Modèle local : {res.get('modele')}",
                         f"{n_src} source{'s' if n_src > 1 else ''}",
                         f"{len(tables)} tables dont {len(calc)} calculées"

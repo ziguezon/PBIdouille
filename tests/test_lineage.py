@@ -183,6 +183,34 @@ check("un fichier local disparu est repéré",
       and lg.chemin_local(manquant) is not None and not Path(manquant).exists())
 check("un chemin réseau n'est pas testé", lg.chemin_local("\\\\srv\\partage\\x.xlsx") is None)
 
+# une requête qui en lit une autre : la chaîne ne se coupe pas
+chaine_m = copie / "chaine_m" / "M.SemanticModel" / "definition"
+(chaine_m / "tables").mkdir(parents=True)
+(chaine_m / "expressions.tmdl").write_text(
+    'expression Brut =\n\t\tlet\n\t\t    Source = Sql.Database("srv", "db")\n\t\tin\n'
+    '\t\t    Source\n\tlineageTag: a\n\n'
+    'expression Propre =\n\t\tlet\n\t\t    Source = Brut,\n'
+    '\t\t    F = Table.SelectRows(Source, each true)\n\t\tin\n\t\t    F\n\tlineageTag: b\n\n'
+    'expression fnCharger =\n\t\t(x) => let\n\t\t    Source = Csv.Document(File.Contents('
+    '"c:\\\\d\\\\" & x))\n\t\tin\n\t\t    Source\n\tlineageTag: c\n', encoding="utf-8")
+for nom_t, m_t in (("Ventes", "Propre"), ("Stock", 'fnCharger("stock.csv")')):
+    (chaine_m / "tables" / f"{nom_t}.tmdl").write_text(
+        f"table {nom_t}\n\tlineageTag: z\n\n\tpartition {nom_t} = m\n\t\tmode: import\n"
+        f"\t\tsource =\n\t\t\t\tlet\n\t\t\t\t    Source = {m_t}\n\t\t\t\tin\n"
+        "\t\t\t\t    Source\n", encoding="utf-8")
+lignes_m, _p = lg.scan_model(chaine_m.parent)
+par_nom = {lg.nom_noeud(l): l for l in lignes_m}
+check("une requête partagée sans connecteur reste dans le lineage",
+      "Propre" in par_nom and par_nom["Propre"]["lit"] == ["Brut"]
+      and par_nom["Propre"]["genre"] == lg.AUCUN)
+check("Ventes lit Propre, qui lit Brut : Sql.Database est au bout",
+      par_nom["Ventes"]["lit"] == ["Propre"]
+      and lg.sources_au_bout(lignes_m).get("Ventes") == ["Brut"])
+check("appeler une requête-fonction, c'est la lire", par_nom["Stock"]["lit"] == ["fnCharger"])
+check("une fonction de M (Table.SelectRows) n'est pas une requête",
+      "Table" not in par_nom["Propre"]["lit"] and "SelectRows" not in par_nom["Propre"]["lit"])
+shutil.rmtree(chaine_m.parents[1])
+
 live = copie / "live"
 (live / "Live.Report").mkdir(parents=True)
 (live / "Live.pbip").write_text(json.dumps({"artifacts": [{"report": {"path": "Live.Report"}}]}),

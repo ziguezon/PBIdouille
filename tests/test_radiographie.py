@@ -586,7 +586,7 @@ check("un clic dans le vide efface le choix et redessine tout",
 import tabs.vue_lignage as tvl                                    # noqa: E402
 fam = ("mesures", "Average Sleep Duration")
 vl.choisir(fam)
-couleurs = {(a, b): t.pen().color().name().lower() for a, b, t, _o in vl.liens}
+couleurs = {(a, b): (t.couleur or "").lower() for a, b, t, _o in vl.liens}
 check("les liens de l'amont sont verts, ceux de l'aval orange",
       couleurs[(("table", "sleep"), fam)] == tvl.AMONT_C.lower()
       and any(c == tvl.AVAL_C.lower() for (a, b), c in couleurs.items() if a == fam))
@@ -621,6 +621,136 @@ check("un lien qui saute une colonne la traverse par un passage libre",
       and all(not any(debut < pts[1 + 2 * j][1] < fin for debut, fin in vl._cols[k][1])
               for j, k in enumerate(sautees)))
 
+# les liens vers une même boîte lointaine se rejoignent à la sortie de leur
+# colonne, puis voyagent ensemble : mêmes passages, colonne par colonne
+_pos = {d: (bx.pos().x(), bx.pos().y()) for d, bx in vl.boites.items()}
+_vers: dict = {}
+for a, b, _t, _o in vl.liens:
+    if vl._col_de[b] - vl._col_de[a] > 1:
+        _vers.setdefault(b, []).append(a)
+_groupes = {b: v for b, v in _vers.items() if len(v) > 1}
+
+
+def _passages(a, b):
+    pts = vl._trajet(a, b, _pos)
+    return {k: pts[1 + 2 * j][1]
+            for j, k in enumerate(range(vl._col_de[a] + 1, vl._col_de[b]))}
+
+
+check("des liens vers une même boîte lointaine partagent un seul tronc",
+      _groupes and all(
+          _passages(a, b)[k] == _passages(c, b)[k]
+          for b, venues in _groupes.items() for a in venues for c in venues
+          for k in _passages(a, b) if k in _passages(c, b)))
+check("le tronc passe toujours entre les boîtes",
+      all(not any(debut < p < fin for debut, fin in vl._cols[k][1])
+          for b, venues in _groupes.items() for a in venues
+          for k, p in _passages(a, b).items()))
+
+# un trajet partagé se dessine une fois, d'autant plus clair qu'il porte de
+# liens, mais pas plus épais : l'épaisseur qui sautait à la jonction gênait
+_cles = [c for _a, _b, t, _o in vl.liens for c, *_r in t.morceaux()]
+check("chaque morceau de trajet n'est dessiné qu'une fois",
+      len(vl.troncons) == len(set(_cles)) < len(_cles))
+_choix_avant = vl.choix
+vl.choisir(None)                # sans chaîne allumée : on compare des traits ordinaires
+_seul = next(t for t in vl.troncons if len(t.liens) == 1)
+_gros = max(vl.troncons, key=lambda t: len(t.liens))
+check("un tronc qui porte plusieurs liens est plus clair qu'un lien seul, pas plus épais",
+      len(_gros.liens) > 1 and _gros.pen().widthF() == _seul.pen().widthF()
+      and _gros.pen().color().lightness() > _seul.pen().color().lightness()
+      and "liens sur ce trajet" in _gros.toolTip())
+vl.choisir(_choix_avant)
+# le même dégradé sur la chaîne, en vert comme en orange
+check("le vert et l'orange de la chaîne s'éclaircissent de 1 à 8 liens",
+      all(tvl.teinte_chaine(c, 0).lightness() < tvl.teinte_chaine(c, 0.5).lightness()
+          < tvl.teinte_chaine(c, 1).lightness() and tvl.teinte_chaine(c, 0.5).name().lower()
+          == c.lower() for c in (tvl.AMONT_C, tvl.AVAL_C)))
+_dans_chaine = {}
+for t in vl.troncons:
+    for c in (tvl.AMONT_C, tvl.AVAL_C):
+        n = sum(1 for l in t.liens if l.couleur == c)
+        if n:
+            _dans_chaine.setdefault(c, []).append((n, t.pen().color().lightness()))
+            break
+check("sur la chaîne choisie, un tronc partagé est plus clair qu'un lien seul",
+      any(max(x for n, x in v if n == max(m for m, _ in v)) > min(x for n, x in v if n == 1)
+          for v in _dans_chaine.values() if max(n for n, _ in v) > 1
+          and any(n == 1 for n, _ in v)))
+check("l'intensité monte de 1 à 8 liens, puis plafonne",
+      tvl.intensite(1) == 0 < tvl.intensite(2) < tvl.intensite(4) < tvl.intensite(8) == 1
+      == tvl.intensite(30))
+
+# les pages : la dernière colonne, chaque visuel mène à la sienne
+pages_g = {n: x for n, x in N.items() if x["genre"] == "page"}
+page_courbes = ("page", courbes[1][0])
+couches_de = {b: [x["couche"] for x in N.values() if x["bande"] == b] for b in lgn.BANDES}
+check("une page par page du rapport, après les visuels",
+      len(pages_g) == len(tab.res["pages"]) and page_courbes in pages_g
+      and max(couches_de["visuel"]) < min(couches_de["page"]))
+check("chaque visuel mène à sa page, et à elle seule",
+      all([b for a, b in g["liens"] if a == n] == [("page", n[1][0])]
+          for n, x in N.items() if x["genre"] == "visuel"))
+check("l'amont d'une page : de la source à ses visuels",
+      {src, courbes} <= lgn.chaine_sens(g["liens"], page_courbes, amont=True))
+vl.masquer_bandes(set(lgn.BANDES) - {"source", "page"})
+check("Sources et Pages seules : la source mène droit à la page",
+      any(a == src and b == page_courbes for a, b, _t, _o in vl.liens))
+vl.masquer_bandes(set())
+
+# les dépendances d'une boîte : directes, en tout, sur combien de niveaux
+_l = [("a", "b"), ("b", "c"), ("a", "c"), ("c", "d")]
+check("comptes : directs, en tout et niveaux, de chaque côté",
+      lgn.comptes(_l, "b") == {"amont": {"directs": 1, "total": 1, "niveaux": 1},
+                               "aval": {"directs": 1, "total": 2, "niveaux": 2}}
+      and lgn.comptes(_l, "a")["aval"] == {"directs": 2, "total": 3, "niveaux": 2}
+      and lgn.comptes(_l, "a")["amont"] == {"directs": 0, "total": 0, "niveaux": 0})
+_choix_avant = vl.choix
+vl.choisir(fam)
+_c = lgn.comptes(g["liens"], fam)
+check("sous le graphe, la boîte choisie dit ses dépendances",
+      f"vient de {_c['amont']['directs']} direct" in vl.lbl.text()
+      and f"{_c['aval']['total']} en tout" in vl.lbl.text())
+check("la fiche les donne en tableau : directs, en tout, niveaux",
+      all(m in tab.fiche.toPlainText() for m in ("directs", "en tout", "niveaux"))
+      and f"Mène à ({_c['aval']['total']})" in tab.fiche.toPlainText())
+vl.choisir(None)
+check("sans choix, le compte du graphe revient", "éléments" in vl.lbl.text()
+      and "vient de" not in vl.lbl.text())
+vl.choisir(_choix_avant)
+
+# des colonnes masquées : leurs liens passent à travers
+vl.masquer_bandes(set(lgn.BANDES) - {"source", "visuel"})
+bandes_vues = {(N[d]["bande"] if d in N else d[1]) for d in vl.boites}
+check("Colonnes : seulement Sources et Visuels", bandes_vues == {"source", "visuel"})
+check("la source mène droit au visuel, à travers les colonnes masquées",
+      any(a == src and b == courbes for a, b, _t, _o in vl.liens))
+check("le bouton dit combien de colonnes restent", "2 sur" in vl.btn_colonnes.text())
+check("le menu coche ce qui est montré",
+      vl._act_bandes["source"].isChecked() and not vl._act_bandes["mesures"].isChecked())
+vl._act_bandes["mesures"].setChecked(True)
+check("cocher une colonne la remet", "mesures" not in vl.masquees
+      and any(N[d]["bande"] == "mesures" for d in vl.boites if d in N))
+vl.masquer_bandes(set(lgn.BANDES))
+check("tout masqué : rien à dessiner, et le dire", not vl.boites and "masquées" in vl.lbl.text())
+vl.masquer_bandes(set())
+
+# des pages choisies : seulement ce qui y mène
+vl.choisir_pages({courbes[1][0]})
+vis_vus = [d for d in vl.boites if d in N and N[d]["genre"] == "visuel"]
+check("Pages : seulement les visuels de la page gardée",
+      courbes in vis_vus and all(N[d]["page"] == N[courbes]["page"] for d in vis_vus)
+      and src in vl.boites)
+check("le bouton dit combien de pages restent", "1 sur" in vl.btn_pages.text())
+autre = next((p for p in vl._act_pages if p != courbes[1][0]), None)
+if autre is not None:
+    vl._act_pages[autre].setChecked(True)
+    check("cocher une autre page l'ajoute", vl.pages_choisies == {courbes[1][0], autre}
+          or vl.pages_choisies is None)
+vl.choisir_pages(None)
+check("Toutes les pages : le graphe entier revient", vl.btn_pages.text().startswith("Pages : toutes")
+      and all(a.isChecked() for a in vl._act_pages.values()))
+
 # une bande se replie en une boîte, et ses liens passent par elle
 vl.choisir(None)
 vl.basculer_bande("filtre")
@@ -632,11 +762,11 @@ vl._clic(vl.boites[("bande", "filtre")])
 check("un clic sur la boîte d'une bande la déplie", ("bande", "filtre") not in vl.boites)
 
 # de haut en bas : les sources au-dessus des visuels
-vl.puces_dispo.choisir("vertical")
+vl.disposer("vertical")
 y_src = vl.boites[src].pos().y()
 y_vis = vl.boites[courbes].pos().y()
 check("Haut → bas : les bandes en rangées, les sources en haut", y_src < y_vis)
-vl.puces_dispo.choisir("horizontal")
+vl.disposer("horizontal")
 
 # une mesure seule : sa famille se déplie, sa chaîne est la sienne
 tab.aller_a("mesure", "Body Fat % YTD")

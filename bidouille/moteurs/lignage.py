@@ -4,7 +4,7 @@
 Un graphe orienté, de gauche à droite, en bandes :
 
     sources -> requêtes Power Query -> tables calculées -> mesures (une boîte par
-    famille) -> paramètres de champ -> filtres et segments -> visuels
+    famille) -> paramètres de champ -> filtres et segments -> visuels -> pages
 
 Une flèche A -> B dit « B a besoin de A » :
   · une source alimente les requêtes qui la lisent ; une requête ou une table
@@ -16,7 +16,11 @@ Une flèche A -> B dit « B a besoin de A » :
     les paramètres de champ qui les proposent, les filtres sur mesure et les
     visuels qui les affichent ;
   · un filtre alimente les visuels qu'il filtre (le sien, ceux de sa page, ou
-    tout le rapport) ; un segment, les visuels de sa page qu'il filtre.
+    tout le rapport) ; un segment, les visuels de sa page qu'il filtre ;
+  · un visuel alimente sa page. La page est au BOUT de la chaîne, et pas
+    avant les visuels comme un contenant : un trait dit « alimente », et une
+    page est ce que ses visuels montrent. Son amont va ainsi de la source au
+    visuel, et Sources + Pages seules disent quelle source sert à quelle page.
 
 Les mesures sont regroupées par FAMILLE (radiographie.famille_de) : un KPI et
 ses variations font une seule boîte, sinon un rapport de 300 mesures serait
@@ -41,16 +45,16 @@ import ntpath
 import lineage as lg
 
 # l'ordre des bandes, de gauche à droite
-BANDES = ("source", "requete", "calculee", "mesures", "parametre", "filtre", "visuel")
+BANDES = ("source", "requete", "calculee", "mesures", "parametre", "filtre", "visuel", "page")
 TITRES = {"source": "Sources", "requete": "Power Query", "calculee": "Tables calculées",
           "mesures": "Mesures", "parametre": "Paramètres de champ",
-          "filtre": "Filtres et segments", "visuel": "Visuels"}
+          "filtre": "Filtres et segments", "visuel": "Visuels", "page": "Pages"}
 # le genre d'un nœud -> sa bande (un segment est un filtre qu'on voit)
 BANDE = {"source": "source", "requete": "requete", "calculee": "calculee",
          "mesures": "mesures", "mesure": "mesures", "parametre": "parametre",
          "filtre": "filtre",
-         "segment": "filtre", "visuel": "visuel"}
-TERMINAUX = ("visuel", "segment")
+         "segment": "filtre", "visuel": "visuel", "page": "page"}
+TERMINAUX = ("visuel", "segment", "page")
 
 
 def _nom_court(detail: str) -> str:
@@ -192,6 +196,11 @@ def construire(res, lignes, deplies=()) -> dict:
         for i, f in enumerate(p["filtres"]):
             if f["actif"]:
                 filtre(f, ("filtre", "page", p["id"], i), vis)
+        n_vis = len(vis)
+        pid = noeud(("page", p["id"]), "page", p["nom"],
+                    f"{n_vis} visuel{'s' if n_vis > 1 else ''}", ("page", p["id"]), p["nom"])
+        for v in vis:
+            liens.add((v, pid))
     tous = [("visuel", (v["page_id"], v["id"])) for v in res["visuels"] if not v["segment"]]
     for i, f in enumerate(res.get("filtres_rapport") or []):
         if f["actif"]:
@@ -263,6 +272,21 @@ def chaine_sens(liens, depart, amont: bool) -> set:
                 vus.add(x)
                 pile.append(x)
     return vus
+
+
+def comptes(liens, nid) -> dict:
+    """Combien un nœud a de dépendances, en boîtes du lignage (une famille
+    repliée compte pour une) : {"amont": {"directs", "total", "niveaux"},
+    "aval": {...}}. `directs` : les voisins immédiats ; `total` : toute la
+    chaîne dans ce sens ; `niveaux` : le plus long des plus courts chemins,
+    c'est-à-dire combien de pas il faut pour l'atteindre en entier."""
+    out = {}
+    for sens, amont in (("amont", True), ("aval", False)):
+        dist = distances(liens, nid, amont)
+        out[sens] = {"directs": sum(1 for d in dist.values() if d == 1),
+                     "total": len(dist) - 1,
+                     "niveaux": max(dist.values())}
+    return out
 
 
 def chaine(liens, depart) -> set:
