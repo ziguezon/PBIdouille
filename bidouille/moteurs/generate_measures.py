@@ -465,6 +465,86 @@ def dax_table_ref(name) -> str:
     return "'" + str(name).strip().replace("'", "''") + "'"
 
 
+# ---- l'« ICP choisi » : une mesure qui aiguille vers celle de chaque ICP ----
+#
+# Une règle de couleur qui ne vise aucune série (la colonne unique d'un
+# graphique combiné, que Desktop écrit « pour toutes les catégories ») ne peut
+# pas suivre le paramètre de champ : elle garde la mesure de l'ICP sur lequel
+# on l'a posée, et Power BI ignore une copie rattachée à une série précise
+# (vérifié dans Desktop). La seule règle qui marche est UNE règle, dont la
+# mesure change avec l'ICP choisi.
+#
+# Cette mesure ne RECALCULE rien : elle renvoie la mesure de l'ICP choisi,
+# telle que la variation l'a générée pour lui. Chaque ICP garde donc ses
+# propres réglages, à commencer par le SENS d'une couleur (<<direction>>), que
+# l'ancienne mesure Switch perdait : elle appliquait une seule formule à la
+# valeur du switch, donc un seul sens pour tous.
+CLE_ICP_CHOISI = "selectedKpiMeasure"     # la case de la variation
+ICP_CHOISI_DEFAUT = "ICP choisi"          # préfixe des noms, et du dossier
+
+COLONNE_DAX_RE = re.compile(
+    r"^\s*(?:'((?:[^']|'')+)'|([A-Za-z_][\w.]*))\s*\[((?:[^\]]|\]\])+)\]\s*$")
+COLUMN_NAME_RE = re.compile(r"^\tcolumn\s+(?:'((?:[^']|'')+)'|([^\s=']+))")
+
+
+def colonne_de_dax(ref):
+    """(table, colonne) d'une référence DAX « 'Table'[Colonne] » ou
+    « Table[Colonne] », sinon None."""
+    m = COLONNE_DAX_RE.match(str(ref or ""))
+    if not m:
+        return None
+    table = (m.group(1) or "").replace("''", "'") or m.group(2)
+    return table, m.group(3).replace("]]", "]")
+
+
+def colonne_existe(tables_dir, table, colonne) -> bool:
+    """La table `table` du modèle a-t-elle une colonne `colonne` ? À la casse
+    près, comme Power BI. Une référence vers une colonne absente rendrait le
+    modèle impossible à ouvrir : on vérifie avant d'écrire."""
+    for fichier in sorted(Path(tables_dir).glob("*.tmdl")):
+        texte = fichier.read_text(encoding="utf-8-sig")
+        nom = _first_group(TABLE_NAME_RE.search(texte)) or fichier.stem
+        if nom.casefold() != str(table).casefold():
+            continue
+        for ligne in texte.splitlines():
+            c = _first_group(COLUMN_NAME_RE.match(ligne))
+            if c and c.casefold() == str(colonne).casefold():
+                return True
+        return False
+    return False
+
+
+def dax_icp_choisi(colonnes, membres, libelles=None) -> tuple:
+    """(DAX, doublons) de la mesure qui renvoie, pour l'ICP choisi, SA mesure.
+
+    `colonnes` : les colonnes qui disent l'ICP choisi, dans l'ordre — la
+    première filtrée sur un seul ICP l'emporte (SELECTEDVALUE en cascade), ce
+    qui couvre un segment posé sur l'un OU l'autre des paramètres de champ.
+    `membres` : [(ICP, mesure, format)]. Chaque ICP se reconnaît à son nom, et
+    à son libellé (`libelles`, ICP -> libellé) quand le segment montre les
+    libellés. `doublons` : [(ICP, mesure)] écartées, l'ICP ayant déjà la sienne
+    (deux cibles d'un même ICP, par exemple)."""
+    libelles = libelles or {}
+    cas, vus, doublons, dans = [], set(), [], set()
+    for kpi, nom, _fmt in membres:
+        if kpi in dans:
+            doublons.append((kpi, nom))
+            continue
+        dans.add(kpi)
+        for cle in (kpi, libelles.get(kpi)):
+            cle = str(cle or "").strip()
+            if cle and cle.casefold() not in vus:
+                vus.add(cle.casefold())
+                cas.append(f'        "{dax_str(cle)}", {bracket(nom)},')
+    choix = "BLANK()"
+    for col in reversed(list(colonnes)):
+        choix = f"SELECTEDVALUE({col}, {choix})" if choix != "BLANK()" \
+            else f"SELECTEDVALUE({col})"
+    dax = ("VAR _icp = " + choix + "\nRETURN\n    SWITCH(_icp,\n"
+           + "\n".join(cas) + "\n        BLANK()\n    )")
+    return dax, doublons
+
+
 def kpi_table_tokens(tables) -> dict:
     """Jetons « portée » dérivés de la liste de tables d'UN KPI.
 
@@ -1782,6 +1862,15 @@ def _generate(model_dir, config, *, dry_run=None, remove_orphans=None, log=print
     # suppose PAS « <KPI> <branche> », car le namePattern d'une branche est
     # librement configurable (« {base} cumul », « YTD {base} »…).
     kpi_branch_ref: dict = {}
+    # les mesures que l'« ICP choisi » aiguillera (cf. plus bas) :
+    # (variation, Calcul, branche) -> [(ICP, nom de sa mesure, format)]
+    pour_icp_choisi: dict = {}
+
+    def noter_pour_icp_choisi(vid, tpl, calcul, branch_id, kpi_lbl, name, fmt):
+        if (tpl.get(CLE_ICP_CHOISI) and calcul is not None and kpi_lbl
+                and vid not in branches):
+            pour_icp_choisi.setdefault((vid, calcul, branch_id or ""), []).append(
+                (kpi_lbl, name, fmt))
 
     def process(base_name, base_fmt, base_folder, kpi_lbl, vid, tpl,
                 fp_label, fp_branch, pass_folder_pattern, branch_id, fp_group=2,
@@ -1921,6 +2010,8 @@ def _generate(model_dir, config, *, dry_run=None, remove_orphans=None, log=print
         if prev is not None and not overwrite:
             preserved_names.add(name)
             skipped.append(name)
+            noter_pour_icp_choisi(vid, tpl, fp_label, branch_id, kpi_lbl, name,
+                                  prev["format"])
             return (name, prev["format"], prev["folder"])
 
         # dédup par NOM : dans le modèle les noms de mesures sont UNIQUES.
@@ -1941,6 +2032,7 @@ def _generate(model_dir, config, *, dry_run=None, remove_orphans=None, log=print
             "desc": desc, "data_cat": tpl.get("dataCategory") or None,
         }
         planned_names[name] = tag
+        noter_pour_icp_choisi(vid, tpl, fp_label, branch_id, kpi_lbl, name, fmt)
         arbre[name] = {"name": name, "parent": base_name,
                        "type": "branche" if branch_id == vid else "variation",
                        "kpi": kpi_lbl, "variation": vid,
@@ -2177,6 +2269,90 @@ def _generate(model_dir, config, *, dry_run=None, remove_orphans=None, log=print
     if n_wrap:
         log(f"Branches : {n_wrap} mesure(s) ENVELOPPENT leur variation Réel "
             "(au lieu d'en recopier la logique).")
+
+    # -- 3e passe : les mesures « ICP choisi » ----------------------------------
+    if pour_icp_choisi:
+        reglage = config.get("selectedKpi") or {}
+        prefixe = str(reglage.get("prefix") or "").strip() or ICP_CHOISI_DEFAUT
+        dossier = str(reglage.get("displayFolder") or "").strip() or "_" + prefixe
+        demandees = [str(c).strip() for c in (reglage.get("columns") or [])
+                     if str(c).strip()]
+        if not demandees:
+            # défaut : la colonne ICP de chaque table paramètre générée
+            demandees = [dax_table_ref(s_["name"]) + bracket(fp_kpi_col)
+                         for s_ in fp_specs]
+        nouvelles = {s_["name"].casefold(): {fp_kpi_col.casefold()} for s_ in fp_specs}
+        colonnes = []
+        for ref in demandees:
+            pos = colonne_de_dax(ref)
+            if pos is None:
+                log(f"⚠ ICP choisi : « {ref} » n'est pas une colonne DAX "
+                    "('Table'[Colonne]), ignorée.")
+            elif not (colonne_existe(tables_dir, *pos)
+                      or pos[1].casefold() in nouvelles.get(pos[0].casefold(), ())):
+                log(f"⚠ ICP choisi : la colonne {ref} est introuvable dans le "
+                    "modèle, ignorée.")
+            else:
+                colonnes.append(dax_table_ref(pos[0]) + bracket(pos[1]))
+        libelles_icp: dict = {}
+        try:
+            libelles_icp = read_attribute_map(td["path"], lkp_key, lkp_lbl)
+        except (SystemExit, Exception):
+            libelles_icp = {}
+        captee = match_kpi(prefixe + " x", sorted(bases, key=len, reverse=True))
+        if not colonnes:
+            log("⚠ ICP choisi : aucune colonne ne dit quel ICP est choisi (ni "
+                "table paramètre générée, ni colonne valide dans ⚙ Réglages), "
+                "aucune mesure « " + prefixe + " » générée.")
+        elif captee:
+            log(f"⚠ ICP choisi : le préfixe « {prefixe} » commence par l'ICP "
+                f"« {captee} », ses mesures seraient prises pour les siennes. "
+                "Choisir un autre préfixe dans ⚙ Réglages.")
+        else:
+            for (vid, calcul, branch_id), membres in pour_icp_choisi.items():
+                name = " ".join(x for x in (prefixe, calcul, branch_id) if x)
+                dax, doublons = dax_icp_choisi(colonnes, membres, libelles_icp)
+                for kpi_d, nom_d in doublons:
+                    log(f"⚠ « {name} » : « {nom_d} » écartée, l'ICP « {kpi_d} » "
+                        "a déjà sa mesure dans l'aiguillage.")
+                formats = {f for _k, _n, f in membres}
+                fmt = formats.pop() if len(formats) == 1 else None
+                desc = (f"{calcul}" + (f" {branch_id}" if branch_id else "")
+                        + " de l'ICP choisi : renvoie la mesure de cet ICP, qui garde "
+                        "ses propres réglages (le sens d'une couleur, par exemple).")
+                tag = name + "|" + vid
+                cle = name.casefold()
+                proprietaire = proprietaires.get(cle)
+                if proprietaire and proprietaire != (target_table, name):
+                    log(f"⚠ '{name}' existe déjà dans '{proprietaire[0]}', ignorée : "
+                        "un nom de mesure est unique dans tout le modèle.")
+                    skipped.append(name)
+                    continue
+                prev = existing.get(name)
+                if prev is not None and not prev["annotation"]:
+                    log(f"⚠ '{name}' existe mais n'est pas générée, ignorée.")
+                    skipped.append(name)
+                    continue
+                if name in planned_names:
+                    log(f"⚠ « {name} » porte le nom d'une mesure déjà générée, ignorée.")
+                    continue
+                proprietaires[cle] = (target_table, name)
+                if prev is not None and not overwrite:
+                    preserved_names.add(name)
+                    skipped.append(name)
+                    continue
+                planned[tag] = {"name": name, "dax": dax, "fmt": fmt,
+                                "folder": dossier, "desc": desc, "data_cat": None}
+                planned_names[name] = tag
+                arbre[name] = {"name": name, "parent": None, "type": "aiguillage",
+                               "kpi": None, "variation": vid,
+                               "branche": branch_id or None,
+                               "cible": False, "dax": dax, "format": fmt,
+                               "dossier": dossier, "description": desc,
+                               "dataCategory": None, "enveloppe": False,
+                               "membres": [n for _k, n, _f in membres]}
+            log(f"ICP choisi : {len(pour_icp_choisi)} mesure(s) d'aiguillage, "
+                "selon " + ", puis ".join(colonnes) + ".")
 
     # ---- classement des specs vs l'existant ----------------------------------
     def normalized(block_text):

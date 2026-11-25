@@ -747,6 +747,22 @@ class ConfigTab(QWidget):
             "Sans effet si la branche recopie tout (⚙ Réglages → Branches," + chr(10) +
             "« Envelopper » décoché), ou si le DAX cite {branch} : écrite" + chr(10) +
             "pour la branche, la variation est alors toujours recopiée.")
+        self.chk_icp = QCheckBox("aussi une mesure « ICP choisi »")
+        self.chk_icp.setToolTip(
+            "Génère en plus UNE mesure qui renvoie celle de l'ICP choisi" + chr(10) +
+            "dans les segments : « ICP choisi CF YoY % » vaut [Weight CF YoY %]" + chr(10) +
+            "quand Weight est choisi, [Body Fat % CF YoY %] pour Body Fat %…" + chr(10) +
+            "Une par Calcul et par branche, cibles comprises." + chr(10) + chr(10) +
+            "Pour une règle de couleur qui ne vise aucune série, comme la" + chr(10) +
+            "colonne unique d'un graphique combiné : Desktop l'écrit « pour" + chr(10) +
+            "toutes les catégories », la propagation ne peut pas la copier par" + chr(10) +
+            "ICP, et elle garderait la couleur de l'ICP sur lequel on l'a posée." + chr(10) +
+            "Avec cette mesure, une seule règle suffit pour tous les ICP." + chr(10) + chr(10) +
+            "Rien n'est recalculé : chaque ICP garde SA mesure, donc ses propres" + chr(10) +
+            "réglages, à commencer par le sens de sa couleur (<<direction>>)." + chr(10) + chr(10) +
+            "Les colonnes qui disent l'ICP choisi se règlent dans ⚙ Réglages →" + chr(10) +
+            "Paramètres de champ → Réglages communs. Défaut : la colonne ICP de" + chr(10) +
+            "chaque table paramètre générée.")
         pour = QHBoxLayout()
         pour.addWidget(self.chk_kpi)
         pour.addSpacing(12)
@@ -754,6 +770,7 @@ class ConfigTab(QWidget):
         pour.addStretch()
         pleine(pour)
         pleine(self.chk_wrap)
+        pleine(self.chk_icp)
 
         kinds = QHBoxLayout()
         kinds.setContentsMargins(0, 0, 0, 0)
@@ -914,6 +931,7 @@ class ConfigTab(QWidget):
         self.chk_kpi.stateChanged.connect(self._on_edit)
         self.chk_wrap.stateChanged.connect(self._on_edit)
         self.chk_cible.stateChanged.connect(self._on_edit)
+        self.chk_icp.stateChanged.connect(self._on_edit)
         return w
 
     def _build_parametres_tab(self) -> QWidget:
@@ -952,6 +970,9 @@ class ConfigTab(QWidget):
         self.g_lkp_table = line("Table du LOOKUPVALUE des libellés (ex. TD_Indicateurs).")
         self.g_lkp_key = line("Colonne clé = nom de la mesure (ex. mesure).")
         self.g_lkp_label = line("Colonne du libellé affiché (ex. libelle_indicateur).")
+        self.g_icp_colonnes = line("Colonnes qui disent l'ICP choisi, séparées par ;")
+        self.g_icp_prefixe = line("Début du nom des mesures « ICP choisi ».")
+        self.g_icp_prefixe.setPlaceholderText(gm.ICP_CHOISI_DEFAUT)
         gb_fp = self._form_group("Paramètres de champ", [
             (None, self.g_fp_enabled,
              "Coché : les tables de la liste sont créées ou mises à jour à\n"
@@ -999,6 +1020,21 @@ class ConfigTab(QWidget):
             ("Libellés (colonne affichée) :", self.g_lkp_label,
              "Colonne de cette table qui contient le LIBELLÉ affiché.\n\n"
              "Ex. libelle_indicateur → « Poids » pour Weight"),
+            ("ICP choisi, colonnes :", self.g_icp_colonnes,
+             "Pour les mesures « ICP choisi » (case d'une variation) : les\n"
+             "colonnes où un segment choisit l'ICP, séparées par ;\n"
+             "   'P_Indicateurs'[Indicateur]; 'TD_KPI'[mesure]\n"
+             "La première filtrée sur un seul ICP l'emporte. Une colonne peut\n"
+             "porter le nom de la mesure de l'ICP ou son libellé.\n\n"
+             "Une colonne absente du modèle est écartée à la génération (et\n"
+             "le journal le dit) : elle rendrait le modèle impossible à ouvrir.\n\n"
+             "Vide = la colonne ICP de chaque table paramètre générée."),
+            ("ICP choisi, préfixe :", self.g_icp_prefixe,
+             "Début du nom de ces mesures, et de leur dossier :\n"
+             "   ICP choisi CF YoY %   dans  _ICP choisi\n"
+             "Il ne doit pas commencer par le nom d'un ICP : la propagation\n"
+             "prendrait ces mesures pour les siennes.\n\n"
+             "Vide = " + gm.ICP_CHOISI_DEFAUT + "."),
         ])
         rang_communs = QHBoxLayout()
         rang_communs.addWidget(
@@ -1066,6 +1102,9 @@ class ConfigTab(QWidget):
         self.g_lkp_table.setText(lkp.get("table", "") or "")
         self.g_lkp_key.setText(lkp.get("keyColumn", "") or "")
         self.g_lkp_label.setText(lkp.get("labelColumn", "") or "")
+        icp = self._config.get("selectedKpi") or {}
+        self.g_icp_colonnes.setText("; ".join(str(c) for c in (icp.get("columns") or [])))
+        self.g_icp_prefixe.setText(str(icp.get("prefix") or ""))
 
         self._loading = False
 
@@ -1107,6 +1146,20 @@ class ConfigTab(QWidget):
                 fp["kpiLabelLookup"] = lkp
             else:
                 fp.pop("kpiLabelLookup", None)
+        # les mesures « ICP choisi » : leurs réglages vivent à part, ils ne
+        # dépendent pas des tables paramètre (une colonne de segment suffit)
+        icp = dict(config.get("selectedKpi") or {})
+        colonnes = [c.strip() for c in self.g_icp_colonnes.text().split(";") if c.strip()]
+        for cle, val in (("columns", colonnes),
+                         ("prefix", self.g_icp_prefixe.text().strip())):
+            if val:
+                icp[cle] = val
+            else:
+                icp.pop(cle, None)
+        if icp:
+            config["selectedKpi"] = icp
+        else:
+            config.pop("selectedKpi", None)
 
     def _rafraichir_parametres(self) -> None:
         """L'aperçu des tables : la génération à blanc sur une COPIE du
@@ -2518,6 +2571,7 @@ class ConfigTab(QWidget):
             self.chk_kpi.setChecked(True)
             self.chk_wrap.setChecked(True)
             self.chk_cible.setChecked(False)
+            self.chk_icp.setChecked(False)
             self.ed_dax.setPlainText("")
         else:
             self.ed_name.setText(v.get("namePattern", ""))
@@ -2531,6 +2585,7 @@ class ConfigTab(QWidget):
             self.chk_kpi.setChecked(bool(v.get("appliesToKpi", True)))
             self.chk_cible.setChecked(bool(v.get("appliesToCibles", False)))
             self.chk_wrap.setChecked(gm.enveloppable(v))
+            self.chk_icp.setChecked(bool(v.get(gm.CLE_ICP_CHOISI)))
             self._refresh_kind_items(v.get("appliesToFormats") or None)
             self.ed_exclude.setText(
                 ", ".join(v.get("excludeNameContains") or []))
@@ -2586,6 +2641,10 @@ class ConfigTab(QWidget):
             v["appliesToCibles"] = True
         else:
             v.pop("appliesToCibles", None)
+        if self.chk_icp.isChecked():
+            v[gm.CLE_ICP_CHOISI] = True
+        else:
+            v.pop(gm.CLE_ICP_CHOISI, None)
         # « tous » = aucun filtre : rien n'est alors écrit dans le config
         if self.cmb_kinds.all_checked():
             v.pop("appliesToFormats", None)

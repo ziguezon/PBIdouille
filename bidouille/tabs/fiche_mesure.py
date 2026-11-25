@@ -50,7 +50,8 @@ ROLE_HTML = Qt.UserRole + 7
 ROLE_ATTRIBUT = Qt.UserRole + 8
 
 TYPES = {"base": "base (écrite à la main)", "cible": "cible racine (écrite à la main)",
-         "variation": "variation", "branche": "branche (devient une base)"}
+         "variation": "variation", "branche": "branche (devient une base)",
+         "aiguillage": "ICP choisi (renvoie la mesure de l'ICP choisi)"}
 # la couleur de ce qu'est devenu un jeton : celles de l'éditeur DAX
 COULEUR_JETON = {"accolade": BLUE, "chevron": ACCENT}
 _JETON = re.compile(r"<<.*?>>|\{[A-Za-z_][A-Za-z0-9_]*\}", re.S)
@@ -65,6 +66,9 @@ def attributs(n: dict) -> list:
         out.append(("ICP", n["kpi"] + (" (cible)" if n.get("cible") else "")))
     if n.get("variation") and n.get("type") != "branche":
         out.append(("variation", n["variation"]))
+    if n.get("membres"):
+        out.append(("renvoie", f"{len(n['membres'])} mesures, une par ICP : "
+                    + ", ".join(n["membres"])))
     if n.get("branche"):
         out.append(("branche", n["branche"]))
         if n.get("type") == "variation":

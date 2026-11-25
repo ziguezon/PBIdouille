@@ -252,8 +252,19 @@ class ArbreMesures(QWidget):
                 ajouter(it, e)
             it.setExpanded(n["name"] not in self._replies)
 
+        # Une mesure « ICP choisi » n'appartient à aucun ICP : rangées chacune
+        # à la racine, elles noieraient la liste des ICP. Un groupe les tient.
+        icp_choisi = [n for n in enfants.get(None, []) if n.get("type") == "aiguillage"]
         for n in enfants.get(None, []):
-            ajouter(None, n)
+            if n.get("type") != "aiguillage":
+                ajouter(None, n)
+        if icp_choisi:
+            g = self._groupe(None, "icp_choisi", "ICP choisi")
+            for n in icp_choisi:
+                ajouter(g, n)
+            total = len(icp_choisi)
+            g.setText(COL_ETAT, f"{total} mesure{'s' if total > 1 else ''}")
+            g.setExpanded(g.data(0, Qt.UserRole) not in self._replies)
 
     def _groupe(self, parent_item, cle, texte, couleur=None) -> QTreeWidgetItem:
         g = QTreeWidgetItem([texte, "", ""])
@@ -314,7 +325,7 @@ class ArbreMesures(QWidget):
     def _resumer(self) -> None:
         ns = self._noeuds
         bases = sum(1 for n in ns if n.get("type") == "base")
-        gen = [n for n in ns if n.get("type") in ("variation", "branche")]
+        gen = [n for n in ns if n.get("type") in ("variation", "branche", "aiguillage")]
         par = {}
         for n in gen:
             par[n.get("etat")] = par.get(n.get("etat"), 0) + 1

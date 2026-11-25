@@ -167,6 +167,7 @@ la mesure n'est pas créée.
 | **générer pour les ICP** | `appliesToKpi` | Crée la mesure pour chaque ICP (coché par défaut) |
 | **générer pour les cibles** | `appliesToCibles` | Crée la mesure pour chaque cible, comme `Weight cible écart` |
 | **envelopper en branche** | `wrapInBranch` | En branche, entoure la mesure Réel au lieu de recopier son DAX |
+| **aussi une mesure « ICP choisi »** | `selectedKpiMeasure` | Crée en plus une mesure qui renvoie celle de l'ICP choisi (voir plus bas) |
 | **types de base** | `appliesToFormats` | Limite aux bases d'un type : nombre, pourcentage, devise, ou un type de TD_Indicateurs |
 | **exclure si le nom contient** | `excludeNameContains` | Écarte les bases dont le nom contient ce texte |
 | **mais garder** | `includeNameContains` | Rattrape une base nommée, même exclue |
@@ -186,6 +187,41 @@ sans régénérer. Mais ce n'est pas toujours le même calcul : une variation qu
 fixe sa propre fenêtre de dates (`DATEADD`, `DATESINPERIOD`, `MAX({date})`) ne
 donne pas le même résultat. Pour obtenir la variation **du cumul**, décocher
 « envelopper en branche » et comparer les deux.
+
+### Une mesure « ICP choisi »
+
+Certaines règles de couleur ne visent aucune série. C'est le cas de la colonne
+unique d'un graphique combiné : Desktop n'y propose que « Catégories », et
+écrit la règle pour toutes. La propagation ne peut pas la copier par ICP (Power
+BI ignore une copie rattachée à une série), donc la règle garde la mesure de
+l'ICP sur lequel on l'a posée.
+
+Cocher **aussi une mesure « ICP choisi »** sur la variation de couleur crée une
+mesure de plus, qui renvoie celle de l'ICP choisi dans les segments :
+
+```
+ICP choisi CF YoY % =
+VAR _icp = SELECTEDVALUE('P_Indicateurs'[Indicateur])
+RETURN
+    SWITCH(_icp,
+        "Body Fat %", [Body Fat % CF YoY %],
+        "Weight", [Weight CF YoY %],
+        BLANK()
+    )
+```
+
+On pose alors cette mesure dans la règle, une seule fois, pour tous les ICP.
+
+| | |
+|---|---|
+| **Le sens de chaque ICP est gardé** | La mesure ne recalcule rien : elle renvoie celle de l'ICP, générée avec ses propres attributs. Une couleur qui suit `<<direction>>` reste verte pour un ICP qui monte quand c'est bien, rouge pour celui dont la hausse est mauvaise |
+| **Une par Calcul et par branche** | `ICP choisi CF YoY %`, `ICP choisi CF YoY % YTD`, `ICP choisi Cible CF écart %` pour les cibles |
+| **Où se lit l'ICP choisi** | ⚙ Réglages → Paramètres de champ → Réglages communs → **ICP choisi, colonnes**. La première colonne filtrée sur un seul ICP l'emporte. Vide = la colonne ICP de chaque table paramètre générée. Une colonne absente du modèle est écartée, et le journal le dit |
+| **Nom et dossier** | **ICP choisi, préfixe** (défaut `ICP choisi`), rangées dans `_ICP choisi`. Le préfixe ne doit pas commencer par le nom d'un ICP |
+| **Nom ou libellé** | Chaque ICP se reconnaît à son nom de mesure, et à son libellé de TD_Indicateurs s'il diffère : un segment sur l'une ou l'autre colonne fonctionne |
+
+La propagation n'y touche pas : ces mesures n'appartiennent à aucun ICP. Décocher
+la case en fait des orphelines, retirées avec « Supprimer les orphelines ».
 
 ## Modifier une variation existante
 

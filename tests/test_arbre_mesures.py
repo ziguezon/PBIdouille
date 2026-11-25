@@ -85,6 +85,9 @@ vars_fp = [v for v, t in conf["variations"].items()
 V = vars_fp[0]
 # la démo n'applique aucune variation aux cibles : on en donne une
 conf["variations"][V]["appliesToCibles"] = True
+# et une mesure « ICP choisi », pour que son rangement soit testé quel que
+# soit l'état du projet de démonstration
+conf["variations"][V]["selectedKpiMeasure"] = True
 conf["fieldParameter"] = dict(conf["fieldParameter"])
 conf["fieldParameter"]["tables"] = [
     {"name": "P_tout"},
@@ -102,10 +105,13 @@ st = gm.generate(MODELE, json.loads(json.dumps(conf)), dry_run=True, log=lambda 
 check("l'aperçu n'a rien écrit dans le modèle",
       {p: p.stat().st_mtime_ns for p in MODELE.rglob("*") if p.is_file()} == mtimes)
 arbre = {n["name"]: n for n in st["arbre"]}
-racines = [n for n in st["arbre"] if n["parent"] is None]
+aiguillages = [n for n in st["arbre"] if n["type"] == "aiguillage"]
+racines = [n for n in st["arbre"] if n["parent"] is None and n["type"] != "aiguillage"]
 check(f"une racine par KPI ({len(bases)})",
       sorted(n["name"] for n in racines) == sorted(bases)
       and all(n["type"] == "base" for n in racines))
+check(f"les mesures « ICP choisi » n'ont pas de KPI parent ({len(aiguillages)})",
+      aiguillages and all(n["parent"] is None for n in aiguillages))
 var_k = [n for n in st["arbre"] if n["parent"] == K and n["type"] == "variation"]
 check(f"{K} -> ses variations", var_k and all(n["variation"] for n in var_k))
 br_k = [n for n in st["arbre"] if n["parent"] == K and n["type"] == "branche"]
@@ -126,7 +132,7 @@ print("2. le marqueur suit les tables et leurs filtres")
 check("la base est dans les deux tables", arbre[K]["tables"] == ["P_tout", conf["fieldParameter"]["tables"][1]["name"]])
 nv = next(n for n in var_k if n["variation"] == V)
 check(f"« {nv['name']} » seulement dans P_tout (l'autre l'écarte)", nv["tables"] == ["P_tout"])
-hors = [n for n in st["arbre"] if not n["tables"]]
+hors = [n for n in st["arbre"] if not n["tables"] and n["type"] != "aiguillage"]
 check(f"sans table = variation hors paramètre ({len(hors)} : sparkline, CF…)",
       hors and all(n["type"] == "variation"
                    and not conf["variations"][n["variation"]].get("inFieldParameter")
@@ -151,7 +157,7 @@ print("4. la vue")
 from qtpy.QtWidgets import QApplication                          # noqa: E402
 app = QApplication.instance() or QApplication([])
 import tabs.tab_config as tc                                     # noqa: E402
-from tabs.arbre_mesures import MARQUEUR                          # noqa: E402
+from tabs.arbre_mesures import MARQUEUR, ROLE_GROUPE                         # noqa: E402
 from core.project import Project                                 # noqa: E402
 
 ct = tc.ConfigTab()
@@ -161,8 +167,23 @@ app.processEvents()
 vue = ct.arbre_mesures
 check("l'onglet s'appelle « Arbre des mesures »",
       ct.inner.tabText(tc.IDX_ARBRE) == "Arbre des mesures")
-check(f"un KPI par racine ({vue.arbre.topLevelItemCount()})",
-      vue.arbre.topLevelItemCount() == len(bases))
+def racines_vue():
+    return [vue.arbre.topLevelItem(i) for i in range(vue.arbre.topLevelItemCount())]
+
+
+def un_kpi_par_racine():
+    """Un KPI par racine, plus UN groupe qui tient les mesures « ICP choisi »."""
+    rs = racines_vue()
+    kpis = [r for r in rs if not r.data(0, ROLE_GROUPE)]
+    groupes = [r for r in rs if r.data(0, ROLE_GROUPE)]
+    return (sorted(r.text(0) for r in kpis) == sorted(bases)
+            and len(groupes) == 1
+            and sorted(groupes[0].child(i).text(0) for i in range(groupes[0].childCount()))
+            == sorted(n["name"] for n in aiguillages))
+
+
+check(f"un KPI par racine, et un groupe « ICP choisi » ({vue.arbre.topLevelItemCount()})",
+      un_kpi_par_racine())
 it_k = vue.element(K)
 check("la base porte le marqueur ◆", it_k is not None and it_k.text(1).startswith(MARQUEUR))
 check("… et l'infobulle dit dans quelles tables", "P_tout" in it_k.toolTip(1))
@@ -263,8 +284,7 @@ vue.arbre.setCurrentItem(it_b.parent())
 check("choisir un groupe : la fiche le résume, sans DAX",
       B in vue.fiche.lbl_nom.text() and not vue.fiche.ed_dax.isVisible())
 vue.cmb_rangement.setCurrentIndex(vue.cmb_rangement.findData("kpi"))
-check("retour par KPI : un KPI par racine",
-      vue.arbre.topLevelItemCount() == len(bases))
+check("retour par KPI : un KPI par racine", un_kpi_par_racine())
 
 # ---------------------------------------------------------------------------
 print("7. l'aperçu des noms se déplie sur le DAX du formulaire en cours")
@@ -304,7 +324,12 @@ from core.theme import BLUE                                      # noqa: E402
 tous = [n for n in vue._noeuds if n["type"] not in ("base", "cible")]
 check(f"chaque DAX généré se recolle à son modèle ({len(tous)} mesures)",
       all("".join(t for t, _ in segments_dax(n)[0]) == n["dax"] for n in tous)
-      and all(any(g for _, g in segments_dax(n)[0]) for n in tous))
+      and all(any(g for _, g in segments_dax(n)[0])
+              for n in tous if n["type"] != "aiguillage"))
+# une mesure « ICP choisi » n'a pas de modèle à jetons : son DAX est un bloc
+check("une mesure « ICP choisi » s'affiche d'un bloc, sans couleur inventée",
+      all(segments_dax(n)[0] == [(n["dax"], None)]
+          for n in vue._noeuds if n["type"] == "aiguillage"))
 seg, subs = segments_dax(ct_arbre(env["name"]))
 check(f"une enveloppe colore la mesure Réel qu'elle cite ([{reel['name']}])",
       ("[" + reel["name"] + "]", "accolade") in seg
