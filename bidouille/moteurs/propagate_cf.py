@@ -54,6 +54,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import backup_restore as br
 from dossiers_mesures import folder_matches
+from color_matrix_by_kpi import visual_title
 import chemins                    # où sont les projets
 
 # ---------------------------------------------------------------------------
@@ -1445,12 +1446,102 @@ def process_visual(path: Path, template: str, targets: list[str], *,
     return changes
 
 
+# ------------------------------------------------ la portée
+#
+# Par défaut, une propagation passe sur TOUS les visuels du rapport. Une
+# PORTÉE la borne : une liste de pages (« <dossier de page> ») et de visuels
+# (« <dossier de page>/<dossier de visuel> »), les mêmes clés que la mémoire.
+# Un visuel hors portée n'est ni lu, ni écrit, ni nettoyé : la propagation
+# reste un miroir, mais seulement là où on l'a demandée. Le formatage d'un
+# visuel ne se copie qu'à l'intérieur de ce visuel, donc borner les visuels
+# ne change rien à ce que chacun reçoit.
+
+def cle_visuel(visual_json) -> str:
+    """« page/visuel » d'un visual.json : la clé de la portée et de la
+    mémoire."""
+    vj = Path(visual_json)
+    return f"{vj.parents[2].name}/{vj.parent.name}"
+
+
+def dans_portee(visual_json, portee) -> bool:
+    """Le visuel est-il dans la portée ? None (ou vide) = tout le rapport."""
+    if not portee:
+        return True
+    cle = cle_visuel(visual_json)
+    return cle in portee or cle.partition("/")[0] in portee
+
+
+def _nom_page(report_dir, page) -> str:
+    try:
+        d = json.loads(lire_texte(Path(report_dir) / "definition" / "pages"
+                                  / page / "page.json"))
+        return d.get("displayName") or page
+    except (OSError, ValueError):
+        return page
+
+
+def _nom_visuel(report_dir, page, visuel) -> str:
+    vj = Path(report_dir) / "definition" / "pages" / page / "visuals" / visuel / "visual.json"
+    try:
+        data = json.loads(lire_texte(vj))
+    except (OSError, ValueError):
+        return visuel
+    vis = data.get("visual") or {}
+    titre = visual_title(data)
+    genre = vis.get("visualType") or "visuel"
+    return f"« {titre} » ({genre})" if titre else f"{genre} {visuel}"
+
+
+def decrire_portee(report_dir, portee) -> str:
+    """La portée en mots, pour le journal : les pages et visuels par leur
+    nom dans Power BI, pas par leur dossier."""
+    if not portee:
+        return "tout le rapport"
+    morceaux = []
+    for cle in portee:
+        page, _, visuel = cle.partition("/")
+        nom = f"page « {_nom_page(report_dir, page)} »"
+        if visuel:
+            nom = f"visuel {_nom_visuel(report_dir, page, visuel)}, {nom}"
+        morceaux.append(nom)
+    return " ; ".join(morceaux)
+
+
+def visuels_de_la_portee(report_dir, portee) -> list:
+    """Les visual.json du rapport que la portée garde, dans l'ordre."""
+    return [vj for vj in sorted(Path(report_dir).glob(
+                "definition/pages/*/visuals/*/visual.json"))
+            if dans_portee(vj, portee)]
+
+
+def _portee(portee):
+    """Normalise : None pour tout le rapport, sinon un ensemble de clés."""
+    if not portee:
+        return None
+    if isinstance(portee, str):
+        portee = [portee]
+    return {str(c).strip("/") for c in portee if str(c).strip("/")} or None
+
+
+def journal_portee(report_dir, portee, log) -> bool:
+    """Dit la portée ; False si elle ne garde aucun visuel (page ou visuel
+    disparu depuis qu'on l'a choisi)."""
+    if not portee:
+        return True
+    log("Portée       : " + decrire_portee(report_dir, portee))
+    if not visuels_de_la_portee(report_dir, portee):
+        log("⚠ La portée ne contient aucun visuel : la page ou le visuel "
+            "choisi n'existe plus. Rien n'a été propagé.")
+        return False
+    return True
+
+
 def propagate(report_dir, template_kpi, *, branches=BRANCHES, targets=None,
               entity: str = ENTITY, field_parameter: str = FIELD_PARAMETER,
               dry_run: bool = False, verbose: bool = False, log=print,
               backup_dir=None, cible_folders=(), cellules=None, classer=None,
               contexte=None, entete=None, superposer=False,
-              memoire=None) -> int:
+              memoire=None, portee=None) -> int:
     """Propage le formatage conditionnel du KPI template vers tous les KPI (et
     toutes les branches) dans les visual.json du rapport. Retourne le nombre
     total d'entrées écrites. Point d'entrée commun CLI (main) et UI (Atelier) :
@@ -1468,9 +1559,14 @@ def propagate(report_dir, template_kpi, *, branches=BRANCHES, targets=None,
     remplace alors les lignes « KPI template / KPI cibles » du journal.
 
     `superposer` / `memoire` : le template passe SOUS les gabarits de groupe
-    (cf. process_visual) ; `memoire` = {"page/visuel": {...}}, tenue à jour."""
+    (cf. process_visual) ; `memoire` = {"page/visuel": {...}}, tenue à jour.
+
+    `portee` : les pages (« page ») et visuels (« page/visuel ») à traiter ;
+    None = tout le rapport. Hors portée, rien n'est lu ni écrit (cf. « la
+    portée » plus haut)."""
     report_dir = Path(report_dir)
     branches = list(branches)
+    portee = _portee(portee)
     # Ce qu'on lit du modèle (cf. contexte_modele) : TOUS les KPI — pour
     # découper les noms même quand la passe n'en touche que quelques-uns —,
     # le paramètre de champ (une CIBLE se propage sans parser son nom : «
@@ -1499,6 +1595,8 @@ def propagate(report_dir, template_kpi, *, branches=BRANCHES, targets=None,
     else:
         for ligne in entete:
             log(ligne)
+    if contexte is None and not journal_portee(report_dir, portee, log):
+        return 0
     if dry_run and contexte is None:
         log("*** DRY_RUN : aucun fichier modifié (diagnostic seulement) ***")
 
@@ -1514,7 +1612,7 @@ def propagate(report_dir, template_kpi, *, branches=BRANCHES, targets=None,
 
     total = 0
     n_visuals = 0
-    for visual_json in sorted(report_dir.glob("definition/pages/*/visuals/*/visual.json")):
+    for visual_json in visuels_de_la_portee(report_dir, portee):
         n = process_visual(visual_json, template_kpi, targets, entity=entity,
                            branches=branches, verbose=verbose, dry_run=dry_run, log=log,
                            backup_dir=backup_dir, fp_forward=fp_forward, fp_reverse=fp_reverse,
@@ -3033,14 +3131,20 @@ def _elaguer_memoire(memoire, report_dir) -> None:
             del memoire[vis]
 
 
-def retraits_prevus(analyse, grille) -> list:
+def retraits_prevus(analyse, grille, portee=None) -> list:
     """Ce que la prochaine propagation RETIRERA faute de source :
     [(KPI, variation, source, entrées)]. Une case qui copie un KPI qui n'a
     RIEN pour cette variation, dans un visuel que ce KPI pilote, perd son
     formatage — le miroir est voulu (retirer un réglage du gabarit le retire
     partout), mais sur une case qu'on croyait couverte, c'est une perte qu'on
-    veut voir AVANT d'écrire."""
+    veut voir AVANT d'écrire. `portee` : seuls ses visuels comptent (les
+    autres ne seront pas touchés)."""
     reglages = (analyse or {}).get("reglages") or {}
+    portee = _portee(portee)
+    if portee:
+        reglages = {kv: {vis: n for vis, n in par_visuel.items()
+                         if vis in portee or vis.partition("/")[0] in portee}
+                    for kv, par_visuel in reglages.items()}
     pilotes: dict = {}       # source -> visuels où elle porte ses propres cases
     for (k, v), par_visuel in reglages.items():
         if grille.source(k, v) == k:
@@ -3080,7 +3184,7 @@ def retraits_prevus(analyse, grille) -> list:
 
 def _executer_passes(report_dir, grille, *, branches, entity, field_parameter,
                      dry_run, verbose, log, cible_folders, classer, contexte,
-                     titre, entete_passe, memoire=None) -> tuple:
+                     titre, entete_passe, memoire=None, portee=None) -> tuple:
     """Une passe par source de la grille, sous UNE session de sauvegarde.
     Rend (total, session, sources).
 
@@ -3106,7 +3210,7 @@ def _executer_passes(report_dir, grille, *, branches, entity, field_parameter,
                            cible_folders=cible_folders,
                            cellules=_CouchesDe(grille, u, gabarits),
                            classer=classer, contexte=contexte, entete=[],
-                           superposer=True, memoire=memoire)
+                           superposer=True, memoire=memoire, portee=portee)
     sources = grille.sources()
     for s in sources:
         log("")
@@ -3117,7 +3221,7 @@ def _executer_passes(report_dir, grille, *, branches, entity, field_parameter,
                            verbose=verbose, log=log, backup_dir=session,
                            cible_folders=cible_folders,
                            cellules=grille.cases_de(s), classer=classer,
-                           contexte=contexte, entete=[])
+                           contexte=contexte, entete=[], portee=portee)
     return total, session, sources
 
 
@@ -3125,7 +3229,7 @@ def propagate_regles(report_dir, regles=None, *, branches=BRANCHES,
                      toutes_branches=None, entity: str = ENTITY,
                      field_parameter: str = FIELD_PARAMETER, variations=None,
                      dry_run: bool = False, verbose: bool = False, log=print,
-                     regles_json=None, cible_folders=()) -> int:
+                     regles_json=None, cible_folders=(), portee=None) -> int:
     """La propagation selon la GRILLE DES SOURCES (propagation.json).
 
     Une passe par source — la base, puis chaque KPI dont d'autres copient
@@ -3139,11 +3243,13 @@ def propagate_regles(report_dir, regles=None, *, branches=BRANCHES,
     config, [(id, suffixe)] (cf. variations_du_config) ; None = celles du
     measures_config.json voisin du rapport. `toutes_branches` : les branches
     du modèle, pour CLASSER les mesures ; `branches` ne dit que celles à
-    synthétiser.
+    synthétiser. `portee` : les pages et visuels à traiter, None = tout le
+    rapport (cf. « la portée »).
 
     Tout est validé AVANT la première écriture : des règles fautives ne
     produisent jamais un rapport à moitié propagé."""
     report_dir = Path(report_dir)
+    portee = _portee(portee)
     chemin = Path(regles_json) if regles_json else groupes_a_lire(report_dir)
     if regles is None:
         regles = lire_regles(chemin)
@@ -3175,7 +3281,9 @@ def propagate_regles(report_dir, regles=None, *, branches=BRANCHES,
         log(ligne)
     for a in avertissements:
         log("⚠ " + a)
-    for k, v, s, n in retraits_prevus(analyse, grille):
+    if not journal_portee(report_dir, portee, log):
+        return 0
+    for k, v, s, n in retraits_prevus(analyse, grille, portee):
         log(f"⚠ {k} · {v} : {n} réglage(s) retiré(s), sa source, {s}, "
             "n'en porte aucun.")
     if dry_run:
@@ -3191,7 +3299,7 @@ def propagate_regles(report_dir, regles=None, *, branches=BRANCHES,
         contexte=ctx, titre="Propagation",
         entete_passe=lambda s: (f"--- source « {s} » "
                                 + ("(base) ---" if s == grille.base else "---")),
-        memoire=memoire)
+        memoire=memoire, portee=portee)
     _elaguer_memoire(memoire, report_dir)
     if session is not None and _canon(memoire) != memoire_avant:
         # la mémoire suit le rapport : restaurer la sauvegarde la remet
@@ -3204,7 +3312,9 @@ def propagate_regles(report_dir, regles=None, *, branches=BRANCHES,
         ecrire_memoire(chemin_memoire, memoire, report_dir.name)
     if session is not None:
         session.close(f"{total} entrée(s), {len(sources)} source(s) : "
-                      + ", ".join(sources))
+                      + ", ".join(sources)
+                      + ("" if not portee else
+                         " ; portée : " + decrire_portee(report_dir, portee)))
     log("")
     log("Aucun changement." if total == 0 else
         f"Terminé : {total} entrée(s) au total, {len(sources)} source(s).")
@@ -3215,7 +3325,8 @@ def propagate_groupes(report_dir, groupes=None, *, branches=BRANCHES,
                       entity: str = ENTITY,
                       field_parameter: str = FIELD_PARAMETER,
                       dry_run: bool = False, verbose: bool = False,
-                      log=print, groupes_json=None, cible_folders=()) -> int:
+                      log=print, groupes_json=None, cible_folders=(),
+                      portee=None) -> int:
     """Une passe de propagation PAR GROUPE, chacune avec SON gabarit : l'ancien
     format de propagation.json, gardé pour les scripts et les fichiers d'avant.
 
@@ -3225,8 +3336,10 @@ def propagate_groupes(report_dir, groupes=None, *, branches=BRANCHES,
 
     `groupes` = sortie brute de `read_groupes` ; None = lue dans le fichier du
     rapport. La validation a lieu ici, AVANT la première écriture : un fichier
-    fautif ne produit jamais un rapport à moitié propagé."""
+    fautif ne produit jamais un rapport à moitié propagé. `portee` : comme
+    pour propagate_regles."""
     report_dir = Path(report_dir)
+    portee = _portee(portee)
     chemin = Path(groupes_json) if groupes_json else groupes_a_lire(report_dir)
     if groupes is None:
         groupes = read_groupes(chemin)
@@ -3246,6 +3359,8 @@ def propagate_groupes(report_dir, groupes=None, *, branches=BRANCHES,
         log(f"  {g['nom']} : " + ", ".join(
             [f"{g['gabarit']} (gabarit)"] + autres))
     journal_contexte(ctx, cible_folders, log)
+    if not journal_portee(report_dir, portee, log):
+        return 0
 
     grille = Sources.depuis_regles(regles_depuis_groupes(groupes),
                                    ctx["kpis_connus"])
@@ -3260,7 +3375,8 @@ def propagate_groupes(report_dir, groupes=None, *, branches=BRANCHES,
         field_parameter=field_parameter, dry_run=dry_run, verbose=verbose,
         log=log, cible_folders=cible_folders, classer=classer, contexte=ctx,
         titre="Propagation par groupes",
-        entete_passe=lambda s: f"--- groupe « {noms.get(s, s)} » ---")
+        entete_passe=lambda s: f"--- groupe « {noms.get(s, s)} » ---",
+        portee=portee)
 
     if session is not None:
         session.close("{0} entrée(s), {1} groupe(s) : {2}".format(

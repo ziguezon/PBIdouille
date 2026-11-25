@@ -26,9 +26,11 @@ autres ICP.
 2. Dans **Rapport**, cliquer **Grille des sources…** et choisir le **gabarit de base**.
 3. Cliquer **Enregistrer** dans la grille, puis fermer la fenêtre.
 4. Cocher les **branches** à traiter.
-5. Laisser **Aperçu (dry-run)** coché, cliquer **Propager** et lire le journal.
-6. Décocher **Aperçu (dry-run)**, cliquer **Propager** et confirmer.
-7. Fermer Desktop **sans enregistrer**, puis rouvrir le `.pbip`. Enregistrer à ce moment
+5. Choisir la **portée** : tout le rapport par défaut, ou une page, ou un visuel (voir
+   plus bas).
+6. Laisser **Aperçu (dry-run)** coché, cliquer **Propager** et lire le journal.
+7. Décocher **Aperçu (dry-run)**, cliquer **Propager** et confirmer.
+8. Fermer Desktop **sans enregistrer**, puis rouvrir le `.pbip`. Enregistrer à ce moment
    effacerait la propagation.
 
 **Verbeux** ajoute le détail de la recherche au journal. Sans grille enregistrée, la
@@ -36,6 +38,28 @@ propagation refuse de démarrer : PBIdouille ne choisit jamais le gabarit à la 
 l'utilisateur.
 
 ![Diapo du guide : Propager et colorer](../ressources/guide/propager-colorer.png)
+
+### Propager sur une page ou un visuel
+
+La ligne **Portée** borne la propagation. Par défaut, elle passe sur **tout le rapport**.
+
+| Choix | Ce qui est traité |
+|---|---|
+| **Tout le rapport** | Tous les visuels, comme avant. |
+| Une page, **Toute la page** | Les visuels de cette page seulement. |
+| Une page, puis un visuel | Ce visuel seulement. |
+
+Les visuels sont listés par leur titre, ou par leur type quand ils n'en ont pas, dans
+l'ordre de lecture de la page. Un visuel masqué porte la mention `[masqué]`.
+
+Hors de la portée, rien n'est lu, écrit ni nettoyé. Chaque visuel ne copie le formatage
+qu'à l'intérieur de lui-même : borner la portée ne change donc pas ce que reçoit un
+visuel traité. Cela sert à retoucher une page sans repasser sur tout un gros rapport, ou à
+essayer une grille sur un seul visuel avant de la lancer partout.
+
+La confirmation et le journal rappellent la portée. Si la page ou le visuel choisi
+n'existe plus, rien n'est propagé et le journal le dit. **Propager puis colorer** colore
+toujours tout le rapport : la portée ne vaut que pour la propagation.
 
 ### Ce que la propagation fait
 
