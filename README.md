@@ -210,7 +210,19 @@ contenu change sont sauvegardés puis écrits). Le manifeste de la sauvegarde es
 écriture interrompue se défait entièrement, et l'erreur nomme la sauvegarde à
 restaurer. Les lineageTags
 existants sont préservés ; une table paramètre créée est ajoutée aux
-`ref table` de model.tmdl (penser à la relation TD → Indicateur ensuite).
+`ref table` de model.tmdl.
+
+**Une table paramètre créée dans Desktop** n'a que Value1 à Value3. Les
+rangées générées en ont six : sans déclaration, Desktop ajoutait les trois
+dernières sous les noms `Value4…6`. `colonnes_icp` les déclare avec les noms
+du config (`kpiColumn`, `calcColumn`, `branchColumn`), ou renomme celles qui
+portent encore le nom par défaut, sauf si `colonne_citee` trouve une
+référence (visuel, DAX, relation, tri) : le journal dit alors de renommer
+dans Desktop, qui suit les références. **La relation** `TD → Indicateur`
+(`relateKpiColumn`, vrai par défaut) est ajoutée à `relationships.tmdl` vers
+`kpiLabelLookup.table[keyColumn]`, seulement si la colonne n'a encore aucune
+relation et que les deux tables ne sont pas déjà reliées ; une clé répétée
+dans l'Excel des indicateurs (`doublons_excel`) l'empêche.
 
 **Le DAX sous le « = »** : `measure_block` écrit toujours une ligne vide
 indentée (`\t\t\t`) juste après `measure 'Nom' =`, puis le DAX. C'est la forme

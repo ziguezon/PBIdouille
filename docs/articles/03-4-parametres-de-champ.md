@@ -57,9 +57,23 @@ est corrigée à la génération suivante, et le journal le signale.
 4. Vérifier le résultat dans **Contenu de la table**, en bas.
 5. Cliquer **Sauvegarder**, enregistrer dans Power BI Desktop s'il est ouvert, puis lancer
    **Générer les mesures**.
-6. Fermer Desktop **sans enregistrer** et rouvrir le `.pbip`. Pour une table nouvelle,
-   relier sa colonne `Indicateur` à la table des ICP, si un segment d'ICP doit la filtrer. Cette relation se crée une
-   seule fois, dans Power BI Desktop.
+6. Fermer Desktop **sans enregistrer** et rouvrir le `.pbip`.
+
+La colonne `Indicateur` de la table est reliée à la table des libellés à la génération :
+voir [La relation avec la table des ICP](#la-relation-avec-la-table-des-icp).
+
+### Une table créée dans Desktop
+
+Une table paramètre peut aussi être créée dans Power BI Desktop, puis ajoutée à la liste
+sous le même nom. Desktop ne lui donne que trois colonnes : l'affichage, `Fields` et
+l'ordre. À la génération, PBIdouille réécrit ses rangées et lui **déclare** les trois
+colonnes qui manquent, avec les noms des réglages communs : `Indicateur`, `Calcul` et
+`Branche`.
+
+Si Desktop a déjà ajouté ces colonnes sous ses noms par défaut, `Value4`, `Value5` et
+`Value6`, elles sont **renommées**. Une colonne déjà utilisée par un visuel, une mesure
+ou une relation garde son nom, et le journal le signale : la renommer dans Desktop, qui
+met les références à jour. Une colonne renommée à la main garde son nom.
 
 **Dupliquer** crée une copie de la table choisie. C'est utile pour avoir deux
 sélections indépendantes sur une même page.
@@ -119,9 +133,36 @@ dans chaque table.
 | **Libellés (table)** | `kpiLabelLookup.table` | La table qui donne les libellés, comme `TD_Indicateurs` |
 | **Libellés (colonne clé)** | `kpiLabelLookup.keyColumn` | La colonne qui contient le nom de la mesure |
 | **Libellés (colonne affichée)** | `kpiLabelLookup.labelColumn` | La colonne qui contient le libellé |
+| **Relier la colonne ICP de chaque table à cette table** | `relateKpiColumn` | Cochée par défaut : voir ci-dessous. Décochée, le config porte `false` |
 
 Si la table des libellés n'existe pas dans le modèle, l'ICP s'affiche sous le nom de sa
 mesure, et un avertissement le signale.
+
+### La relation avec la table des ICP
+
+À la génération, la colonne `Indicateur` de chaque table paramètre est reliée à la
+colonne clé de la table des libellés :
+
+```
+TD_Indicateurs[mesure] → P_Indicateurs_…[Indicateur]
+```
+
+C'est la relation qu'on crée dans Desktop : plusieurs-à-un, et la table des ICP filtre la
+table paramètre. Un segment ou un filtre sur `TD_Indicateurs` filtre donc aussi les
+rangées du paramètre.
+
+| Situation | Résultat |
+|---|---|
+| La colonne `Indicateur` n'a aucune relation | La relation est ajoutée, et le journal le dit |
+| La colonne a déjà une relation, même vers une autre table | Rien : la relation en place est gardée |
+| Les deux tables sont déjà reliées par une autre colonne | Rien : une deuxième relation serait ambiguë |
+| La colonne `Indicateur` n'existe pas encore (une `Value4` utilisée) | Rien, jusqu'à ce qu'elle soit renommée |
+| La colonne clé est absente du modèle | Rien, et un avertissement le signale |
+| La colonne clé a des doublons dans l'Excel des indicateurs | Rien, et le journal nomme les doublons : Power BI refuserait la relation |
+
+Les doublons ne sont vérifiés que si l'Excel des indicateurs a une colonne de ce nom.
+Sinon, une clé répétée fait échouer le rechargement dans Desktop. Il suffit alors de
+supprimer la relation, ou de décocher la case et de relancer.
 
 ## Lire l'aperçu
 
@@ -157,7 +198,7 @@ L'état de la table s'affiche à côté de son nom :
 | État ou situation | Résultat |
 |---|---|
 | **nouvelle** | La table est créée et ajoutée au modèle |
-| **modifiée** | Seule la liste des rangées est réécrite, plus le tri par `Ordre` s'il manque |
+| **modifiée** | Seule la liste des rangées est réécrite, plus le tri par `Ordre` et les colonnes `Indicateur`, `Calcul` et `Branche` s'ils manquent |
 | **inchangée** | Rien |
 | **vide** | Aucune rangée après les filtres : la table n'est pas touchée, et un avertissement le signale |
 | **conflit** | Une table qui n'est pas un paramètre de champ porte déjà ce nom, une table Power Query par exemple : elle n'est pas touchée, et le reste de la génération se fait. Choisir un autre nom |

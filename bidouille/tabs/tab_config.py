@@ -970,6 +970,7 @@ class ConfigTab(QWidget):
         self.g_lkp_table = line("Table du LOOKUPVALUE des libellés (ex. TD_Indicateurs).")
         self.g_lkp_key = line("Colonne clé = nom de la mesure (ex. mesure).")
         self.g_lkp_label = line("Colonne du libellé affiché (ex. libelle_indicateur).")
+        self.g_fp_relier = check("Relier la colonne ICP de chaque table à cette table")
         self.g_icp_colonnes = line("Colonnes qui disent l'ICP choisi, séparées par ;")
         self.g_icp_prefixe = line("Début du nom des mesures « ICP choisi ».")
         self.g_icp_prefixe.setPlaceholderText(gm.ICP_CHOISI_DEFAUT)
@@ -985,10 +986,10 @@ class ConfigTab(QWidget):
                   "réglages : ce qu'affichent ses rangées, et ce qu'elle garde.")
         communs = self._form_group("Réglages communs à toutes les tables", [
             ("Colonne ICP :", self.g_fp_kpiColumn,
-             "Nom de la colonne (cachée) qui porte l'ICP dans chaque table\n"
-             "paramètre : le nom de sa mesure de base. C'est la CLÉ : la relier à\n"
-             "TD_KPI pour filtrer par ICP :\n"
-             "   TD_KPI[mesure] → P_Indicateurs_…[Indicateur]\n\n"
+             "Nom de la colonne qui porte l'ICP dans chaque table paramètre :\n"
+             "le nom de sa mesure de base. C'est la CLÉ qui la relie à la table\n"
+             "des libellés (voir la case plus bas) :\n"
+             "   TD_Indicateurs[mesure] → P_Indicateurs_…[Indicateur]\n\n"
              "Défaut : Indicateur."),
             ("Colonne Calcul :", self.g_fp_calcColumn,
              "Nom de la colonne qui porte le CALCUL (Réel, PY, 7d avg…),\n"
@@ -1020,6 +1021,16 @@ class ConfigTab(QWidget):
             ("Libellés (colonne affichée) :", self.g_lkp_label,
              "Colonne de cette table qui contient le LIBELLÉ affiché.\n\n"
              "Ex. libelle_indicateur → « Poids » pour Weight"),
+            (None, self.g_fp_relier,
+             "Coché : à la génération, la colonne ICP de chaque table paramètre\n"
+             "est reliée à la colonne clé de la table des libellés, comme une\n"
+             "relation créée dans Desktop (plusieurs-à-un, la table des ICP\n"
+             "filtre le paramètre) :\n"
+             "   TD_Indicateurs[mesure] → P_Indicateurs_…[Indicateur]\n\n"
+             "Une colonne qui a déjà une relation, même vers une autre table,\n"
+             "est laissée telle quelle.\n"
+             "La colonne clé ne doit pas avoir de doublon : sinon Power BI\n"
+             "refuse la relation au rechargement."),
             ("ICP choisi, colonnes :", self.g_icp_colonnes,
              "Pour les mesures « ICP choisi » (case d'une variation) : les\n"
              "colonnes où un segment choisit l'ICP, séparées par ;\n"
@@ -1102,6 +1113,7 @@ class ConfigTab(QWidget):
         self.g_lkp_table.setText(lkp.get("table", "") or "")
         self.g_lkp_key.setText(lkp.get("keyColumn", "") or "")
         self.g_lkp_label.setText(lkp.get("labelColumn", "") or "")
+        self.g_fp_relier.setChecked(bool(fp.get("relateKpiColumn", True)))
         icp = self._config.get("selectedKpi") or {}
         self.g_icp_colonnes.setText("; ".join(str(c) for c in (icp.get("columns") or [])))
         self.g_icp_prefixe.setText(str(icp.get("prefix") or ""))
@@ -1146,6 +1158,11 @@ class ConfigTab(QWidget):
                 fp["kpiLabelLookup"] = lkp
             else:
                 fp.pop("kpiLabelLookup", None)
+            # coché est le défaut : seul « non » s'écrit
+            if self.g_fp_relier.isChecked():
+                fp.pop("relateKpiColumn", None)
+            else:
+                fp["relateKpiColumn"] = False
         # les mesures « ICP choisi » : leurs réglages vivent à part, ils ne
         # dépendent pas des tables paramètre (une colonne de segment suffit)
         icp = dict(config.get("selectedKpi") or {})

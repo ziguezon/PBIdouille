@@ -1076,6 +1076,168 @@ def champs_tries(texte):
     return texte[:d2] + neuf + texte[f2:]
 
 
+# Les trois colonnes que PBIdouille ajoute aux rangées d'un paramètre de champ
+# (l'ICP, le calcul, la branche), dans l'ordre des rangées. Desktop ne crée
+# que Value1 à Value3 : sans déclaration, il nomme les suivantes Value4…6.
+VALEURS_ICP = ("Value4", "Value5", "Value6")
+COLONNE_TETE_RE = re.compile(r"\tcolumn[ \t]+('(?:[^']|'')+'|[^\s=]+)")
+
+
+def _nom_tmdl(brut):
+    return brut[1:-1].replace("''", "'") if brut.startswith("'") else brut
+
+
+def noms_colonnes(texte) -> set:
+    """Les noms des colonnes d'un .tmdl de table, en casefold."""
+    return {_nom_tmdl(m.group(1)).casefold()
+            for m in re.finditer(r"^" + COLONNE_TETE_RE.pattern, texte, re.M)}
+
+
+def colonnes_icp(texte, noms, utilisee=lambda _col: False):
+    """Le texte d'une table paramètre dont les colonnes Value4, Value5 et
+    Value6 portent les noms du config (`noms` : {"Value4": "Indicateur", …}).
+    Rend (texte, retouches, avertissements).
+
+    - Une colonne absente est DÉCLARÉE avec son nom : c'est le cas d'une
+      table créée dans Desktop, qui n'en connaît que trois. Sans ça, Desktop
+      les ajoutait au rechargement sous les noms Value4, Value5, Value6.
+    - Une colonne que Desktop a déjà ajoutée sous son nom par défaut
+      (« Value4 ») est RENOMMÉE, sauf si `utilisee(nom)` dit qu'un visuel,
+      une mesure ou une relation la cite : renommer casserait la référence.
+      Desktop, lui, renomme partout ; on le laisse faire et on le dit.
+    - Une colonne déjà nommée autrement est laissée telle quelle : c'est un
+      choix de l'utilisateur."""
+    membres = list(MEMBER_RE.finditer(texte))
+    presentes = {}            # "Value4" -> (début de l'en-tête, nom brut)
+    debut_partition = None
+    for i, m in enumerate(membres):
+        fin = membres[i + 1].start() if i + 1 < len(membres) else len(texte)
+        if m.group(1) == "partition" and debut_partition is None:
+            debut_partition = m.start()
+        if m.group(1) != "column":
+            continue
+        bloc = texte[m.start():fin]
+        src = re.search(r"^\t\tsourceColumn: \[(Value\d+)\][ \t]*$", bloc, re.M)
+        tete = COLONNE_TETE_RE.match(bloc)
+        if src and tete:
+            presentes[src.group(1)] = (m.start(), tete.group(1))
+    pris = noms_colonnes(texte)
+    retouches, avertissements = [], []
+    edits = []                # (position, longueur remplacée, texte)
+    a_declarer = []
+    for valeur in VALEURS_ICP:
+        voulu = noms.get(valeur)
+        if not voulu:
+            continue
+        if valeur in presentes:
+            pos, brut = presentes[valeur]
+            nom = _nom_tmdl(brut)
+            if nom.casefold() == voulu.casefold() or nom.casefold() != valeur.casefold():
+                continue          # déjà bon, ou nommée par l'utilisateur
+            if voulu.casefold() in pris:
+                avertissements.append(f"colonne {nom} non renommée en « {voulu} », "
+                                      "une autre colonne porte déjà ce nom")
+            elif utilisee(nom):
+                avertissements.append(f"colonne {nom} utilisée dans le rapport ou le "
+                                      f"modèle, à renommer « {voulu} » dans Desktop "
+                                      "(qui met les références à jour)")
+            else:
+                debut = texte.index(brut, pos)
+                edits.append((debut, len(brut), quote_tmdl(voulu)))
+                pris.add(voulu.casefold())
+                retouches.append(f"colonne {nom} renommée « {voulu} »")
+        elif voulu.casefold() in pris:
+            avertissements.append(f"colonne « {voulu} » non déclarée pour {valeur}, "
+                                  "une autre colonne porte déjà ce nom")
+        else:
+            a_declarer.append((valeur, voulu))
+            pris.add(voulu.casefold())
+    if a_declarer:
+        bloc = "".join(
+            "\tcolumn " + quote_tmdl(voulu) + "\n"
+            + "\t\tdataType: string\n"
+            + "\t\tlineageTag: " + str(uuid.uuid4()) + "\n"
+            + "\t\tsummarizeBy: none\n"
+            + "\t\tsourceColumn: [" + valeur + "]\n\n"
+            for valeur, voulu in a_declarer)
+        pos = debut_partition if debut_partition is not None else len(texte)
+        edits.append((pos, 0, bloc))
+        retouches.append("colonne" + ("s " if len(a_declarer) > 1 else " ")
+                         + ", ".join(v for _, v in a_declarer)
+                         + (" déclarées" if len(a_declarer) > 1 else " déclarée"))
+    for pos, longueur, neuf in sorted(edits, reverse=True):
+        texte = texte[:pos] + neuf + texte[pos + longueur:]
+    return texte, retouches, avertissements
+
+
+def _ref_tmdl_re(table, colonne):
+    """`Table.Colonne` d'une relation, quoté ou non, à la casse près."""
+    def nom(n):
+        return r"(?:'" + re.escape(n.replace("'", "''")) + r"'|" + re.escape(n) + r")"
+    return nom(table) + r"\." + nom(colonne)
+
+
+def colonne_citee(model_dir, table, colonne) -> bool:
+    """Une colonne d'une table est-elle citée ailleurs : DAX ('T'[c]),
+    relation (T.c), tri (sortByColumn) ou visuel d'un rapport du dossier ?
+    Prudent : un doute compte comme une citation, on ne renomme pas."""
+    model_dir = Path(model_dir)
+    t_dax = (r"(?:'" + re.escape(table.replace("'", "''")) + r"'|(?<![\w'])"
+             + re.escape(table) + r")\s*\[" + re.escape(colonne) + r"\]")
+    motifs = [re.compile(t_dax, re.I),
+              re.compile(r"^\t(?:from|to)Column:\s*" + _ref_tmdl_re(table, colonne)
+                         + r"\s*$", re.I | re.M)]
+    local = re.compile(r"^\t\t(?:sortByColumn|groupByColumn):\s*(?:'"
+                       + re.escape(colonne) + r"'|" + re.escape(colonne) + r")\s*$",
+                       re.I | re.M)
+    for f in (model_dir / "definition").rglob("*.tmdl"):
+        try:
+            t = f.read_text(encoding="utf-8-sig")
+        except OSError:
+            return True
+        if any(m.search(t) for m in motifs):
+            return True
+        nom = _first_group(TABLE_NAME_RE.search(t))
+        if nom and nom.casefold() == table.casefold() and local.search(t):
+            return True
+    entite = re.compile(r'"Entity"\s*:\s*"' + re.escape(table) + r'"', re.I)
+    propriete = re.compile(r'"Property"\s*:\s*"' + re.escape(colonne) + r'"', re.I)
+    query_ref = (table + "." + colonne).casefold()
+    for rapport in model_dir.parent.glob("*.Report"):
+        for j in rapport.rglob("*.json"):
+            try:
+                t = j.read_text(encoding="utf-8-sig")
+            except OSError:
+                return True
+            if query_ref in t.casefold() or (entite.search(t) and propriete.search(t)):
+                return True
+    return False
+
+
+def relation_presente(rel_texte, table, colonne, autre_table) -> bool:
+    """La colonne a-t-elle déjà une relation, ou les deux tables en ont-elles
+    déjà une entre elles ? Dans les deux cas on n'en ajoute pas : une
+    deuxième relation entre les mêmes tables serait ambiguë."""
+    if re.search(r"^\t(?:from|to)Column:\s*" + _ref_tmdl_re(table, colonne) + r"\s*$",
+                 rel_texte, re.I | re.M):
+        return True
+    for bloc in re.split(r"(?m)^relationship\b", rel_texte)[1:]:
+        cotes = [_nom_tmdl(m.group(1)).casefold() for m in re.finditer(
+            r"^\t(?:from|to)Column:\s*('(?:[^']|'')+'|[^\s.']+)\.", bloc, re.M)]
+        if {table.casefold(), autre_table.casefold()} <= set(cotes):
+            return True
+    return False
+
+
+def bloc_relation(table, colonne, vers_table, vers_colonne) -> str:
+    """Une relation plusieurs-à-un, de la table paramètre vers la table des
+    ICP : TD filtre le paramètre, comme une relation créée dans Desktop."""
+    return ("relationship " + str(uuid.uuid4()) + "\n"
+            + "\tfromColumn: " + quote_tmdl(table) + "." + quote_tmdl(colonne) + "\n"
+            + "\ttoColumn: " + quote_tmdl(vers_table) + "." + quote_tmdl(vers_colonne)
+            + "\n\n")
+
+
 def libelle_calcul(vid, tpl, prefixe=""):
     """La valeur Calcul d'une variation dans les tables paramètre.
 
@@ -1327,6 +1489,33 @@ def read_attribute_map(xlsx, key_col, attr_col) -> dict:
         if pd.notna(r[kl]) and str(r[kl]).strip() and pd.notna(r[al]):
             out[str(r[kl]).strip()] = _fmt_attr(r[al])
     return out
+
+
+def doublons_excel(xlsx, colonne):
+    """Les valeurs répétées d'une colonne de l'Excel, à la casse près (Power
+    BI compare ainsi les clés texte). None si on ne peut pas le savoir :
+    Excel absent ou illisible, ou colonne qu'il n'a pas (la table du modèle
+    vient alors d'ailleurs)."""
+    xlsx = Path(xlsx)
+    try:
+        lignes = _lignes_excel(xlsx) if xlsx.exists() else None
+    except Exception:                 # noqa: BLE001 : verrou, format, openpyxl absent
+        return None
+    if not lignes:
+        return None
+    entete = [str(h).strip().casefold() if h is not None else "" for h in lignes[0]]
+    if colonne.casefold() not in entete:
+        return None
+    i = entete.index(colonne.casefold())
+    vus, doublons = {}, []
+    for r in lignes[1:]:
+        v = str(r[i]).strip() if i < len(r) and r[i] is not None else ""
+        if not v:
+            continue
+        if v.casefold() in vus and v not in doublons:
+            doublons.append(v)
+        vus.setdefault(v.casefold(), v)
+    return doublons
 
 
 # --------------------------------- ordre des KPI dans les tables paramètre
@@ -2537,6 +2726,9 @@ def _generate(model_dir, config, *, dry_run=None, remove_orphans=None, log=print
         # impossible et deux tables homonymes arrêtent tout, parce que c'est
         # alors le config ou le modèle lui-même qui est faux.
         etats_fp: dict = {}
+        textes_fp: dict = {}      # table -> son texte après génération
+        noms_icp = dict(zip(VALEURS_ICP, (fp_kpi_col, fp_calc_col, fp_branch_col)))
+        relier = bool(fp.get("relateKpiColumn", True))
         for tname, expr, n_rows in targets:
             if Path(tname).name != tname or tname in (".", ".."):
                 raise SystemExit(f"Nom de table paramètre invalide : « {tname} ».")
@@ -2565,7 +2757,16 @@ def _generate(model_dir, config, *, dry_run=None, remove_orphans=None, log=print
                 avec_tri = champs_tries(avec_ordre)
                 if avec_tri != avec_ordre:
                     retouches.append("champs triés par l'ordre")
-                new_ttext = avec_tri
+                # une table créée dans Desktop ne connaît que Value1 à
+                # Value3 : ses colonnes ICP, Calcul et Branche sont déclarées
+                # (ou renommées) avec les noms du config
+                new_ttext, nommees, refus = colonnes_icp(
+                    avec_tri, noms_icp,
+                    lambda col, t=tname: colonne_citee(model_dir, t, col))
+                retouches += nommees
+                for r in refus:
+                    fp_statuses.append(f"⚠ {tname} : {r}")
+                textes_fp[tname] = new_ttext
                 if new_ttext != ttext:
                     fp_writes.append((tpath, new_ttext))
                     fp_statuses.append(f"{tname} : expression mise à jour ({n_rows} rangées)"
@@ -2579,9 +2780,51 @@ def _generate(model_dir, config, *, dry_run=None, remove_orphans=None, log=print
                 content = param_table_file(tname, expr, fp_kpi_col, fp_calc_col,
                                            fp_branch_col, {})
                 fp_writes.append((tpath, content))
+                textes_fp[tname] = content
                 model_refs_needed.append(tname)
-                fp_statuses.append(f"{tname} : CRÉÉE ({n_rows} rangées). Penser à la "
-                                   f"relation TD → {fp_kpi_col} à créer une fois dans Desktop)")
+                fp_statuses.append(f"{tname} : CRÉÉE ({n_rows} rangées)"
+                                   + ("" if relier else
+                                      f". Penser à la relation TD → {fp_kpi_col}, "
+                                      "à créer une fois dans Desktop"))
+
+        # La colonne ICP de chaque table paramètre reliée à la table des
+        # ICP (celle des libellés) : un segment ou un filtre sur TD filtre
+        # alors le paramètre. Seulement là où il n'y a encore rien : une
+        # relation posée à la main, même vers une autre table, est gardée.
+        if relier and textes_fp:
+            rel_path = model_dir / "definition" / "relationships.tmdl"
+            rel_texte = (rel_path.read_text(encoding="utf-8-sig")
+                         if rel_path.exists() else "")
+            # une clé répétée : Power BI refuserait la relation au
+            # rechargement (le côté « un » doit être unique)
+            doublons = doublons_excel(td["path"], lkp_key)
+            if not colonne_existe(tables_dir, lkp_table, lkp_key):
+                fp_statuses.append(
+                    f"⚠ relations non créées : la colonne {lkp_table}[{lkp_key}] "
+                    "est absente du modèle (Réglages communs → Libellés)")
+            elif doublons:
+                fp_statuses.append(
+                    f"⚠ relations non créées : la colonne {lkp_key} de "
+                    f"{Path(td['path']).name} a des doublons ("
+                    + ", ".join(doublons[:5]) + (", …" if len(doublons) > 5 else "")
+                    + "), Power BI refuserait la relation")
+            else:
+                ajouts = []
+                for tname, texte_fp in textes_fp.items():
+                    if tname.casefold() == lkp_table.casefold():
+                        continue
+                    if fp_kpi_col.casefold() not in noms_colonnes(texte_fp):
+                        continue      # colonne pas encore renommée : plus tard
+                    if relation_presente(rel_texte + "".join(ajouts), tname,
+                                         fp_kpi_col, lkp_table):
+                        continue
+                    ajouts.append(bloc_relation(tname, fp_kpi_col, lkp_table, lkp_key))
+                    fp_statuses.append(f"{tname} : relation {fp_kpi_col} → "
+                                       f"{lkp_table}[{lkp_key}] créée")
+                if ajouts:
+                    base_rel = rel_texte.rstrip("\n")
+                    fp_writes.append((rel_path, (base_rel + "\n\n" if base_rel else "")
+                                      + "".join(ajouts)))
 
     # ---- résumé / écriture -----------------------------------------------------
     log(f"{len(bases)} mesure(s) de base : " + ", ".join(bases))
