@@ -28,7 +28,7 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
-from core import model_reader
+from core import model_reader, report_reader
 from core.journal import Journal
 from core.runner import ToolRunner
 from tabs.dialog_guide import bouton_schema
@@ -107,6 +107,25 @@ class ReportTab(QWidget):
         self.lst_branches.setMaximumHeight(70)
         grid.addWidget(self.lst_branches, 2, 1)
 
+        # --- où propager : tout le rapport, une page, ou un visuel ---
+        grid.addWidget(QLabel("Portée :"), 3, 0)
+        portee = QHBoxLayout()
+        self.cmb_page = QComboBox()
+        self.cmb_page.setToolTip(
+            "Par défaut, la propagation passe sur tous les visuels du rapport.\n"
+            "Choisir une page pour ne propager que sur elle.")
+        self.cmb_page.setMinimumContentsLength(18)
+        self.cmb_visuel = QComboBox()
+        self.cmb_visuel.setToolTip(
+            "Sur la page choisie : tous ses visuels, ou un seul.\n"
+            "Les autres visuels ne sont ni lus, ni modifiés, ni nettoyés.")
+        self.cmb_visuel.setMinimumContentsLength(24)
+        self.cmb_page.currentIndexChanged.connect(self._on_page_portee)
+        portee.addWidget(self.cmb_page, 1)
+        portee.addWidget(self.cmb_visuel, 2)
+        grid.addLayout(portee, 3, 1)
+        self._remplir_pages()
+
         opts = QHBoxLayout()
         self.chk_prop_dry = QCheckBox("Aperçu (dry-run)")
         self.chk_prop_dry.setChecked(True)
@@ -123,7 +142,7 @@ class ReportTab(QWidget):
             "changer.")
         self.btn_propagate.clicked.connect(self._run_propagate)
         opts.addWidget(self.btn_propagate)
-        grid.addLayout(opts, 3, 0, 1, 2)
+        grid.addLayout(opts, 4, 0, 1, 2)
         grid.setColumnStretch(1, 1)
         return box
 
@@ -352,6 +371,7 @@ class ReportTab(QWidget):
 
         self._kpis = self._lire_kpis()
         self._fill_checklist(self.lst_branches, model_reader.branches(project), checked=True)
+        self._remplir_pages(garder=False)     # un autre projet : tout le rapport
         # un ancien fichier <rapport>.propagation.json SEUL dans le dossier
         # devient propagation.json, partagé par toutes les versions du rapport
         propagate_cf.migrer_groupes(project.folder, log=self.journal.info)
@@ -422,6 +442,89 @@ class ReportTab(QWidget):
         self.refresh_model()
         self._refresh_td_label()
         self._refresh_sources_label()
+        self._remplir_pages()                 # le choix reste, s'il existe encore
+
+    # ---- la portée ------------------------------------------------------------
+
+    TOUT_LE_RAPPORT = "Tout le rapport"
+    TOUTE_LA_PAGE = "Toute la page"
+
+    def _remplir_pages(self, garder=True):
+        """Les pages du rapport, dans son ordre. `garder` : la page et le
+        visuel choisis le restent s'ils existent encore."""
+        page_avant = self.cmb_page.currentData() if garder else None
+        visuel_avant = self.cmb_visuel.currentData() if garder else None
+        self.cmb_page.blockSignals(True)
+        self.cmb_page.clear()
+        self.cmb_page.addItem(self.TOUT_LE_RAPPORT, None)
+        if self.project and self.project.valid:
+            try:
+                for pg in report_reader.pages(self.project.report_dir):
+                    self.cmb_page.addItem(pg["display"], pg["id"])
+            except OSError:
+                pass
+        i = self.cmb_page.findData(page_avant) if page_avant else 0
+        self.cmb_page.setCurrentIndex(max(i, 0))
+        self.cmb_page.blockSignals(False)
+        self._on_page_portee()
+        if visuel_avant:
+            j = self.cmb_visuel.findData(visuel_avant)
+            if j >= 0:
+                self.cmb_visuel.setCurrentIndex(j)
+
+    @staticmethod
+    def libelle_visuel(v) -> str:
+        """Son titre s'il en a un, sinon son type et le premier champ qu'il
+        utilise (un segment sans titre se reconnaît à son champ) ; « masqué »
+        se voit."""
+        genre = v.get("type") or "visuel"
+        if v.get("title"):
+            nom = f"{v['title']}  ({genre})"
+        else:
+            champs = v.get("fields") or []
+            champ = champs[0].split(".", 1)[-1] if champs else ""
+            nom = f"{genre} : {champ}" if champ else genre
+        return nom + ("  [masqué]" if v.get("hidden") else "")
+
+    def _on_page_portee(self, *_):
+        """La page choisie donne la liste de ses visuels, dans l'ordre de
+        lecture (de haut en bas, puis de gauche à droite)."""
+        page = self.cmb_page.currentData()
+        self.cmb_visuel.clear()
+        self.cmb_visuel.addItem(self.TOUTE_LA_PAGE, None)
+        if page and self.project:
+            try:
+                vis = report_reader.visuals(self.project.report_dir, page)
+            except OSError:
+                vis = []
+            vis = sorted((v for v in vis if not v.get("is_group")),
+                         key=lambda v: (round(v.get("y", 0)), round(v.get("x", 0))))
+            # deux visuels de même nom (deux cartes sans titre) : le
+            # dossier les départage
+            libelles = [self.libelle_visuel(v) for v in vis]
+            for v, lib in zip(vis, libelles):
+                if libelles.count(lib) > 1:
+                    lib += f"  · {v['id'][:8]}"
+                self.cmb_visuel.addItem(lib, v["id"])
+        self.cmb_visuel.setEnabled(bool(page))
+
+    def portee(self):
+        """Ce que la propagation doit traiter : None (tout le rapport), une
+        page, ou un visuel « page/visuel » (cf. propagate_cf.dans_portee)."""
+        page = self.cmb_page.currentData()
+        if not page:
+            return None
+        visuel = self.cmb_visuel.currentData()
+        return [f"{page}/{visuel}" if visuel else page]
+
+    def portee_en_mots(self) -> str:
+        page = self.cmb_page.currentData()
+        if not page:
+            return "tout le rapport"
+        if self.cmb_visuel.currentData():
+            return (f"le visuel {self.cmb_visuel.currentText()} de la page "
+                    f"« {self.cmb_page.currentText()} »")
+        return f"la page « {self.cmb_page.currentText()} »"
 
     def refresh_model(self):
         """Relit KPI et branches APRÈS une génération, sans défaire les choix
@@ -487,6 +590,7 @@ class ReportTab(QWidget):
             dry_run=dry,
             verbose=self.chk_prop_verbose.isChecked(),
             cible_folders=self._cible_folders(),
+            portee=self.portee(),
         )
         return (propagate_cf.propagate_regles, kwargs, not dry,
                 "Propagation des attributs")
@@ -532,7 +636,9 @@ class ReportTab(QWidget):
         if self._runner is not None:
             return  # un run à la fois
         writes = any(w for _, _, w, _ in steps)
-        if writes and not self._confirm_write():
+        propage = any(f is propagate_cf.propagate_regles and w
+                      for f, _, w, _ in steps)
+        if writes and not self._confirm_write(bool(propage and self.portee())):
             return
         self._queue = list(steps)
         self._failed = False
@@ -554,11 +660,13 @@ class ReportTab(QWidget):
         self._runner = r
         r.start()
 
-    def _confirm_write(self) -> bool:
+    def _confirm_write(self, bornee=False) -> bool:
+        portee = (f"La propagation ne touchera que {self.portee_en_mots()}.\n\n"
+                  if bornee else "")
         return QMessageBox.question(
             self, "Confirmer l'écriture",
-            "Des fichiers du rapport vont être modifiés.\n\n"
-            "Continuer ?",
+            "Des fichiers du rapport vont être modifiés.\n\n" + portee
+            + "Continuer ?",
             QMessageBox.Yes | QMessageBox.Cancel, QMessageBox.Cancel,
         ) == QMessageBox.Yes
 

@@ -1474,6 +1474,18 @@ l'ouverture du projet (le journal le dit). S'il y en a plusieurs, on ne
 devine pas lequel partager : chaque rapport lit le sien jusqu'au premier
 enregistrement de la grille, qui écrit `propagation.json`.
 
+#### La portée : une page, un visuel
+
+Par défaut, une propagation passe sur tous les visuels. La ligne **Portée** de
+l'onglet Rapport la borne à une page, ou à un visuel d'une page : le moteur
+reçoit `portee`, une liste de clés `page` ou `page/visuel` (les mêmes que la
+mémoire). `propagate_regles`, `propagate_groupes` et `propagate` la prennent ;
+`None` vaut tout le rapport. Hors portée, un visuel n'est ni lu ni écrit ni
+nettoyé, et les pertes annoncées avant l'écriture (`retraits_prevus`) ne
+comptent que la portée. Un visuel ne copie le formatage qu'en lui-même : borner
+ne change pas ce qu'il reçoit. Une portée qui ne garde plus aucun visuel
+n'écrit rien et le dit.
+
 #### Ce qui rend le découpage sûr
 
 `process_visual` travaille par **cases** : chaque passe — une par source —
