@@ -1486,6 +1486,21 @@ comptent que la portée. Un visuel ne copie le formatage qu'en lui-même : borne
 ne change pas ce qu'il reçoit. Une portée qui ne garde plus aucun visuel
 n'écrit rien et le dit.
 
+#### Vers les branches seulement
+
+`propagate_branches` : sans grille ni gabarit, chaque ICP est sa propre
+source. Pour des visuels montés un par ICP, formatés à la main sur le Réel,
+qu'on veut seulement recopier sur YTD. Rien à ajouter au moteur : une passe
+`process_visual(vj, k, [k])`, l'ICP étant à la fois le template et la seule
+cible, ne fait que régénérer les faces de branche du template depuis son Réel
+(« le Réel du template n'est jamais réécrit »), avec le même miroir borné à
+cet ICP. Une passe par ICP et par visuel, `cellules=None` (toutes ses
+variations), `kpis_connus` complet pour découper les noms, UNE session de
+sauvegarde. `propagation.json` n'est pas lu. Bouton **Vers les branches
+seulement** de l'onglet Rapport, mêmes branches cochées, portée, aperçu et
+confirmation que **Propager** ; sans branche cochée, rien n'est lancé. Test :
+`tests/test_propagation_branches.py`.
+
 #### Ce qui rend le découpage sûr
 
 `process_visual` travaille par **cases** : chaque passe — une par source —

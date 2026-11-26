@@ -70,7 +70,8 @@ class ReportTab(QWidget):
         root.addLayout(chain_bar)
         root.addStretch(1)      # le journal a sa colonne : rien à étirer ici
 
-        self._action_buttons = [self.btn_propagate, self.btn_colorize, self.btn_chain]
+        self._action_buttons = [self.btn_propagate, self.btn_branches,
+                                self.btn_colorize, self.btn_chain]
         self._set_enabled(False)
 
     # ---- construction de l'UI -------------------------------------------------
@@ -133,6 +134,17 @@ class ReportTab(QWidget):
         opts.addWidget(self.chk_prop_dry)
         opts.addWidget(self.chk_prop_verbose)
         opts.addStretch()
+        # sans gabarit : chaque ICP vers SES branches (visuels montés un par
+        # ICP, déjà formatés à la main sur le Réel)
+        self.btn_branches = QPushButton("Vers les branches seulement")
+        self.btn_branches.setToolTip(
+            "Sans gabarit ni grille des sources : le formatage du Réel de\n"
+            "chaque ICP est recopié sur SES branches cochées (YTD...).\n"
+            "Rien ne passe d'un ICP à un autre.\n\n"
+            "Pour des visuels montés un par ICP, réglés à la main sur le Réel.\n"
+            "Même portée, même aperçu, même sauvegarde que « Propager ».")
+        self.btn_branches.clicked.connect(self._run_branches)
+        opts.addWidget(self.btn_branches)
         self.btn_propagate = QPushButton("Propager")
         self.btn_propagate.setToolTip(
             "Aligne chaque case de la grille sur sa source : ce que la source "
@@ -595,6 +607,21 @@ class ReportTab(QWidget):
         return (propagate_cf.propagate_regles, kwargs, not dry,
                 "Propagation des attributs")
 
+    def _branches_step(self):
+        dry = self.chk_prop_dry.isChecked()
+        kwargs = dict(
+            report_dir=str(self.project.report_dir),
+            branches=self._checked(self.lst_branches),
+            entity=model_reader.entity(self.project),
+            field_parameter=model_reader.field_parameter(self.project),
+            dry_run=dry,
+            verbose=self.chk_prop_verbose.isChecked(),
+            cible_folders=self._cible_folders(),
+            portee=self.portee(),
+        )
+        return (propagate_cf.propagate_branches, kwargs, not dry,
+                "Propagation vers les branches")
+
     def _colorize_step(self):
         dry = self.chk_col_dry.isChecked()
         td = self._td_spec()          # relu au moment de l'exécution
@@ -625,6 +652,13 @@ class ReportTab(QWidget):
         if self._sources_pretes():
             self._enqueue([self._propagate_step()])
 
+    def _run_branches(self):
+        if not self._checked(self.lst_branches):
+            self.journal.info("⚠ Aucune branche cochée : cocher au moins une "
+                              "branche (YTD, par exemple) à remplir.")
+            return
+        self._enqueue([self._branches_step()])
+
     def _run_colorize(self):
         self._enqueue([self._colorize_step()])
 
@@ -636,7 +670,8 @@ class ReportTab(QWidget):
         if self._runner is not None:
             return  # un run à la fois
         writes = any(w for _, _, w, _ in steps)
-        propage = any(f is propagate_cf.propagate_regles and w
+        propage = any(f in (propagate_cf.propagate_regles,
+                            propagate_cf.propagate_branches) and w
                       for f, _, w, _ in steps)
         if writes and not self._confirm_write(bool(propage and self.portee())):
             return
