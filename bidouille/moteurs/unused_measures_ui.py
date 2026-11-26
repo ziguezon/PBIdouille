@@ -65,15 +65,6 @@ try:
     from core import theme as _theme
 except ImportError:
     _theme = None
-# PRODUCTION : analyse et export seulement, pas de suppression (cf.
-# core/edition.py). Sans le dossier bidouille\ à côté, on reste prudent :
-# production.
-try:
-    from core.edition import production as _production
-except ImportError:
-    def _production():
-        return True
-
 APP_NAME  = "ChopChopRapport"
 APP_EMOJI = "🪓"
 
@@ -340,10 +331,6 @@ class ChopChopPanel(QWidget):
         buttons.addWidget(btn_backups)
         buttons.addStretch()
         buttons.addWidget(self.btn_delete)
-        if _production():
-            # « Cocher manuelles » ne sert qu'à préparer une suppression
-            btn_manual.setVisible(False)
-            self.btn_delete.setVisible(False)
         layout.addLayout(buttons)
 
         self.log = QPlainTextEdit()
@@ -560,8 +547,7 @@ class ChopChopPanel(QWidget):
         # journal, et la suppression bloquée (cf. _update_delete_label)
         avis = um.avertissement_incomplet(self.result)
         if avis:
-            if not _production():
-                avis += " La suppression est bloquée tant qu'ils ne sont pas corrigés."
+            avis += " La suppression est bloquée tant qu'ils ne sont pas corrigés."
             self.log.appendPlainText(avis)
             for nom, raison in self.result["illisibles"].items():
                 self.log.appendPlainText(f"    {nom} : {raison}")
@@ -893,7 +879,7 @@ class ChopChopPanel(QWidget):
     # ---- suppression -----------------------------------------------------------
 
     def _delete_checked(self):
-        if _production() or not self.result or self.result.get("illisibles"):
+        if not self.result or self.result.get("illisibles"):
             return
         measures    = self.result["measures"]
         referencers = self.result["referencers"]

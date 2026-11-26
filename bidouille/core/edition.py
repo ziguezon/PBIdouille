@@ -8,8 +8,9 @@ pas offert :
   · Wireframe : lecture seule (plan des pages, structure, détails d'un
     visuel). Ni déplacement, ni redimensionnement, ni groupement, ni import
     de gabarit, ni enregistrement.
-  · ChopChop : analyse, export et restauration des sauvegardes. Pas de
-    suppression.
+
+La suppression de ChopChop n'en fait plus partie : elle sert dans la version
+partagée, et chaque suppression est sauvegardée avant d'écrire.
 
 LA PRODUCTION EST LE DÉFAUT. L'édition dev ne s'obtient qu'en posant un
 fichier « .dev » à côté de app.py (ou PBIDOUILLE_DEV=1 dans

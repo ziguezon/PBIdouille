@@ -161,15 +161,10 @@ check("les boutons d'écriture sont là",
 check("les éléments du niveau actif se déplacent", len(deplacables(w2)) > 0)
 
 # ===================================================================== 4
-print("4. ChopChop : la suppression n'existe qu'en dev")
+print("4. ChopChop : la suppression est offerte dans les deux éditions")
 edition.MARQUEUR_DEV = ABSENT
 k = ChopChopTab()
-check("production : bouton Supprimer masqué", k.panel.btn_delete.isHidden())
-avant = empreinte(c)
-k.panel.result = {"measures": {}, "referencers": {}, "columns": {},
-                  "column_referencers": {}}
-k.panel._delete_checked()
-check("production : _delete_checked n'écrit rien", empreinte(c) == avant)
+check("production : bouton Supprimer présent", not k.panel.btn_delete.isHidden())
 edition.MARQUEUR_DEV = PRESENT
 k2 = ChopChopTab()
 check("dev : bouton Supprimer présent", not k2.panel.btn_delete.isHidden())

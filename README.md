@@ -1709,7 +1709,7 @@ catégories calc/import/structural). Une colonne est utilisée si référencée 
 **Sortie** : `unused_measures.csv` (audit complet mesures + colonnes, colonne
 `Type`, avec la raison d'utilisation de chacune), par l'export de ChopChop ou
 `py bidouille\moteurs\unused_measures.py`. La suppression se fait dans
-ChopChop (édition dev), avec sauvegarde.
+ChopChop, avec sauvegarde.
 
 **Analyse incomplète** : les JSON du rapport sont lus avec ou sans BOM. Un
 fichier (ou un dossier) qu'on ne peut pas lire est noté dans
@@ -2300,7 +2300,7 @@ reste, il n'est pas offert) :
 |---|---|---|
 | Mesures, Rapport, Réglages, Bibliothèque, Sources de données, Radiographie | ✔ | ✔ |
 | Wireframe | **absent** : pas encore utilisable pour un usager | l'onglet complet |
-| ChopChop | analyse, export, restauration des sauvegardes | + suppression |
+| ChopChop | analyse, export, suppression | idem |
 
 **La production est le défaut.** L'édition dev ne s'obtient qu'en posant un
 fichier **`.dev`** à côté de `app.py` (ou `PBIDOUILLE_DEV=1`) — jamais versionné,
