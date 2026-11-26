@@ -2588,19 +2588,25 @@ sémantique du GABARIT — compatibilité à vérifier (même modèle ou champs
 communs). Voir `core/template_import.py`.
 
 **Indicateurs d'un gabarit** : un gabarit vient d'un autre rapport, ses
-visuels citent SES ICP. `indicateurs_du_modele` les retrouve dans le
-sous-arbre : mesure citée dont le nom est un ICP ou une déclinaison
-(`match_kpi`, plus long préfixe d'abord), ou littéral égal à un ICP
-(filtre, segment). Les ICP connus = ceux du gabarit (`read_measures` sur
-son modèle, avec son config s'il en a un, sinon celui du rapport) + ceux
-du rapport. Le panneau propose une liste par ICP trouvé (défaut : lui-même).
-`remplacer_indicateurs` réécrit chaque copie : le `Property` des `Measure`,
-toute autre chaîne égale à une mesure citée ou à `Table.Mesure` pour une
-table qui porte des mesures citées (queryRef, nativeQueryRef), et les
-littéraux égaux à un ICP. Chaque chaîne d'après sa valeur d'ORIGINE (un
-échange A <-> B tient) ; colonnes et titres jamais touchés. Le manifeste
-note les remplacements ; `mesures_absentes` signale ensuite les mesures
-citées que le modèle cible n'a pas. Test : `tests/test_gabarit_indicateurs.py`.
+visuels citent SES ICP, que la cible n'a en général pas. Détection
+(`indicateurs_du_modele`) par la NOMENCLATURE d'abord : `motifs_de_noms`
+lit les habits (avant, après) des `namePattern` des variations (un
+`{branch}` essayé avec chaque branche et vide) et les noms de branches, des
+configs du rapport et du gabarit ; `racine` les retire tant qu'il en reste
+(`Body Fat % YTD PY` -> `Body Fat %`). Puis les ICP connus des deux modèles
+(`match_kpi`, plus long préfixe), et les littéraux égaux à un ICP. Ce ne
+sont que des propositions : chaque rangée du panneau est un « remplacer
+TEXTE par TEXTE » modifiable (liste des ICP du rapport, éditable), plus
+« + Ajouter » et « ✕ ». `remplacer_indicateurs` remplace le texte comme
+SOUS-CHAÎNE (`renommer`, une passe, le plus long d'abord : un échange
+tient) dans le `Property` des `Measure`, dans toute chaîne égale à une
+mesure citée ou à `Table.Mesure` pour une table qui porte des mesures
+citées (queryRef, nativeQueryRef), et dans les littéraux égaux à un ancien
+texte ou à une mesure citée. Colonnes et titres jamais touchés. L'aperçu
+(`mesures_du_sous_arbre` + `renommer` contre `mesures_du_modele` de la
+cible) marque chaque mesure ✓ ou ⚠ à chaque frappe. Le manifeste note les
+remplacements ; `mesures_absentes` les redit après l'import. Test :
+`tests/test_gabarit_indicateurs.py`.
 
 ### Onglet « Mesures »
 

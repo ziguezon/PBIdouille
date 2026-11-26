@@ -153,21 +153,44 @@ Le modèle garde sa position et sa taille d'origine.
 
 ### Changer les indicateurs
 
-Un gabarit vient d'un autre rapport : ses visuels citent **ses** indicateurs. Sous la liste
-des modèles, une rangée par indicateur que cite le modèle choisi, avec à côté la liste des
-indicateurs de ce rapport. Par défaut, chacun se garde lui-même ; un indicateur que ce
-rapport n'a pas est marqué « absent de ce rapport ».
+Un gabarit vient d'un autre rapport : ses visuels citent **ses** indicateurs, que ce
+rapport n'a en général pas. Sous la liste des modèles, la zone **Dans les noms des
+mesures, remplacer** propose une rangée par indicateur trouvé dans le modèle choisi :
 
-Un indicateur est reconnu dans un modèle de deux façons :
+- à gauche, le texte du gabarit, qui se corrige ;
+- à droite, l'indicateur de ce rapport qui le remplace, à choisir dans la liste ou à
+  taper. Il est déjà choisi si ce rapport a le même ; sinon la case est vide.
 
-- une **mesure** qui est l'indicateur ou une de ses déclinaisons : `Body Fat % 30d avg`
-  est une déclinaison de `Body Fat %` ;
-- un **filtre** ou un **segment** dont la valeur est l'indicateur : `'Body Fat %'`.
+**+ Ajouter un remplacement** ajoute une rangée pour un cas que la détection n'a pas vu,
+et **✕** en retire une.
 
-À l'import, avec `Body Fat %` remplacé par `Weight` :
+Un indicateur est trouvé par la **nomenclature**, sans avoir à lire le modèle du gabarit :
+on retire d'un nom de mesure les habits connus de ses variations et branches (les
+`namePattern` du `measures_config.json`). `Body Fat % YTD PY` perd ` PY`, puis ` YTD`,
+et il reste `Body Fat %`. Les indicateurs connus du gabarit, quand son modèle se lit, et
+ceux de ce rapport servent aussi. Une mesure qui ne suit aucun motif n'est pas trouvée :
+l'ajouter à la main.
+
+À l'import, le texte de gauche est remplacé par celui de droite **dans le nom de chaque
+mesure citée**. Avec `Body Fat %` remplacé par `Weight` :
 
 | Dans le gabarit | Dans le rapport |
 |---|---|
+| La mesure `Body Fat % 30d avg` | `Weight 30d avg` |
+| Le filtre ou segment `'Body Fat %'` | `'Weight'` |
+| Une colonne qui s'appelle `Body Fat %` | Inchangée : ce n'est pas une mesure |
+| Un titre « Évolution de Body Fat % » | Inchangé : à retoucher dans Desktop |
+
+Un bout de nom suffit : remplacer `Fat %` par `Mass` donne `Body Mass 30d avg`.
+
+**L'aperçu** liste chaque mesure citée telle qu'elle sera importée, avec ✓ si ce rapport
+l'a et ⚠ sinon, et le compte des absentes. Il suit chaque frappe : on voit si le
+remplacement tombe juste avant d'importer. Une mesure absente laisserait son visuel vide.
+
+Le modèle cite aussi les tables et colonnes du gabarit (dates, paramètres de champ) :
+ce rapport doit les avoir sous les mêmes noms.
+
+---|---|
 | La mesure `Body Fat % 30d avg` | `Weight 30d avg` |
 | Le filtre ou segment `'Body Fat %'` | `'Weight'` |
 | Une colonne qui s'appelle `Body Fat %` | Inchangée : ce n'est pas une mesure |

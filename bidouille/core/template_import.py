@@ -19,13 +19,15 @@ tables/champs du modèle sémantique du GABARIT — la compatibilité avec le
 modèle du rapport cible est à la charge de l'utilisateur.
 
 INDICATEURS. Un gabarit vient d'un autre rapport : ses visuels citent SES
-indicateurs. `indicateurs_du_modele` les retrouve (mesures citées dont le nom
-est un ICP ou une de ses déclinaisons, « Body Fat % 30d avg » -> « Body Fat % »,
-et valeurs de filtre ou de segment égales à un ICP), et `import_model` les
-remplace à la copie : « Body Fat % 30d avg » devient « Weight 30d avg »
-partout où la mesure est citée (champ, queryRef, nativeQueryRef…), et le
-filtre 'Body Fat %' devient 'Weight'. Le reste du texte (titres) n'est pas
-touché. `mesures_absentes` dit ensuite ce que le rapport cible n'a pas."""
+indicateurs, que le rapport cible n'a en général pas. `indicateurs_du_modele`
+les retrouve, par la NOMENCLATURE (« Body Fat % 30d avg » moins le « {base}
+30d avg » d'une variation = « Body Fat % »), ce qui marche sans lire le modèle
+du gabarit, et par les ICP connus des deux modèles. Ce sont des propositions :
+l'utilisateur corrige le texte à remplacer et choisit (ou tape) le nouveau.
+`import_model` remplace alors ce TEXTE dans le nom de chaque mesure citée,
+partout où la mesure est citée (champ, queryRef, nativeQueryRef…), et dans
+les filtres égaux à lui. Colonnes et titres ne sont pas touchés.
+`mesures_absentes` dit ensuite ce que le rapport cible n'a pas."""
 
 from __future__ import annotations
 
@@ -172,50 +174,126 @@ def _litteraux(obj, out):
     return out
 
 
-def indicateurs_du_modele(template_report_dir, template_page_id, root_id,
-                          bases) -> list:
-    """Les ICP que cite un modèle du gabarit, dans l'ordre où on les
-    rencontre : une mesure citée qui est un ICP de `bases` ou une de ses
-    déclinaisons, ou une valeur de filtre égale à un ICP. `bases` = les ICP
-    connus (ceux du gabarit, et ceux du rapport cible)."""
+def motifs_de_noms(*configs) -> list:
+    """Les habits que la nomenclature met autour d'un ICP, en (avant, après) :
+    « {base} 7d avg » donne ("", " 7d avg"), une branche YTD donne ("", " YTD").
+    Lus dans les namePattern des variations (un {branch} essayé avec chaque
+    branche, et vide) et dans les noms de branches, de tous les configs
+    donnés. Les plus longs d'abord."""
+    out = set()
+    for config in configs:
+        config = config or {}
+        branches = [b for b in (config.get("branches") or {}) if b]
+        for vid, v in (config.get("variations") or {}).items():
+            motif = (v or {}).get("namePattern") or "{base} " + vid
+            for br in branches + [""]:
+                p = re.sub(r" {2,}", " ", motif.replace("{branch}", br))
+                m = re.search(r"\{(base|kpi)\}", p)
+                if not m:
+                    continue
+                avant, apres = p[:m.start()], p[m.end():]
+                if "{" in avant + apres or not (avant or apres):
+                    continue
+                out.add((avant, apres))
+        for br in branches:
+            out.add(("", " " + br))
+    return sorted(out, key=lambda t: (-(len(t[0]) + len(t[1])), t))
+
+
+def racine(nom, motifs) -> str:
+    """Le nom dépouillé des habits connus, tant qu'il en reste :
+    « Body Fat % YTD PY » -> « Body Fat % YTD » -> « Body Fat % »."""
+    cur = nom
+    change = True
+    while change:
+        change = False
+        for avant, apres in motifs:
+            if (cur.startswith(avant) and cur.endswith(apres)
+                    and len(cur) > len(avant) + len(apres)):
+                milieu = cur[len(avant):len(cur) - len(apres)].strip()
+                if milieu:
+                    cur, change = milieu, True
+                    break
+    return cur
+
+
+def mesures_du_sous_arbre(template_report_dir, template_page_id, root_id) -> list:
+    """Les mesures que cite un modèle du gabarit (triées, sans doublon)."""
     raw = _lire_page(template_report_dir, template_page_id)
     if root_id not in raw:
         return []
-    par_longueur = sorted(set(bases), key=len, reverse=True)
+    noms = set()
+    for vid in _sous_arbre(raw, root_id):
+        noms |= set(_mesures_citees(raw[vid], []))
+    return sorted(noms)
+
+
+def indicateurs_du_modele(template_report_dir, template_page_id, root_id,
+                          bases, motifs=()) -> list:
+    """Les ICP que cite un modèle du gabarit, dans l'ordre où on les
+    rencontre. Pour chaque mesure citée :
+    1. sa RACINE par la nomenclature (`motifs`), si c'est un ICP connu ;
+    2. sinon l'ICP connu (`bases`) dont elle est une déclinaison ;
+    3. sinon sa racine, si la nomenclature a enlevé quelque chose : c'est
+       ainsi qu'un ICP absent des deux modèles est quand même reconnu.
+    Plus les valeurs de filtre égales à un ICP connu ou trouvé.
+    `bases` = les ICP connus (ceux du gabarit, et ceux du rapport cible)."""
+    raw = _lire_page(template_report_dir, template_page_id)
+    if root_id not in raw:
+        return []
+    connus = set(bases)
+    par_longueur = sorted(connus, key=len, reverse=True)
     vus: list = []
-    for vid in sorted(_sous_arbre(raw, root_id)):
-        data = raw[vid]
-        for nom in _mesures_citees(data, []):
-            b = _icp_de(nom, par_longueur)
-            if b and b not in vus:
-                vus.append(b)
-        for t in _litteraux(data, []):
-            if t in par_longueur and t not in vus:
+    sous_arbre = sorted(_sous_arbre(raw, root_id))
+    for vid in sous_arbre:
+        for nom in _mesures_citees(raw[vid], []):
+            r = racine(nom, motifs)
+            if r in connus:
+                trouve = r
+            else:
+                trouve = _icp_de(nom, par_longueur) or (r if r != nom else None)
+            if trouve and trouve not in vus:
+                vus.append(trouve)
+    for vid in sous_arbre:
+        for t in _litteraux(raw[vid], []):
+            if (t in connus or t in vus) and t not in vus:
                 vus.append(t)
     return vus
 
 
-def remplacer_indicateurs(data, remplacements, bases) -> int:
-    """Remplace en place les ICP de `data` (un visual.json) selon
-    `remplacements` {ancien: nouveau}. Retourne le nombre de remplacements.
+def renommer(nom, remplacements) -> str:
+    """`nom` avec chaque ancien texte remplacé par le nouveau, en une passe
+    (le plus long d'abord) : un échange A <-> B ne se défait pas."""
+    paires = {a: b for a, b in (remplacements or {}).items()
+              if a and b is not None and a != b}
+    if not paires:
+        return nom
+    rx = re.compile("|".join(re.escape(a) for a in
+                             sorted(paires, key=len, reverse=True)))
+    return rx.sub(lambda m: paires[m.group(0)], nom)
 
-    - une mesure citée, déclinaison d'un ancien ICP : son nom ;
-    - toute AUTRE chaîne égale à une de ces mesures, ou qui finit par
-      « .<mesure> » (queryRef « _mesures.Body Fat % 30d avg ») ;
-    - un littéral égal à un ancien ICP ('Body Fat %', filtre ou segment).
-    Chaque chaîne est lue une seule fois d'après sa valeur D'ORIGINE : un
-    échange (A -> B et B -> A) ne se défait pas."""
+
+def remplacer_indicateurs(data, remplacements) -> int:
+    """Remplace en place les ICP de `data` (un visual.json) selon
+    `remplacements` {ancien texte: nouveau texte}. Retourne le nombre de
+    remplacements.
+
+    - le nom de chaque mesure citée, où l'ancien texte apparaît (une
+      sous-chaîne : « Body Fat % 30d avg » -> « Weight 30d avg ») ;
+    - toute AUTRE chaîne égale à une de ces mesures, ou « Table.Mesure »
+      pour une table qui porte des mesures citées (queryRef) ;
+    - un littéral égal à un ancien texte ('Body Fat %', filtre ou segment)
+      ou à une mesure citée.
+    Les colonnes et les titres ne sont pas touchés. Chaque chaîne est lue une
+    seule fois d'après sa valeur D'ORIGINE : un échange ne se défait pas."""
     remplacements = {a: b for a, b in (remplacements or {}).items()
                      if a and b and a != b}
     if not remplacements:
         return 0
-    par_longueur = sorted(set(bases) | set(remplacements), key=len, reverse=True)
 
     def nouveau(nom):
-        b = _icp_de(nom, par_longueur)
-        if b in remplacements:
-            return remplacements[b] + nom[len(b):]
-        return None
+        n = renommer(nom, remplacements)
+        return n if n != nom else None
 
     citees = {n: nouveau(n) for n in _mesures_citees(data, [])}
     citees = {a: b for a, b in citees.items() if b}
@@ -321,10 +399,10 @@ def _mint_id(used: set) -> str:
 
 def import_model(template_report_dir, template_page_id, root_id,
                  target_report_dir, target_page_id, backup_root,
-                 remplacements=None, bases=()):
+                 remplacements=None):
     """Copie le sous-arbre `root_id` de la page gabarit vers la page cible.
     `remplacements` {ICP du gabarit: ICP du rapport} est appliqué à chaque
-    copie (voir remplacer_indicateurs ; `bases` = les ICP connus).
+    copie (voir remplacer_indicateurs).
     Écrit un manifeste (undo = supprimer les dossiers listés) sous
     backup_root/<horodatage>/import_manifest.txt. Retourne
     (nouvel_id_racine, [chemins visual.json écrits], chemin_du_manifeste)."""
@@ -371,7 +449,7 @@ def import_model(template_report_dir, template_page_id, root_id,
         for f in (data.get("filterConfig") or {}).get("filters") or []:
             if isinstance(f, dict) and "name" in f:
                 f["name"] = secrets.token_hex(10)
-        remplacer_indicateurs(data, remplacements, bases)
+        remplacer_indicateurs(data, remplacements)
         dst = (target_report_dir / "definition" / "pages" / target_page_id
                / "visuals" / mapping[vid] / "visual.json")
         dst.parent.mkdir(parents=True, exist_ok=True)

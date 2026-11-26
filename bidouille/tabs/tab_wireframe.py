@@ -28,7 +28,6 @@ from qtpy.QtWidgets import (
     QAbstractSpinBox,
     QComboBox,
     QFileDialog,
-    QFormLayout,
     QGraphicsItem,
     QGraphicsRectItem,
     QGraphicsScene,
@@ -38,6 +37,7 @@ from qtpy.QtWidgets import (
     QHBoxLayout,
     QInputDialog,
     QLabel,
+    QLineEdit,
     QListWidget,
     QListWidgetItem,
     QMessageBox,
@@ -316,7 +316,10 @@ class WireframeTab(QWidget):
         self._tpl_project = None       # Project du PBIP gabarit (ou None)
         self._tpl_models: list = []    # modèles du gabarit (list_models)
         self._tpl_bases: list = []     # ICP du gabarit (mesures de base)
-        self._icp_combos: dict = {}    # ICP du modèle -> QComboBox (ICP du rapport)
+        self._icp_rangees: list = []   # [(QLineEdit ancien, QComboBox nouveau, QWidget)]
+        self._tpl_citees: list = []    # mesures citées par le modèle sélectionné
+        self._cible_mesures: set = set()   # toutes les mesures du rapport
+        self._cible_bases: list = []   # ICP du rapport
 
         root = QHBoxLayout(self)
         split = QSplitter(Qt.Horizontal)
@@ -503,22 +506,42 @@ class WireframeTab(QWidget):
         self.lst_models.itemSelectionChanged.connect(self._tpl_refresh_icp)
         tv.addWidget(self.lst_models)
         # le gabarit vient d'un autre rapport : ses visuels citent SES
-        # indicateurs. Une rangée par indicateur trouvé dans le modèle, pour
-        # choisir celui de CE rapport qui le remplace à l'import.
-        self.lbl_icp = QLabel("Indicateurs du modèle :")
+        # indicateurs, que ce rapport n'a en général pas. Une rangée
+        # « remplacer TEXTE par TEXTE » par indicateur trouvé, modifiable, et
+        # l'aperçu de chaque mesure citée après remplacement.
+        self.icp_box = QWidget()
+        ib = QVBoxLayout(self.icp_box)
+        ib.setContentsMargins(0, 0, 0, 0)
+        self.lbl_icp = QLabel("Dans les noms des mesures, remplacer :")
         self.lbl_icp.setToolTip(
-            "Les indicateurs que cite le modèle choisi : ses mesures (« Body Fat %\n"
-            "30d avg » est une déclinaison de « Body Fat % ») et ses filtres ou\n"
-            "segments sur un indicateur.\n\n"
-            "À l'import, chacun est remplacé par l'indicateur choisi à côté :\n"
-            "« Body Fat % 30d avg » devient « Weight 30d avg », le filtre\n"
-            "'Body Fat %' devient 'Weight'. Les titres ne sont pas touchés.")
-        tv.addWidget(self.lbl_icp)
-        self.icp_host = QWidget()
-        self.icp_form = QFormLayout(self.icp_host)
-        self.icp_form.setContentsMargins(0, 0, 0, 0)
-        tv.addWidget(self.icp_host)
-        self.lbl_icp.setVisible(False)
+            "Les indicateurs que cite le modèle choisi, reconnus par la\n"
+            "nomenclature : « Body Fat % 30d avg » moins le « 30d avg » d'une\n"
+            "variation donne « Body Fat % ». Le texte de gauche se corrige.\n\n"
+            "À l'import, il est remplacé par celui de droite (un indicateur de\n"
+            "ce rapport, ou un texte tapé) dans le nom de chaque mesure citée :\n"
+            "« Body Fat % 30d avg » devient « Weight 30d avg ». Un filtre ou un\n"
+            "segment égal à « Body Fat % » devient « Weight ».\n"
+            "Les colonnes et les titres ne sont pas touchés.")
+        ib.addWidget(self.lbl_icp)
+        self.icp_rangees_host = QWidget()
+        self.icp_rangees_lay = QVBoxLayout(self.icp_rangees_host)
+        self.icp_rangees_lay.setContentsMargins(0, 0, 0, 0)
+        self.icp_rangees_lay.setSpacing(2)
+        ib.addWidget(self.icp_rangees_host)
+        btn_plus = QPushButton("+ Ajouter un remplacement")
+        btn_plus.clicked.connect(lambda: self._tpl_ajouter_rangee("", ""))
+        ib.addWidget(btn_plus, 0, Qt.AlignLeft)
+        self.lbl_apercu = QLabel("")
+        self.lbl_apercu.setStyleSheet(f"color:{TEXT_DIM};")
+        ib.addWidget(self.lbl_apercu)
+        self.lst_apercu = QListWidget()
+        self.lst_apercu.setMaximumHeight(130)
+        self.lst_apercu.setToolTip("Chaque mesure citée par le modèle, telle qu'elle sera "
+                                   "importée.\n✓ : ce rapport l'a. ⚠ : il ne l'a pas, "
+                                   "le visuel resterait vide.")
+        ib.addWidget(self.lst_apercu)
+        tv.addWidget(self.icp_box)
+        self.icp_box.setVisible(False)
         self.btn_import = QPushButton("Importer dans la page courante")
         self.btn_import.setEnabled(False)
         self.btn_import.clicked.connect(self._tpl_import)
@@ -2122,42 +2145,121 @@ class WireframeTab(QWidget):
             return []
 
     def _tpl_refresh_icp(self, *_):
-        """Une rangée par ICP cité par le modèle sélectionné : l'ICP du
-        gabarit, et à côté l'ICP du rapport qui le remplacera. Par défaut
-        chacun se garde lui-même (le même nom, s'il existe ici)."""
-        while self.icp_form.rowCount():
-            self.icp_form.removeRow(0)
-        self._icp_combos = {}
-        sel = self.lst_models.selectedItems()
-        model = None
-        if sel and self._tpl_project is not None:
-            rid = sel[0].data(Qt.UserRole)
-            model = next((m for m in self._tpl_models if m["root_id"] == rid), None)
+        """Le modèle sélectionné a changé : une rangée par ICP qu'il cite
+        (texte du gabarit à gauche, modifiable ; ICP de ce rapport à droite,
+        à choisir ou à taper), puis l'aperçu."""
+        for _a, _n, w in self._icp_rangees:
+            w.setParent(None)
+            w.deleteLater()
+        self._icp_rangees = []
+        self._tpl_citees = []
+        model = self._tpl_modele_choisi()
         if model is None:
-            self.lbl_icp.setVisible(False)
+            self.icp_box.setVisible(False)
             return
-        cibles = self._bases_de(self.project, self._lire_config(self.project))
+        config = self._lire_config(self.project)
+        config_tpl = self._lire_config(self._tpl_project)
+        self._cible_bases = self._bases_de(self.project, config)
+        self._cible_mesures = template_import.mesures_du_modele(
+            getattr(self.project, "model_dir", None))
+        rd, pid, rid = (self._tpl_project.report_dir, model["page_id"],
+                        model["root_id"])
+        self._tpl_citees = template_import.mesures_du_sous_arbre(rd, pid, rid)
         trouves = template_import.indicateurs_du_modele(
-            self._tpl_project.report_dir, model["page_id"], model["root_id"],
-            list(self._tpl_bases) + cibles)
-        self.lbl_icp.setVisible(True)
-        if not trouves:
-            self.lbl_icp.setText("Indicateurs du modèle : aucun")
-            return
-        self.lbl_icp.setText("Indicateurs du modèle, remplacés à l'import par :")
+            rd, pid, rid, list(self._tpl_bases) + self._cible_bases,
+            template_import.motifs_de_noms(config, config_tpl))
+        self.icp_box.setVisible(True)
         for icp in trouves:
-            cmb = QComboBox()
-            if icp not in cibles:
-                cmb.addItem(f"{icp} (absent de ce rapport)", icp)
-            for c in cibles:
-                cmb.addItem(c, c)
-            cmb.setCurrentIndex(max(0, cmb.findData(icp)))
-            self.icp_form.addRow(QLabel(icp + " →"), cmb)
-            self._icp_combos[icp] = cmb
+            # même nom ici : il se garde ; sinon à choisir
+            self._tpl_ajouter_rangee(icp, icp if icp in self._cible_bases else "")
+        self._tpl_refresh_apercu()
+
+    def _tpl_modele_choisi(self):
+        sel = self.lst_models.selectedItems()
+        if not sel or self._tpl_project is None:
+            return None
+        rid = sel[0].data(Qt.UserRole)
+        return next((m for m in self._tpl_models if m["root_id"] == rid), None)
+
+    def _tpl_ajouter_rangee(self, ancien, nouveau):
+        w = QWidget()
+        h = QHBoxLayout(w)
+        h.setContentsMargins(0, 0, 0, 0)
+        ed = QLineEdit(ancien)
+        ed.setPlaceholderText("texte du gabarit")
+        cmb = QComboBox()
+        cmb.setEditable(True)
+        cmb.setInsertPolicy(QComboBox.NoInsert)
+        cmb.addItems(self._cible_bases)
+        cmb.setCurrentIndex(-1)
+        cmb.setEditText(nouveau)
+        cmb.lineEdit().setPlaceholderText("indicateur de ce rapport")
+        btn = QPushButton("✕")
+        btn.setFixedWidth(28)
+        btn.setToolTip("Retirer ce remplacement")
+        h.addWidget(ed, 1)
+        h.addWidget(QLabel("→"))
+        h.addWidget(cmb, 1)
+        h.addWidget(btn)
+        rangee = (ed, cmb, w)
+        self._icp_rangees.append(rangee)
+        self.icp_rangees_lay.addWidget(w)
+        ed.textChanged.connect(self._tpl_refresh_apercu)
+        cmb.currentTextChanged.connect(self._tpl_refresh_apercu)
+        btn.clicked.connect(lambda: self._tpl_retirer_rangee(rangee))
+        if not ancien:
+            ed.setFocus()
+        self._tpl_refresh_apercu()
+
+    def _tpl_retirer_rangee(self, rangee):
+        if rangee in self._icp_rangees:
+            self._icp_rangees.remove(rangee)
+            rangee[2].setParent(None)
+            rangee[2].deleteLater()
+        self._tpl_refresh_apercu()
 
     def _tpl_remplacements(self) -> dict:
-        return {icp: cmb.currentData() for icp, cmb in self._icp_combos.items()
-                if cmb.currentData() and cmb.currentData() != icp}
+        out = {}
+        for ed, cmb, _w in self._icp_rangees:
+            a, b = ed.text().strip(), cmb.currentText().strip()
+            if a and b and a != b:
+                out[a] = b
+        return out
+
+    def _tpl_apercu(self) -> list:
+        """[(mesure du gabarit, nom après import, existe dans ce rapport ?)]"""
+        remp = self._tpl_remplacements()
+        out = []
+        for nom in self._tpl_citees:
+            n = template_import.renommer(nom, remp)
+            out.append((nom, n, n in self._cible_mesures))
+        return out
+
+    def _tpl_refresh_apercu(self, *_):
+        self.lst_apercu.clear()
+        apercu = self._tpl_apercu()
+        if not apercu:
+            self.lbl_apercu.setText("Le modèle ne cite aucune mesure.")
+            self.lst_apercu.setVisible(False)
+            return
+        self.lst_apercu.setVisible(True)
+        lisible = bool(self._cible_mesures)
+        manquent = 0
+        for ancien, nouveau, existe in apercu:
+            texte = nouveau if ancien == nouveau else f"{nouveau}   ← {ancien}"
+            if lisible:
+                manquent += not existe
+                texte = ("✓ " if existe else "⚠ ") + texte
+            it = QListWidgetItem(texte)
+            if lisible and not existe:
+                it.setForeground(QColor("#E5A50A"))
+                it.setToolTip("Ce rapport n'a pas cette mesure : le visuel resterait vide.")
+            self.lst_apercu.addItem(it)
+        resume = f"Aperçu : {len(apercu)} mesure(s) citée(s)"
+        if lisible:
+            resume += (f", {manquent} absente(s) de ce rapport" if manquent
+                       else ", toutes présentes dans ce rapport")
+        self.lbl_apercu.setText(resume + ".")
 
     def _tpl_update_button(self, *_):
         sel = self.lst_models.selectedItems()
@@ -2180,14 +2282,12 @@ class WireframeTab(QWidget):
         if model is None:
             return
         remplacements = self._tpl_remplacements()
-        bases = list(self._tpl_bases) + self._bases_de(
-            self.project, self._lire_config(self.project))
         try:
             new_root, written, manifest = template_import.import_model(
                 self._tpl_project.report_dir, model["page_id"], root_id,
                 self.project.report_dir, page["id"],
                 br.backup_root(self.project.folder, "_wireframe_backups"),
-                remplacements=remplacements, bases=bases)
+                remplacements=remplacements)
         except (OSError, ValueError) as e:
             QMessageBox.critical(self, "Erreur d'import", str(e))
             return
@@ -2198,7 +2298,7 @@ class WireframeTab(QWidget):
         warn = (" ⚠ déborde de la page (position d'origine conservée)."
                 if (model["x"] + model["w"] > page["width"]
                     or model["y"] + model["h"] > page["height"]) else "")
-        icp = "".join(f" {a} → {b}." for a, b in remplacements.items())
+        icp = "".join(f" « {a} » → « {b} »." for a, b in remplacements.items())
         absentes = template_import.mesures_absentes(written, self.project.model_dir)
         if absentes:
             liste = ", ".join(absentes[:3]) + (" …" if len(absentes) > 3 else "")
