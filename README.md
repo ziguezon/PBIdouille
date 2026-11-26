@@ -2398,6 +2398,7 @@ bidouille\
     dialog_couleurs.py  aperçu & édition des couleurs KPI (écrit dans l'Excel)
   core\report_reader.py    lecture pages/visuels (positions, types, champs) + write_positions
   core\template_import.py  modèles d'un PBIP gabarit -> import dans la page courante
+  core\alignement.py       « Aligner les bords » du wireframe (sans Qt)
 ```
 
 Les scripts racine restent utilisables en CLI ; l'app **réutilise la même
@@ -2517,6 +2518,25 @@ cellule rééchelonne son contenu. Annulable (Ctrl+Z). NB : penser « grille » 
 un élément qui chevauche deux rangées (barre latérale) fusionne les rangées ;
 sélectionner alors ce qu'il faut répartir. Le **nom d'un groupe** se replace
 en haut-droite quand on le redimensionne.
+
+**Aligner les bords** : bouton « 📐 Aligner les bords », tolérance réglable
+(1 à 20 px, 5 par défaut, retenue). Pur Python dans `core/alignement.py`, sans
+Qt. Chaque axe seul : les bords à moins de la tolérance sont regroupés (étendue
+bornée, pas de chaîne de proche en proche) et deviennent UNE ligne, posée sur
+un appui fixe s'il y en a un (page, cadre du groupe actif, visuels visibles
+hors de la cible), sinon sur la valeur entière la plus fréquente ; à égalité,
+celle qu'un bord occupait déjà pile. Puis les gouttières (voisins d'une même
+bande) et les marges (jusqu'au cadre), en deux familles séparées : les écarts
+proches prennent la valeur la plus fréquente, en déplaçant une LIGNE, donc ce
+qui y est aligné suit. Un bord resté seul suit l'autre bord de son élément
+(translation plutôt qu'étirement). Écarts > 48 px ignorés ; un élément plus
+mince que la tolérance ne donne que son bord de départ et garde sa taille.
+Cible : sélection multiple, sinon l'élément sélectionné (un groupe avec son
+contenu), sinon le niveau actif. Seuls les VISUELS sont alignés ; un groupe
+dont la boîte épousait son contenu (à tolérance près) est refait sur
+l'union de ses enfants, du plus profond au moins profond ; `parent_x/y`
+suivent, et seuls les éléments dont la géométrie RELATIVE change passent en
+« modifié ». En mémoire, Ctrl+Z. Test : `tests/test_alignement.py`.
 
 **Grouper / Dégrouper** : Ctrl+clic (ou lasso depuis le fond) pour
 sélectionner ≥ 2 éléments du niveau actif → **« Grouper »** (nom demandé) :

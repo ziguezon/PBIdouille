@@ -24,6 +24,7 @@ from pathlib import Path
 from qtpy.QtCore import QPointF, QRectF, Qt, QTimer
 from qtpy.QtGui import QBrush, QColor, QFont, QKeySequence, QPainter, QPen
 from qtpy.QtWidgets import (
+    QAbstractSpinBox,
     QComboBox,
     QFileDialog,
     QGraphicsItem,
@@ -40,6 +41,7 @@ from qtpy.QtWidgets import (
     QMessageBox,
     QPlainTextEdit,
     QPushButton,
+    QSpinBox,
     QSplitter,
     QTreeWidget,
     QTreeWidgetItem,
@@ -47,7 +49,7 @@ from qtpy.QtWidgets import (
     QWidget,
 )
 
-from core import edition, report_reader, template_import
+from core import alignement, edition, report_reader, template_import
 from core.journal import Journal
 from core.project import Project, ecrire_reglage, lire_reglage, reglages
 from core.theme import (ACCENT, ACCENT_DIM, BG_DARKEST, BG_WINDOW, BORDER,
@@ -427,6 +429,50 @@ class WireframeTab(QWidget):
         self.btn_distribute.clicked.connect(self._distribute)
         rv.addWidget(self.btn_distribute)
 
+        # aligner : bords presque alignés -> alignés, gouttières égales, pixel
+        align_row = QHBoxLayout()
+        align_row.setContentsMargins(0, 0, 0, 0)
+        self.btn_align = QPushButton("📐 Aligner les bords")
+        self.btn_align.setToolTip(
+            "Range au pixel ce qui est à quelques pixels près :\n"
+            "• les bords proches les uns des autres (moins que la tolérance)\n"
+            "  se posent sur une même ligne : presque collés = collés,\n"
+            "  presque alignés = alignés, près du bord de page = sur le bord ;\n"
+            "• les gouttières presque égales entre voisins deviennent égales,\n"
+            "  les marges aussi (chacune avec sa famille) ;\n"
+            "• tout finit sur des pixels entiers.\n\n"
+            "Cible : la sélection (un élément, un groupe, plusieurs) ; sinon\n"
+            "tout le niveau actif, contenu des groupes compris. Le reste de la\n"
+            "page sert d'appui sans bouger. Annulable (Ctrl+Z).")
+        self.btn_align.setEnabled(False)
+        self.btn_align.clicked.connect(self._aligner)
+        align_row.addWidget(self.btn_align, 1)
+        align_row.addWidget(QLabel("à"))
+        self.spn_tol = QSpinBox()
+        self.spn_tol.setRange(1, 20)
+        # le nombre seul, sans flèches : elles étaient trop petites pour
+        # être cliquées, et un clic dessus sélectionnait le texte. Le
+        # clavier et la molette changent toujours la valeur.
+        self.spn_tol.setButtonSymbols(QAbstractSpinBox.NoButtons)
+        self.spn_tol.setAlignment(Qt.AlignRight)
+        self.spn_tol.setFixedWidth(40)
+        self.spn_tol.setToolTip(
+            "Tolérance : deux bords plus proches que ça sont « le même bord ».\n"
+            "Une gouttière voulue plus petite que la tolérance se refermerait :\n"
+            "garder la tolérance sous la plus petite gouttière du rapport.\n\n"
+            "De 1 à 20 : taper le nombre, ou la molette, ou les flèches du clavier.")
+        try:
+            self.spn_tol.setValue(int(lire_reglage(self.CLE_TOLERANCE, "5")))
+        except (TypeError, ValueError):
+            self.spn_tol.setValue(5)
+        self.spn_tol.valueChanged.connect(
+            lambda v: ecrire_reglage(self.CLE_TOLERANCE, v))
+        align_row.addWidget(self.spn_tol)
+        align_row.addWidget(QLabel("px près"))
+        self.align_host = QWidget()
+        self.align_host.setLayout(align_row)
+        rv.addWidget(self.align_host)
+
         # -- panneau Gabarits (replié par défaut) --
         self.grp_tpl = QGroupBox("Gabarits")
         self.grp_tpl.setCheckable(True)
@@ -469,7 +515,8 @@ class WireframeTab(QWidget):
             # rien qui écrive dans les visual.json n'est offert ; la
             # navigation (sélection, entrer dans un groupe, détails) reste
             for w in (self.btn_cancel, self.btn_save, self.btn_group,
-                      self.btn_ungroup, self.btn_distribute, self.grp_tpl):
+                      self.btn_ungroup, self.btn_distribute, self.align_host,
+                      self.grp_tpl):
                 w.setVisible(False)
             hint.setText("Lecture seule · clic : détails d'un visuel · "
                          "double-clic sur un groupe : entrer (Échap : remonter).")
@@ -580,6 +627,7 @@ class WireframeTab(QWidget):
         self.btn_group.setEnabled(False)
         self.btn_ungroup.setEnabled(False)
         self.btn_distribute.setEnabled(False)
+        self.btn_align.setEnabled(False)
         self._update_dirty_ui()
 
         page = self.cmb_pages.currentData()
@@ -815,6 +863,7 @@ class WireframeTab(QWidget):
 
     def _update_distribute_btn(self):
         self.btn_distribute.setEnabled(len(self._distribute_target()[0]) >= 2)
+        self.btn_align.setEnabled(bool(self._aligner_cible()[0]))
 
     def _apply_scope(self):
         """Accorde l'interactivité aux enfants directs du niveau actif ;
@@ -1032,6 +1081,133 @@ class WireframeTab(QWidget):
         self._rebuild_dividers()
         self._place_grips()
         self._status(f"⬍⬌ {msg}, Ctrl+Z pour annuler.")
+
+    CLE_TOLERANCE = "wireframe_tolerance_alignement"
+
+    def _aligner_cible(self):
+        """(ids du niveau actif à aligner, libellé) : la sélection multiple,
+        sinon l'élément sélectionné (un groupe vient avec son contenu), sinon
+        tout le niveau actif."""
+        def actifs(ids):
+            return [i for i in ids if i in self._data
+                    and self._tier(self._data[i]) == "active"]
+        multi = actifs(self._multi_ids)
+        if multi:
+            return multi, f"({len(multi)} éléments sélectionnés)"
+        sel = actifs([self._selected_id] if self._selected_id else [])
+        if sel:
+            d = self._data[sel[0]]
+            if d["is_group"]:
+                nom = d["group_name"] or "groupe"
+            else:
+                nom = d.get("title") or d["type"]
+            return sel, f"(« {nom} »)"
+        ids = [o["id"] for o in self._data.values()
+               if self._parent_of(o) == self._scope]
+        if self._scope is not None and self._scope in self._data:
+            g = self._data[self._scope]
+            return ids, f"dans « {g['group_name'] or 'groupe'} »"
+        return ids, "sur la page"
+
+    def _feuilles(self, vid):
+        """Les visuels (pas les groupes) du sous-arbre de `vid`, lui compris.
+        Un groupe vide compte comme un visuel : il a une boîte à lui."""
+        kids = self._children_of.get(vid, [])
+        if not kids:
+            return [vid]
+        out = []
+        for k in kids:
+            out += self._feuilles(k)
+        return out
+
+    def _aligner(self):
+        """Bouton « Aligner les bords » : voir core/alignement.py. Les VISUELS
+        de la cible sont alignés ; un groupe dont la boîte épousait son contenu
+        l'épouse encore après, les autres gardent la leur ; les positions
+        relatives suivent. En mémoire, annulable (Ctrl+Z)."""
+        if self.lecture_seule:
+            return
+        cible, label = self._aligner_cible()
+        if not cible:
+            return
+        tol = float(self.spn_tol.value())
+
+        def boite(d):
+            return (d["x"], d["y"], d["x"] + d["w"], d["y"] + d["h"])
+
+        feuilles = []
+        for vid in cible:
+            feuilles += self._feuilles(vid)
+        dans_cible = set(feuilles)
+        groupes = set()
+        for vid in cible:
+            if self._children_of.get(vid):
+                groupes |= {vid} | {g for g in self._descendants(vid)
+                                    if self._children_of.get(g)}
+        # appuis : les visuels visibles du niveau hors de la cible
+        fixes = [boite(d) for d in self._data.values()
+                 if d["id"] not in dans_cible
+                 and not self._children_of.get(d["id"])
+                 and self._tier(d) in ("active", "inside")]
+        if self._scope is not None and self._scope in self._data:
+            cadre = boite(self._data[self._scope])
+        else:
+            W, H = self._page_size()
+            cadre = (0.0, 0.0, W, H) if W and H else None
+
+        def union(gid):
+            bs = [boite(self._data[k]) for k in self._children_of.get(gid, [])]
+            return (min(b[0] for b in bs), min(b[1] for b in bs),
+                    max(b[2] for b in bs), max(b[3] for b in bs))
+
+        # un groupe qui épousait son contenu l'épousera encore ; un groupe
+        # plus grand que son contenu (marge voulue) garde sa boîte
+        epouse = {g for g in groupes
+                  if max(abs(a - b) for a, b in
+                         zip(boite(self._data[g]), union(g))) <= tol + 0.5}
+
+        def relatif(d):
+            return (d["x"] - d["parent_x"], d["y"] - d["parent_y"], d["w"], d["h"])
+
+        avant = {k: relatif(d) for k, d in self._data.items()}
+        nouvelles, n_gout = alignement.aligner(
+            {k: boite(self._data[k]) for k in feuilles}, fixes, cadre, tol)
+        self._push_undo_geom()
+        for k, (x0, y0, x1, y1) in nouvelles.items():
+            d = self._data[k]
+            d["x"], d["y"], d["w"], d["h"] = x0, y0, x1 - x0, y1 - y0
+        # du plus profond au moins profond : un groupe se refait sur des
+        # enfants déjà refaits
+        for g in sorted(groupes, key=lambda g: -self._data[g].get("depth", 0)):
+            if g in epouse:
+                x0, y0, x1, y1 = union(g)
+                d = self._data[g]
+                d["x"], d["y"], d["w"], d["h"] = x0, y0, x1 - x0, y1 - y0
+        for d in self._data.values():
+            p = self._parent_of(d)
+            if p is not None:
+                d["parent_x"] = self._data[p]["x"]
+                d["parent_y"] = self._data[p]["y"]
+        changes = [k for k, d in self._data.items()
+                   if max(abs(a - b) for a, b in zip(relatif(d), avant[k])) > 1e-6]
+        if not changes:
+            self._undo.pop()
+            self._update_dirty_ui()
+            self._status(f"📐 Rien à aligner {label} à {int(tol)} px près : "
+                         "tout est déjà en place.")
+            return
+        for k in self._data:
+            self._apply_geometry(k)
+        for k in changes:
+            self._mark_dirty(k)
+        self._rebuild_dividers()
+        self._place_grips()
+        bouges = sum(1 for k in changes if k in nouvelles)
+        self._status(f"📐 {bouges} visuel(s) aligné(s) {label} à {int(tol)} px "
+                     "près"
+                     + (f", {n_gout} gouttière(s) ou marge(s) égalisée(s)"
+                        if n_gout else "")
+                     + ". Ctrl+Z pour annuler.")
 
     def _ungroup_selection(self):
         """Dissout le groupe sélectionné : ses enfants remontent d'un niveau

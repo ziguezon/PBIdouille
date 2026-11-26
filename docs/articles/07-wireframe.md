@@ -7,7 +7,7 @@
 > la variable d'environnement `PBIDOUILLE_DEV=1`.
 
 L'onglet **Wireframe** dessine chaque page du rapport à l'échelle, et permet de déplacer,
-redimensionner, grouper et répartir les visuels sans ouvrir Power BI Desktop.
+redimensionner, grouper, répartir et aligner les visuels sans ouvrir Power BI Desktop.
 
 ![L'onglet Wireframe, sur une page avec des groupes imbriqués](../ressources/images/wireframe_onglet.png)
 
@@ -59,6 +59,50 @@ s'applique, dans cet ordre, à :
 1. la sélection multiple ;
 2. le contenu du groupe sélectionné ;
 3. tout le niveau actif.
+
+## Aligner les bords
+
+**📐 Aligner les bords** range au pixel ce qui n'est décalé que de quelques pixels, sans
+changer la mise en page. La tolérance se règle à côté du bouton, de 1 à 20 pixels (5 par
+défaut), et elle est retenue.
+
+| Avant | Après |
+|---|---|
+| Deux visuels à 3 pixels l'un de l'autre | Collés |
+| Deux hauts à 2 pixels près | Alignés |
+| Un visuel à 4 pixels du bord de la page | Sur le bord |
+| Des gouttières de 10, 12 et 10 pixels | 10, 10 et 10 |
+| Des marges de 16, 16 et 18 pixels | 16 partout (les marges ne prennent pas la valeur des gouttières) |
+| Des positions à 381,65 | Des pixels entiers |
+
+Les bords proches deviennent **une même ligne**. Quand une gouttière s'ajuste, c'est la
+ligne qui bouge : tout ce qui était aligné dessus le reste. Une ligne prend la valeur la
+plus fréquente parmi ses bords. À égalité, elle prend celle d'un bord déjà posé sur un
+pixel entier : il a sans doute été placé exprès, l'autre a glissé.
+
+Un bord qui n'a rien sur quoi s'aligner suit l'autre bord de son visuel. Un visuel qui ne
+touche quelque chose que d'un côté se déplace donc d'un bloc, sans s'étirer.
+
+Ce qui ne bouge pas :
+
+- un écart plus grand que la tolérance, gouttière voulue comprise ;
+- un vide de plus de 48 pixels, qui n'est pas une gouttière ;
+- l'épaisseur d'un trait de séparation ;
+- la taille des visuels : rendre des cases égales, c'est le rôle de **Répartir**.
+
+Le bouton s'applique, dans cet ordre, à :
+
+1. la sélection multiple ;
+2. l'élément sélectionné (un groupe vient avec tout son contenu) ;
+3. tout le niveau actif, contenu des groupes compris.
+
+Le reste de la page sert d'appui et ne bouge pas. Dans un groupe, le cadre du groupe sert
+de bord de page. Un groupe dont la boîte épousait son contenu l'épouse encore après ; un
+groupe plus grand que son contenu garde sa boîte.
+
+Une gouttière voulue plus petite que la tolérance se refermerait : garder la tolérance
+sous la plus petite gouttière du rapport. L'alignement est fait en mémoire, comme un
+déplacement : il reste à l'enregistrer, et Ctrl+Z l'annule.
 
 ## Grouper et dégrouper
 
