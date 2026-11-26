@@ -2587,6 +2587,21 @@ dossiers listés). ⚠ Le modèle importé référence les tables/champs du mod�
 sémantique du GABARIT — compatibilité à vérifier (même modèle ou champs
 communs). Voir `core/template_import.py`.
 
+**Indicateurs d'un gabarit** : un gabarit vient d'un autre rapport, ses
+visuels citent SES ICP. `indicateurs_du_modele` les retrouve dans le
+sous-arbre : mesure citée dont le nom est un ICP ou une déclinaison
+(`match_kpi`, plus long préfixe d'abord), ou littéral égal à un ICP
+(filtre, segment). Les ICP connus = ceux du gabarit (`read_measures` sur
+son modèle, avec son config s'il en a un, sinon celui du rapport) + ceux
+du rapport. Le panneau propose une liste par ICP trouvé (défaut : lui-même).
+`remplacer_indicateurs` réécrit chaque copie : le `Property` des `Measure`,
+toute autre chaîne égale à une mesure citée ou à `Table.Mesure` pour une
+table qui porte des mesures citées (queryRef, nativeQueryRef), et les
+littéraux égaux à un ICP. Chaque chaîne d'après sa valeur d'ORIGINE (un
+échange A <-> B tient) ; colonnes et titres jamais touchés. Le manifeste
+note les remplacements ; `mesures_absentes` signale ensuite les mesures
+citées que le modèle cible n'a pas. Test : `tests/test_gabarit_indicateurs.py`.
+
 ### Onglet « Mesures »
 
 Quatre sous-onglets : **Variations** (l'éditeur ci-dessous), **Arbre des

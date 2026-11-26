@@ -18,6 +18,7 @@ core/template_import.py."""
 
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 
@@ -27,6 +28,7 @@ from qtpy.QtWidgets import (
     QAbstractSpinBox,
     QComboBox,
     QFileDialog,
+    QFormLayout,
     QGraphicsItem,
     QGraphicsRectItem,
     QGraphicsScene,
@@ -58,6 +60,7 @@ from core.theme import (ACCENT, ACCENT_DIM, BG_DARKEST, BG_WINDOW, BORDER,
                         police_code)
 
 import backup_restore as br
+import generate_measures as gm
 
 
 class WireItem(QGraphicsRectItem):
@@ -312,6 +315,8 @@ class WireframeTab(QWidget):
         self._applying = False         # garde : setPos programmatique en cours
         self._tpl_project = None       # Project du PBIP gabarit (ou None)
         self._tpl_models: list = []    # modèles du gabarit (list_models)
+        self._tpl_bases: list = []     # ICP du gabarit (mesures de base)
+        self._icp_combos: dict = {}    # ICP du modèle -> QComboBox (ICP du rapport)
 
         root = QHBoxLayout(self)
         split = QSplitter(Qt.Horizontal)
@@ -495,7 +500,25 @@ class WireframeTab(QWidget):
         self.lst_models.setStyleSheet(checkable_list_stylesheet())
         self.lst_models.setMaximumHeight(150)
         self.lst_models.itemSelectionChanged.connect(self._tpl_update_button)
+        self.lst_models.itemSelectionChanged.connect(self._tpl_refresh_icp)
         tv.addWidget(self.lst_models)
+        # le gabarit vient d'un autre rapport : ses visuels citent SES
+        # indicateurs. Une rangée par indicateur trouvé dans le modèle, pour
+        # choisir celui de CE rapport qui le remplace à l'import.
+        self.lbl_icp = QLabel("Indicateurs du modèle :")
+        self.lbl_icp.setToolTip(
+            "Les indicateurs que cite le modèle choisi : ses mesures (« Body Fat %\n"
+            "30d avg » est une déclinaison de « Body Fat % ») et ses filtres ou\n"
+            "segments sur un indicateur.\n\n"
+            "À l'import, chacun est remplacé par l'indicateur choisi à côté :\n"
+            "« Body Fat % 30d avg » devient « Weight 30d avg », le filtre\n"
+            "'Body Fat %' devient 'Weight'. Les titres ne sont pas touchés.")
+        tv.addWidget(self.lbl_icp)
+        self.icp_host = QWidget()
+        self.icp_form = QFormLayout(self.icp_host)
+        self.icp_form.setContentsMargins(0, 0, 0, 0)
+        tv.addWidget(self.icp_host)
+        self.lbl_icp.setVisible(False)
         self.btn_import = QPushButton("Importer dans la page courante")
         self.btn_import.setEnabled(False)
         self.btn_import.clicked.connect(self._tpl_import)
@@ -2031,6 +2054,7 @@ class WireframeTab(QWidget):
     def _tpl_set(self, pbip):
         self._tpl_project = None
         self._tpl_models = []
+        self._tpl_bases = []
         self.cmb_tpl_pages.blockSignals(True)
         self.cmb_tpl_pages.clear()
         self.lst_models.clear()
@@ -2050,6 +2074,10 @@ class WireframeTab(QWidget):
         self.lbl_tpl.setStyleSheet(f"color:{TEXT};")
         self.lbl_tpl.setToolTip(str(pbip))
         self._tpl_models = template_import.list_models(self._tpl_project.report_dir)
+        # le config du gabarit s'il en a un, sinon celui du rapport : il dit
+        # où sont les mesures de base (table et dossier)
+        config = self._lire_config(self._tpl_project) or self._lire_config(self.project)
+        self._tpl_bases = self._bases_de(self._tpl_project, config)
         seen = []
         for m in self._tpl_models:
             if m["page_id"] not in seen:
@@ -2077,6 +2105,60 @@ class WireframeTab(QWidget):
             self.lst_models.addItem(it)
         self._tpl_update_button()
 
+    @staticmethod
+    def _lire_config(projet) -> dict:
+        try:
+            return json.loads(projet.config_json.read_text(encoding="utf-8"))
+        except (AttributeError, OSError, ValueError):
+            return {}
+
+    @staticmethod
+    def _bases_de(projet, config) -> list:
+        """Les ICP (mesures de base) d'un projet, triés comme Power BI ; []
+        si le modèle est illisible."""
+        try:
+            return list(gm.read_measures(projet.model_dir, config or {})[1])
+        except (AttributeError, OSError, TypeError, ValueError):
+            return []
+
+    def _tpl_refresh_icp(self, *_):
+        """Une rangée par ICP cité par le modèle sélectionné : l'ICP du
+        gabarit, et à côté l'ICP du rapport qui le remplacera. Par défaut
+        chacun se garde lui-même (le même nom, s'il existe ici)."""
+        while self.icp_form.rowCount():
+            self.icp_form.removeRow(0)
+        self._icp_combos = {}
+        sel = self.lst_models.selectedItems()
+        model = None
+        if sel and self._tpl_project is not None:
+            rid = sel[0].data(Qt.UserRole)
+            model = next((m for m in self._tpl_models if m["root_id"] == rid), None)
+        if model is None:
+            self.lbl_icp.setVisible(False)
+            return
+        cibles = self._bases_de(self.project, self._lire_config(self.project))
+        trouves = template_import.indicateurs_du_modele(
+            self._tpl_project.report_dir, model["page_id"], model["root_id"],
+            list(self._tpl_bases) + cibles)
+        self.lbl_icp.setVisible(True)
+        if not trouves:
+            self.lbl_icp.setText("Indicateurs du modèle : aucun")
+            return
+        self.lbl_icp.setText("Indicateurs du modèle, remplacés à l'import par :")
+        for icp in trouves:
+            cmb = QComboBox()
+            if icp not in cibles:
+                cmb.addItem(f"{icp} (absent de ce rapport)", icp)
+            for c in cibles:
+                cmb.addItem(c, c)
+            cmb.setCurrentIndex(max(0, cmb.findData(icp)))
+            self.icp_form.addRow(QLabel(icp + " →"), cmb)
+            self._icp_combos[icp] = cmb
+
+    def _tpl_remplacements(self) -> dict:
+        return {icp: cmb.currentData() for icp, cmb in self._icp_combos.items()
+                if cmb.currentData() and cmb.currentData() != icp}
+
     def _tpl_update_button(self, *_):
         sel = self.lst_models.selectedItems()
         self.btn_import.setEnabled(bool(
@@ -2097,11 +2179,15 @@ class WireframeTab(QWidget):
         model = next((m for m in self._tpl_models if m["root_id"] == root_id), None)
         if model is None:
             return
+        remplacements = self._tpl_remplacements()
+        bases = list(self._tpl_bases) + self._bases_de(
+            self.project, self._lire_config(self.project))
         try:
             new_root, written, manifest = template_import.import_model(
                 self._tpl_project.report_dir, model["page_id"], root_id,
                 self.project.report_dir, page["id"],
-                br.backup_root(self.project.folder, "_wireframe_backups"))
+                br.backup_root(self.project.folder, "_wireframe_backups"),
+                remplacements=remplacements, bases=bases)
         except (OSError, ValueError) as e:
             QMessageBox.critical(self, "Erreur d'import", str(e))
             return
@@ -2112,5 +2198,14 @@ class WireframeTab(QWidget):
         warn = (" ⚠ déborde de la page (position d'origine conservée)."
                 if (model["x"] + model["w"] > page["width"]
                     or model["y"] + model["h"] > page["height"]) else "")
+        icp = "".join(f" {a} → {b}." for a, b in remplacements.items())
+        absentes = template_import.mesures_absentes(written, self.project.model_dir)
+        if absentes:
+            liste = ", ".join(absentes[:3]) + (" …" if len(absentes) > 3 else "")
+            warn += (f" ⚠ {len(absentes)} mesure(s) absente(s) de ce rapport "
+                     f"({liste}) : ces visuels resteront vides.")
         self._status(f"📥 « {model['name']} » importé ({len(written)} fichier(s), "
-                     f"manifeste {manifest.parent.name}).{warn} Ctrl+Z pour annuler.")
+                     f"manifeste {manifest.parent.name}).{icp}{warn} "
+                     "Ctrl+Z pour annuler.")
+        if len(absentes) > 3:
+            self.journal.info("Mesures absentes : " + ", ".join(absentes))

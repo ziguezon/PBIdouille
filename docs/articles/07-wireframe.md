@@ -146,10 +146,39 @@ Le panneau **Gabarits** copie des éléments d'un autre rapport :
 1. Cocher **Gabarits** pour ouvrir le panneau.
 2. Cliquer **Choisir…** et sélectionner un `.pbip`.
 3. Choisir une page, puis un modèle. Chaque groupe racine et chaque visuel isolé en est un.
-4. Cliquer **Importer dans la page courante**.
+4. Choisir, pour chaque indicateur du modèle, celui de ce rapport qui le remplace.
+5. Cliquer **Importer dans la page courante**.
 
-Le modèle garde sa position et sa taille d'origine. Il cite les champs du modèle sémantique
-du gabarit : vérifier que le rapport cible possède ces mêmes tables et mesures.
+Le modèle garde sa position et sa taille d'origine.
+
+### Changer les indicateurs
+
+Un gabarit vient d'un autre rapport : ses visuels citent **ses** indicateurs. Sous la liste
+des modèles, une rangée par indicateur que cite le modèle choisi, avec à côté la liste des
+indicateurs de ce rapport. Par défaut, chacun se garde lui-même ; un indicateur que ce
+rapport n'a pas est marqué « absent de ce rapport ».
+
+Un indicateur est reconnu dans un modèle de deux façons :
+
+- une **mesure** qui est l'indicateur ou une de ses déclinaisons : `Body Fat % 30d avg`
+  est une déclinaison de `Body Fat %` ;
+- un **filtre** ou un **segment** dont la valeur est l'indicateur : `'Body Fat %'`.
+
+À l'import, avec `Body Fat %` remplacé par `Weight` :
+
+| Dans le gabarit | Dans le rapport |
+|---|---|
+| La mesure `Body Fat % 30d avg` | `Weight 30d avg` |
+| Le filtre ou segment `'Body Fat %'` | `'Weight'` |
+| Une colonne qui s'appelle `Body Fat %` | Inchangée : ce n'est pas une mesure |
+| Un titre « Évolution de Body Fat % » | Inchangé : à retoucher dans Desktop |
+
+Les indicateurs reconnus sont ceux du gabarit (lus dans son modèle, avec son
+`measures_config.json` s'il en a un) et ceux de ce rapport.
+
+Après l'import, les mesures citées que ce rapport n'a pas sont signalées : les visuels
+qui les utilisent resteront vides. Pour le reste, le modèle cite les mêmes tables et
+colonnes que dans le gabarit (dates, paramètres de champ) : ce rapport doit les avoir.
 
 ---
 
