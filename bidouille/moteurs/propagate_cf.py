@@ -3388,6 +3388,100 @@ def propagate_groupes(report_dir, groupes=None, *, branches=BRANCHES,
     return total
 
 
+# ------------------------------------------------ vers les branches seulement
+#
+# Sans gabarit ni grille : chaque ICP est sa PROPRE source, et sa face Réel
+# descend sur ses branches (YTD...). C'est le cas des visuels montés un par
+# ICP, sans paramètre de champ : chacun a déjà son formatage, réglé à la main,
+# mais seulement sur le Réel.
+#
+# Le moteur sait déjà le faire : une passe dont l'ICP est à la fois le
+# template et la seule cible ne fait que régénérer les faces de branche du
+# template (cf. process_visual, « le Réel du template n'est jamais réécrit »).
+# Même miroir aussi, borné à l'ICP de la passe : une face de branche dont le
+# Réel a changé est remise à jour, une face dont le Réel a disparu reste (elle
+# devient une entrée « de branche seule », comme pour un gabarit).
+
+def propagate_branches(report_dir, *, branches=BRANCHES, kpis=None,
+                       entity: str = ENTITY,
+                       field_parameter: str = FIELD_PARAMETER,
+                       dry_run: bool = False, verbose: bool = False,
+                       log=print, cible_folders=(), portee=None) -> int:
+    """Chaque ICP vers SES branches : le Réel de chacun est recopié sur ses
+    faces de branche, rien ne passe d'un ICP à un autre. La grille des
+    sources n'est pas lue. Une seule session de sauvegarde pour le tout.
+
+    `branches` : celles à remplir (au moins une). `kpis` : None = tous les
+    ICP du paramètre de champ. `portee` : comme pour propagate_regles."""
+    report_dir = Path(report_dir)
+    portee = _portee(portee)
+    branches = [b for b in branches if b]
+    if not branches:
+        raise SystemExit("Aucune branche cochée : rien à remplir. Cocher au "
+                         "moins une branche (YTD, par exemple).")
+    ctx = contexte_modele(report_dir, field_parameter, cible_folders, kpis)
+    kpis_connus = ctx["kpis_connus"]
+    kpis = [k for k in (kpis or kpis_connus)]
+
+    log("Vers les branches seulement : le Réel de chaque ICP sur ses "
+        "branches (" + ", ".join(branches) + "), sans gabarit.")
+    log(f"ICP          : {len(kpis)}")
+    journal_contexte(ctx, cible_folders, log)
+    if not journal_portee(report_dir, portee, log):
+        return 0
+    if dry_run:
+        log("*** DRY_RUN : aucun fichier modifié (diagnostic seulement) ***")
+
+    session = None
+    if not dry_run:
+        session = br.BackupSession(
+            br.backup_root(report_dir.parent, "_propagate_backups"),
+            "Propagation vers les branches", report_dir.parent)
+        log(f"Sauvegardes  : {session.dir} (visuels modifiés seulement)")
+
+    communes: set = set()
+    par_kpi: dict = {}
+    total = 0
+    visuels = set()
+    for vj in visuels_de_la_portee(report_dir, portee):
+        for k in kpis:
+            n = process_visual(vj, k, [k], entity=entity, branches=branches,
+                               verbose=verbose, dry_run=dry_run, log=log,
+                               backup_dir=session,
+                               fp_forward=ctx["fp_forward"],
+                               fp_reverse=ctx["fp_reverse"],
+                               known=ctx["known"], communes=communes,
+                               kpis_connus=kpis_connus, cibles=ctx["cibles"])
+            if n:
+                log(f"  page {vj.parents[2].name} / visuel "
+                    f"{vj.parent.name} · {k} : {n} entrée(s)")
+                par_kpi[k] = par_kpi.get(k, 0) + n
+                total += n
+                visuels.add(vj)
+
+    if par_kpi:
+        log(f"ICP touchés ({len(par_kpi)}) : " + ", ".join(
+            f"{k} ({par_kpi[k]})" for k in kpis if k in par_kpi))
+    if communes:
+        log(f"Mesures COMMUNES à toutes les branches ({len(communes)}), "
+            "gardées telles quelles, elles n'ont pas de variante par branche :")
+        for nom in sorted(communes):
+            log("  = " + nom)
+        log("  (si l'une d'elles DEVRAIT avoir une variante, c'est qu'elle "
+            "manque au modèle : la générer, puis relancer.)")
+
+    if session is not None:
+        session.close(f"{total} entrée(s) sur {len(visuels)} visuel(s), "
+                      f"vers les branches {', '.join(branches)}"
+                      + ("" if not portee else
+                         " ; portée : " + decrire_portee(report_dir, portee)))
+    log("")
+    log("Aucun changement." if total == 0 else
+        f"Terminé : {total} entrée(s) sur {len(visuels)} visuel(s), "
+        f"{len(par_kpi)} ICP.")
+    return total
+
+
 def main() -> None:
     propagate(REPORT_DIR, TEMPLATE_KPI, branches=BRANCHES, targets=TARGET_KPIS,
               entity=ENTITY, field_parameter=FIELD_PARAMETER,

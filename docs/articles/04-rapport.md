@@ -61,6 +61,25 @@ La confirmation et le journal rappellent la portée. Si la page ou le visuel cho
 n'existe plus, rien n'est propagé et le journal le dit. **Propager puis colorer** colore
 toujours tout le rapport : la portée ne vaut que pour la propagation.
 
+### Vers les branches seulement
+
+Quand les visuels sont montés **un par ICP**, sans paramètre de champ, chacun a déjà son
+formatage, réglé à la main sur le Réel. Aucun gabarit n'a de sens : il ne reste qu'à
+recopier ce Réel sur les branches (YTD...).
+
+Le bouton **Vers les branches seulement** fait cela pour chaque ICP à la fois :
+
+- le formatage du Réel de chaque ICP est recopié sur **ses** branches cochées ;
+- rien ne passe d'un ICP à un autre ;
+- la grille des sources n'est pas lue, et n'a pas besoin d'exister.
+
+Une variation suit sa branche : un réglage sur `Weight PY` arrive sur `Weight YTD PY`. Un
+réglage changé sur le Réel met sa face YTD à jour au passage suivant. Un réglage posé
+**seulement** sur une branche y reste.
+
+La **portée**, l'**aperçu**, la confirmation et la sauvegarde sont ceux de **Propager**.
+Sans branche cochée, rien n'est lancé.
+
 ### Ce que la propagation fait
 
 - Elle aligne chaque case de la grille sur sa source. Ce que la source porte est
