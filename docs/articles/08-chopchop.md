@@ -18,11 +18,6 @@ La ligne du haut résume le résultat :
 133 mesures · 51 inutilisée(s) (dont 51 générée(s) depuis le config) · 111 colonnes · 40 inutilisée(s) · 4 table(s) entièrement inutilisée(s)
 ```
 
-| Fonction | Version partagée | Édition de développement |
-|---|---|---|
-| Analyse, filtre, export | Oui | Oui |
-| Suppression | Non | Oui |
-
 ### Analyse incomplète
 
 Si un fichier du rapport ne se lit pas, l'analyse continue sans lui, et un bandeau
@@ -89,8 +84,6 @@ Colonnes : `Type`, `Nom`, `Table`, `Statut`, `Référencé par`,
 rapport, et précise si l'analyse était incomplète.
 
 ## Supprimer
-
-> **Édition de développement seulement.**
 
 1. Si Power BI Desktop est ouvert, y enregistrer son travail.
 2. Cocher les objets. La case d'un groupe coche tout le groupe, ou seulement la table
